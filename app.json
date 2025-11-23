@@ -4,7 +4,7 @@
     "slug": "sadaka-plus",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "../assets/images/Sadaka App Logo.png",
+    "icon": "./assets/images/sadaka-logo.png",
     "scheme": "sadakaapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -19,7 +19,7 @@
 
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "../assets/images/Sadaka App Logo.png",
+        "foregroundImage": "./assets/images/Sadaka App Logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -38,7 +38,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "../assets/images/Sadaka App Logo.png"
+      "favicon": "./assets/images/Sadaka App Logo.png"
     },
 
     "plugins": [
@@ -46,7 +46,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "../assets/images/Sadaka App Logo.png",
+          "image": "./assets/images/Sadaka App Logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -60,10 +60,7 @@
     },
 
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "113cf3cc-0839-4f7b-afdb-d1c95ecd743c"
-      }
+      "router": {}
     }
   }
 }
