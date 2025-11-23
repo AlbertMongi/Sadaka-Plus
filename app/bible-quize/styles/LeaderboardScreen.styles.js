@@ -1,0 +1,218 @@
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  header: {
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#E18731',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 5,
+    letterSpacing: 0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666666',
+    fontWeight: '400',
+    letterSpacing: 0.5,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    padding: 20,
+    gap: 15,
+  },
+  filterButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 2,
+    borderColor: '#F0F0F0',
+  },
+  activeFilterButton: {
+    backgroundColor: '#E18731',
+    borderColor: '#E18731',
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
+    letterSpacing: 0.5,
+  },
+  activeFilterButtonText: {
+    color: '#FFFFFF',
+  },
+  currentUserCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#F0F0F0',
+    shadowColor: '#E18731',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  currentUserTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 15,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  currentUserStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  currentUserStat: {
+    alignItems: 'center',
+  },
+  currentUserStatValue: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#E18731',
+    letterSpacing: 0.5,
+  },
+  currentUserStatLabel: {
+    fontSize: 14,
+    color: '#666666',
+    marginTop: 5,
+    fontWeight: '400',
+  },
+  leaderboardList: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  leaderboardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 15,
+    borderWidth: 2,
+    borderColor: '#F0F0F0',
+    shadowColor: '#E18731',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  currentUserItem: {
+    borderColor: '#E18731',
+    backgroundColor: '#FFF8F5',
+  },
+  rankContainer: {
+    marginRight: 15,
+  },
+  rankBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#F0F0F0',
+  },
+  rankText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666666',
+  },
+  topRankText: {
+    color: '#FFFFFF',
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333333',
+    marginBottom: 5,
+    letterSpacing: 0.5,
+  },
+  currentUserName: {
+    color: '#E18731',
+    fontWeight: '600',
+  },
+  userLevel: {
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '400',
+  },
+  scoreContainer: {
+    alignItems: 'flex-end',
+  },
+  userScore: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333333',
+    letterSpacing: 0.5,
+  },
+  currentUserScore: {
+    color: '#E18731',
+  },
+  scoreLabel: {
+    fontSize: 12,
+    color: '#666666',
+    fontWeight: '400',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: '#333333',
+    fontWeight: '500',
+    marginBottom: 10,
+    letterSpacing: 0.5,
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    fontWeight: '400',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#666666',
+    fontWeight: '500',
+    marginTop: 10,
+    letterSpacing: 0.5,
+  },
+});

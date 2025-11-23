@@ -1,0 +1,69 @@
+{
+  "expo": {
+    "name": "Sadaka Plus",
+    "slug": "sadaka-plus",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "../assets/images/Sadaka App Logo.png",
+    "scheme": "sadakaapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.monxtar66.sadakaapp",
+      "config": {
+        "googleMapsApiKey": "YOUR_IOS_GOOGLE_MAPS_API_KEY"
+      }
+    },
+
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "../assets/images/Sadaka App Logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.monxtar66.sadakaapp",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_ANDROID_GOOGLE_MAPS_API_KEY"
+        }
+      }
+    },
+
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "../assets/images/Sadaka App Logo.png"
+    },
+
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "../assets/images/Sadaka App Logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-web-browser"
+    ],
+
+    "experiments": {
+      "typedRoutes": true
+    },
+
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "113cf3cc-0839-4f7b-afdb-d1c95ecd743c"
+      }
+    }
+  }
+}

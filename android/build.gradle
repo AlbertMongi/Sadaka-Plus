@@ -1,0 +1,100 @@
+// // Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+// buildscript {
+//     repositories {
+//         google()
+//         mavenCentral()
+//     }
+//     dependencies {
+//         classpath("com.android.tools.build:gradle:8.0.2")  // Use your desired Gradle plugin version
+//         classpath("com.facebook.react:react-native-gradle-plugin")
+//         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0")
+//     }
+// }
+
+// def reactNativeAndroidDir = new File(
+//     providers.exec {
+//         workingDir(rootDir)
+//         commandLine("node", "--print", "require.resolve('react-native/package.json')")
+//     }.standardOutput.asText.get().trim(),
+//     "../android"
+// )
+
+// allprojects {
+//     repositories {
+//         maven {
+//             // React Native Android binaries from npm
+//             url reactNativeAndroidDir
+//         }
+//         google()
+//         mavenCentral()
+//         maven { url 'https://www.jitpack.io' }
+//     }
+// }
+
+// apply plugin: "expo-root-project"
+// apply plugin: "com.facebook.react.rootproject"
+
+
+
+
+
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // ✅ Updated Gradle and Kotlin versions for compatibility
+        classpath("com.android.tools.build:gradle:8.3.2")
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22")
+    }
+}
+
+def reactNativeAndroidDir = new File(
+    providers.exec {
+        workingDir(rootDir)
+        commandLine("node", "--print", "require.resolve('react-native/package.json')")
+    }.standardOutput.asText.get().trim(),
+    "../android"
+)
+
+allprojects {
+    repositories {
+        maven {
+            // React Native Android binaries from npm
+            url reactNativeAndroidDir
+        }
+        google()
+        mavenCentral()
+        maven { url 'https://www.jitpack.io' }
+    }
+}
+
+// ✅ Ensure consistent JVM target version across Kotlin & Java
+allprojects {
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            jvmTarget = "17"
+        }
+    }
+}
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            project.android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+            }
+        }
+    }
+}
+
+apply plugin: "expo-root-project"
+apply plugin: "com.facebook.react.rootproject"
