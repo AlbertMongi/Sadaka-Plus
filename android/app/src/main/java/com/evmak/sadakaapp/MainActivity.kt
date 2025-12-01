@@ -1,4 +1,4 @@
-package com.monxtar66.sadakaapp
+package com.evmak.sadakaapp
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

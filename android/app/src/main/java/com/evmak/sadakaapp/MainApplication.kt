@@ -1,4 +1,4 @@
-package com.monxtar66.sadakaapp
+package com.evmak.sadakaapp
 
 import android.app.Application
 import android.content.res.Configuration

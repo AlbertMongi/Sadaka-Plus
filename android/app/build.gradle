@@ -87,14 +87,14 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.monxtar66.sadakaapp'
+    namespace 'com.evmak.sadakaapp'
     defaultConfig {
-        applicationId 'com.monxtar66.sadakaapp'
-        // applicationId 'com.evmak.sadakaplus'
+        applicationId 'com.evmak.sadakaapp'
+        // applicationId 'com.evmak.sadakaapp'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-         versionCode 25   // increment this for every update
-        versionName "1.3"
+         versionCode 1
+        versionName "1.0.0"
     }
     signingConfigs {
         debug {
