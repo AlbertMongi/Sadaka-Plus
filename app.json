@@ -4,26 +4,29 @@
     "slug": "sadaka-plus",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "../assets/images/Sadaka App Logo.png",
+    "icon": "./assets/images/sadaka-logo.png",
     "scheme": "sadakaapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.monxtar66.sadakaapp",
+      "bundleIdentifier": "com.evmak.sadakaapp",
       "config": {
         "googleMapsApiKey": "YOUR_IOS_GOOGLE_MAPS_API_KEY"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to help you find nearby communities and donation opportunities.",
+        "NSLocationAlwaysUsageDescription": "This app needs access to your location to provide personalized donation recommendations based on your area."
       }
     },
-
     "android": {
+      "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "../assets/images/Sadaka App Logo.png",
+        "foregroundImage": "./assets/images/sadaka-logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.monxtar66.sadakaapp",
+      "package": "com.evmak.sadakaapp",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
@@ -34,19 +37,17 @@
         }
       }
     },
-
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "../assets/images/Sadaka App Logo.png"
+      "favicon": "./assets/images/Sadaka App Logo.png"
     },
-
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "../assets/images/Sadaka App Logo.png",
+          "image": "./assets/images/Sadaka App Logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -54,15 +55,13 @@
       ],
       "expo-web-browser"
     ],
-
     "experiments": {
       "typedRoutes": true
     },
-
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "113cf3cc-0839-4f7b-afdb-d1c95ecd743c"
+        "projectId": "0990c63b-0a4f-404d-a4ed-69f63dbabe7d"
       }
     }
   }
