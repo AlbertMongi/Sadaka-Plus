@@ -82,12 +82,13 @@ const MorePage = () => {
     [
       { title: 'Events', icon: 'calendar-outline', screen: 'EventScreen' },
       { title: 'Campaigns', icon: 'megaphone-outline', screen: '../campaigns' },
-      { title: 'Saved', icon: 'bookmark-outline', screen: '../saved' },
+      // { title: 'Saved', icon: 'bookmark-outline', screen: '../saved' },
+          { title: 'Help Centre', icon: 'help-circle-outline', screen: '../HelpCentre' },
     ],
     [
       { title: 'Payment Method', icon: 'card-outline', screen: '../paymentMethod' },
       { title: 'Security', icon: 'lock-closed-outline', screen: '../security' },
-      { title: 'Help Centre', icon: 'help-circle-outline', screen: '../HelpCentre' },
+  
           
       { title: 'Privacy & Policy', icon: 'shield-checkmark-outline', onPress: () => openSheet(privacyAnim, setPrivacyVisible) },
     ],
@@ -324,8 +325,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#222',
     fontFamily: 'GothamBold',
+    textAlign: 'left',
   },
-  scrollContent: { padding:  Platform.OS === 'android' ? 10 : 15 },
+  scrollContent: { padding:  Platform.OS === 'android' ? 9 : 10 },
  
   menuItem: {
     flexDirection: 'row',

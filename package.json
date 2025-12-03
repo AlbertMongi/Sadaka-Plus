@@ -24,7 +24,7 @@
     "axios": "^1.11.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.1",
-    "expo": "54.0.17",
+    "expo": "~54.0.25",
     "expo-asset-utils": "^3.0.0",
     "expo-av": "~16.0.7",
     "expo-blur": "~15.0.7",

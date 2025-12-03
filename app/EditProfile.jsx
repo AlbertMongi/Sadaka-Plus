@@ -15,35 +15,53 @@ import {
   Animated,
   Dimensions,
   ActivityIndicator,
-  Alert,
+  SafeAreaView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { BASE_URL } from './apiConfig';
+import NetInfo from "@react-native-community/netinfo";
+import { BASE_URL } from "./apiConfig";
 
 const { height } = Dimensions.get("window");
-const GOLD = "#FF8C00";
+const ORANGE = "#FF8C00";
+const GOLD = "#E18731";
 
-const EditProfileScreen = () => {
-  const navigation = useNavigation();
+export default function EditProfileScreen() {
+  const router = useRouter();
 
-  // Form State
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNo, setPhoneNo] = useState("");
 
-  // UI State
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
+
+  // Toast State (Same as all screens)
+  const [toast, setToast] = useState({ visible: false, message: "", type: "error" });
+
+  // Bottom Sheet
   const [showSuccessSheet, setShowSuccessSheet] = useState(false);
   const [updatedData, setUpdatedData] = useState(null);
-
-  // Bottom Sheet Animation
   const sheetAnim = useRef(new Animated.Value(height)).current;
+
+  const showToast = (message, type = "error") => {
+    setToast({ visible: true, message, type });
+    setTimeout(() => setToast({ ...toast, visible: false }), 3500);
+  };
+
+  // Network Detection
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const connected = state.isConnected ?? true;
+      setIsConnected(connected);
+      if (!connected) showToast("No internet connection.", "error");
+    });
+    return () => unsubscribe();
+  }, []);
 
   const openSheet = () => {
     setShowSuccessSheet(true);
@@ -62,19 +80,26 @@ const EditProfileScreen = () => {
     }).start(() => setShowSuccessSheet(false));
   };
 
-  // Fetch current profile
   const fetchProfile = async () => {
+    if (!isConnected) {
+      showToast("No internet connection.", "error");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      setError(false);
-
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) throw new Error('No authentication token');
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        showToast("Session expired. Please log in again.", "error");
+        router.replace("/login");
+        return;
+      }
 
       const res = await fetch(`${BASE_URL}/users/profile`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -82,18 +107,17 @@ const EditProfileScreen = () => {
 
       if (json.success && json.data) {
         const d = json.data;
-        setFirstName(d.firstName || '');
-        setMiddleName(d.middleName || '');
-        setLastName(d.lastName || '');
-        setEmail(d.email || '');
-        setPhoneNo(d.phoneNo || '');
+        setFirstName(d.firstName || "");
+        setMiddleName(d.middleName || "");
+        setLastName(d.lastName || "");
+        setEmail(d.email || "");
+        setPhoneNo(d.phoneNo || "");
       } else {
-        throw new Error(json.message || 'Failed to load profile');
+        throw new Error(json.message || "Failed to load profile");
       }
     } catch (err) {
-      console.error(err);
-      setError(true);
-      Alert.alert('Error', err.message || 'Could not load profile');
+      console.error("Profile fetch error:", err);
+      showToast("Failed to load profile. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -101,33 +125,37 @@ const EditProfileScreen = () => {
 
   useEffect(() => {
     fetchProfile();
-  }, []);
+  }, [isConnected]);
 
-  // Save Profile
   const handleSubmit = async () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !phoneNo.trim()) {
-      Alert.alert('Required', 'Please fill in all required fields');
+      showToast("Please fill in all required fields.", "error");
+      return;
+    }
+
+    if (!isConnected) {
+      showToast("No internet connection.", "error");
       return;
     }
 
     try {
       setSaving(true);
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) throw new Error('No token');
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) throw new Error("No token");
 
       const body = {
         firstName: firstName.trim(),
-        middleName: middleName.trim(),
+        middleName: middleName.trim() || null,
         lastName: lastName.trim(),
         email: email.trim(),
         phoneNo: phoneNo.trim(),
       };
 
       const res = await fetch(`${BASE_URL}/users/profile`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
       });
@@ -138,160 +166,164 @@ const EditProfileScreen = () => {
         setUpdatedData(body);
         openSheet();
       } else {
-        throw new Error(json.message || 'Update failed');
+        throw new Error(json.message || "Update failed");
       }
     } catch (err) {
-      console.error(err);
-      Alert.alert('Error', err.message || 'Failed to update profile');
+      console.error("Update error:", err);
+      showToast(err.message || "Failed to update profile.", "error");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Ionicons name="chevron-back" size={24} color="#000" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Edit Profile</Text>
-            <View style={{ width: 24 }} />
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        {/* Toast */}
+        {toast.visible && (
+          <View style={styles.toastContainer}>
+            <View style={[styles.toast, toast.type === "success" ? styles.toastSuccess : styles.toastError]}>
+              <Ionicons
+                name={toast.type === "success" ? "checkmark-circle" : "close-circle"}
+                size={22}
+                color="#fff"
+              />
+              <Text style={styles.toastText}>{toast.message}</Text>
+            </View>
           </View>
+        )}
 
-          {loading ? (
-            <View style={styles.loading}>
-              <ActivityIndicator size="large" color={GOLD} />
-              <Text style={styles.loadingText}>Loading profile...</Text>
-            </View>
-          ) : error ? (
-            <View style={styles.error}>
-              <Ionicons name="alert-circle-outline" size={48} color="#CC0000" />
-              <Text style={styles.errorText}>Failed to load profile</Text>
-              <TouchableOpacity style={styles.retryBtn} onPress={fetchProfile}>
-                <Text style={styles.retryText}>Retry</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <>
-              {/* First & Last Name */}
-              <View style={styles.row}>
-                <View style={styles.halfInputWrapper}>
-                  <Text style={styles.label}>First Name</Text>
+        {/* Top Bar */}
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Edit Profile</Text>
+          <View style={{ width: 36 }} />
+        </View>
+
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={ORANGE} />
+                <Text style={styles.loadingText}>Loading your profile...</Text>
+              </View>
+            ) : (
+              <>
+                {/* Name Row */}
+                <View style={styles.row}>
+                  <View style={styles.halfInput}>
+                    <Text style={styles.label}>First Name *</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      placeholder="First Name"
+                      placeholderTextColor="#999"
+                      autoCapitalize="words"
+                    />
+                  </View>
+                  <View style={styles.halfInput}>
+                    <Text style={styles.label}>Last Name *</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={lastName}
+                      onChangeText={setLastName}
+                      placeholder="Last Name"
+                      placeholderTextColor="#999"
+                      autoCapitalize="words"
+                    />
+                  </View>
+                </View>
+
+                {/* Middle Name */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Middle Name (Optional)</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="First Name"
-                    placeholderTextColor="#aaa"
-                    value={firstName}
-                    onChangeText={setFirstName}
+                    value={middleName}
+                    onChangeText={setMiddleName}
+                    placeholder="Middle Name"
+                    placeholderTextColor="#999"
                     autoCapitalize="words"
                   />
                 </View>
 
-                <View style={styles.halfInputWrapper}>
-                  <Text style={styles.label}>Last Name</Text>
+                {/* Email */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Email *</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Last Name"
-                    placeholderTextColor="#aaa"
-                    value={lastName}
-                    onChangeText={setLastName}
-                    autoCapitalize="words"
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="your@email.com"
+                    placeholderTextColor="#999"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
                   />
                 </View>
-              </View>
 
-              {/* Middle Name */}
-              <View style={styles.inputWrapper}>
-                <Text style={styles.label}>Middle Name (Optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Middle Name"
-                  placeholderTextColor="#aaa"
-                  value={middleName}
-                  onChangeText={setMiddleName}
-                  autoCapitalize="words"
-                />
-              </View>
+                {/* Phone */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Phone Number *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={phoneNo}
+                    onChangeText={setPhoneNo}
+                    placeholder="e.g. 255712345678"
+                    placeholderTextColor="#999"
+                    keyboardType="phone-pad"
+                  />
+                </View>
 
-              {/* Email */}
-              <View style={styles.inputWrapper}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your email"
-                  placeholderTextColor="#aaa"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                />
-              </View>
+                {/* Save Button */}
+                <TouchableOpacity
+                  style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+                  onPress={handleSubmit}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.saveBtnText}>Save Changes</Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
+          </ScrollView>
+        </TouchableWithoutFeedback>
 
-              {/* Phone */}
-              <View style={styles.inputWrapper}>
-                <Text style={styles.label}>Phone Number</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. 255712345678"
-                  placeholderTextColor="#aaa"
-                  keyboardType="phone-pad"
-                  value={phoneNo}
-                  onChangeText={setPhoneNo}
-                />
-              </View>
+        {/* Success Bottom Sheet */}
+        <Modal visible={showSuccessSheet} transparent animationType="none">
+          <TouchableWithoutFeedback onPress={closeSheet}>
+            <View style={styles.modalOverlay}>
+              <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetAnim }] }]}>
+                <View style={styles.dragHandleContainer}>
+                  <View style={styles.dragHandle} />
+                </View>
 
-              {/* Submit Button */}
-              <TouchableOpacity
-                style={[styles.button, saving && styles.buttonDisabled]}
-                onPress={handleSubmit}
-                disabled={saving}
-              >
-                {saving ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.buttonText}>Save Changes</Text>
-                )}
-              </TouchableOpacity>
-            </>
-          )}
-        </ScrollView>
-      </TouchableWithoutFeedback>
+                <Ionicons name="checkmark-circle" size={80} color={GOLD} style={{ alignSelf: "center", marginVertical: 20 }} />
 
-      {/* Success Bottom Sheet */}
-      <Modal transparent visible={showSuccessSheet} onRequestClose={closeSheet}>
-        <TouchableWithoutFeedback onPress={closeSheet}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <Animated.View
-                style={[styles.sheet, { transform: [{ translateY: sheetAnim }] }]}
-              >
-                <View style={styles.sheetHandle} />
                 <Text style={styles.sheetTitle}>Profile Updated!</Text>
+                <Text style={styles.sheetSubtitle}>Your changes have been saved successfully.</Text>
 
                 {updatedData && (
-                  <View style={styles.updatedData}>
-                    <Text style={styles.dataLabel}>Full Name:</Text>
-                    <Text style={styles.dataValue}>
-                      {[updatedData.firstName, updatedData.middleName, updatedData.lastName]
+                  <View style={styles.updatedInfo}>
+                    <Text style={styles.infoText}>
+                      {[
+                        updatedData.firstName,
+                        updatedData.middleName,
+                        updatedData.lastName,
+                      ]
                         .filter(Boolean)
-                        .join(' ')
-                        .trim()}
+                        .join(" ")}
                     </Text>
-
-                    <Text style={styles.dataLabel}>Email:</Text>
-                    <Text style={styles.dataValue}>{updatedData.email}</Text>
-
-                    <Text style={styles.dataLabel}>Phone:</Text>
-                    <Text style={styles.dataValue}>{updatedData.phoneNo}</Text>
+                    <Text style={styles.infoText}>{updatedData.email}</Text>
+                    <Text style={styles.infoText}>{updatedData.phoneNo}</Text>
                   </View>
                 )}
 
@@ -299,136 +331,116 @@ const EditProfileScreen = () => {
                   style={styles.doneBtn}
                   onPress={() => {
                     closeSheet();
-                    navigation.goBack();
+                    router.back();
                   }}
                 >
-                  <Text style={styles.doneText}>Done</Text>
+                  <Text style={styles.doneBtnText}>Done</Text>
                 </TouchableOpacity>
               </Animated.View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-    </KeyboardAvoidingView>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
-};
+}
 
+// CONSISTENT STYLES - 100% Match with your app
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: "#fff",
-    flexGrow: 1,
-  },
-  header: {
+  safeArea: { flex: 1, backgroundColor: "#fff" },
+
+  topBar: {
+    height: Platform.OS === "android" ? 90 : 56,
     flexDirection: "row",
-    alignItems: "center",    
+    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingTop: Platform.OS === "android" ? 30 : 0,
+    backgroundColor: "#fff",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#eee",
   },
-  backButton: { padding: 6 },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: "GothamBold",
-    color: "#000",
-  },
+  backButton: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
+  title: { fontSize: 18, fontWeight: "700", color: "#000", fontFamily: "GothamBold" },
 
-  loading: { flex: 1, justifyContent: "center", alignItems: "center", paddingTop: 100 },
-  loadingText: { marginTop: 12, fontSize: 16, color: "#666", fontFamily: "GothamMedium" },
+  scrollContent: { padding: 12, paddingBottom: 40 },
 
-  error: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 32 },
-  errorText: { marginTop: 12, fontSize: 16, color: "#CC0000", fontFamily: "GothamMedium", textAlign: "center" },
-  retryBtn: { marginTop: 16, backgroundColor: GOLD, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8 },
-  retryText: { color: "#fff", fontFamily: "GothamBold" },
-
-  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
-  halfInputWrapper: { flex: 0.48 },
-  inputWrapper: { marginBottom: 16 },
+  row: { flexDirection: "row", gap: 12, marginBottom: 16 },
+  halfInput: { flex: 1 },
+  inputGroup: { marginBottom: 16 },
   label: {
-    fontSize: 14,
-    marginBottom: 6,
-    fontFamily: "GothamMedium",
-    color: "#222",
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
+    fontFamily: "GothamBold",
   },
   input: {
-    backgroundColor: "#f8f8f8",
+    backgroundColor: "#f9f9f9",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    fontSize: 15,
-    fontFamily: "GothamRegular",
+    fontSize: 16,
     borderWidth: 1,
-    borderColor: "#eee",
+    borderColor: "#ddd",
+    fontFamily: "GothamMedium",
   },
 
-  button: {
-    backgroundColor: GOLD,
+  saveBtn: {
+    backgroundColor: ORANGE,
     paddingVertical: 16,
-    borderRadius: 30,
+    borderRadius: 12,
     alignItems: "center",
     marginTop: 20,
-    elevation: 2,
   },
-  buttonDisabled: { opacity: 0.7 },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "GothamBold",
-  },
+  saveBtnDisabled: { opacity: 0.7 },
+  saveBtnText: { color: "#fff", fontSize: 16, fontFamily: "GothamBold" },
 
-  // Bottom Sheet
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 16,
-    paddingHorizontal: 24,
-    paddingBottom: 32,
-    maxHeight: height * 0.7,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 5,
-    backgroundColor: "#ddd",
-    borderRadius: 3,
-    alignSelf: "center",
-    marginBottom: 16,
-  },
-  sheetTitle: {
-    fontSize: 19,
-    fontFamily: "GothamBold",
-    color: "#222",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  updatedData: { marginBottom: 24 },
-  dataLabel: {
-    fontSize: 14,
-    color: "#666",
-    fontFamily: "GothamMedium",
-    marginBottom: 4,
-  },
-  dataValue: {
-    fontSize: 16,
-    color: "#222",
-    fontFamily: "GothamMedium",
-    marginBottom: 12,
-  },
-  doneBtn: {
-    backgroundColor: GOLD,
-    paddingVertical: 16,
-    borderRadius: 30,
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingTop: 100 },
+  loadingText: { marginTop: 16, fontSize: 16, color: "#666", fontFamily: "GothamMedium" },
+
+  // Toast
+  toastContainer: {
+    position: "absolute",
+    top: 60,
+    left: 20,
+    right: 20,
+    zIndex: 9999,
     alignItems: "center",
   },
-  doneText: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "GothamBold",
+  toast: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 10,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
   },
-});
+  toastSuccess: { backgroundColor: "#4CAF50" },
+  toastError: { backgroundColor: "#FF3B30" },
+  toastText: { color: "#fff", fontSize: 15, fontWeight: "600", fontFamily: "GothamBold" },
 
-export default EditProfileScreen;
+  // Bottom Sheet
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  sheet: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingTop: 12,
+    maxHeight: "70%",
+  },
+  dragHandleContainer: { alignItems: "center", paddingVertical: 8 },
+  dragHandle: { width: 40, height: 5, backgroundColor: "#ddd", borderRadius: 3 },
+  sheetTitle: { fontSize: 22, fontFamily: "GothamBold", color: "#333", textAlign: "center", marginBottom: 8 },
+  sheetSubtitle: { fontSize: 16, color: "#555", textAlign: "center", fontFamily: "GothamMedium", marginBottom: 20 },
+  updatedInfo: { alignItems: "center", marginVertical: 16 },
+  infoText: { fontSize: 16, color: "#333", marginVertical: 4, fontFamily: "GothamMedium" },
+  doneBtn: { backgroundColor: GOLD, borderRadius: 999, paddingVertical: 16, alignItems: "center", marginTop: 20 },
+  doneBtnText: { color: "#fff", fontSize: 16, fontFamily: "GothamBold" },
+});

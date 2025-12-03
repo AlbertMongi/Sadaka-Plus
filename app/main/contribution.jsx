@@ -13,7 +13,6 @@ import {
   Modal,
   Platform,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -42,13 +41,13 @@ export default function GiveScreen() {
   const [offering, setOffering] = useState('');
   const [frequency, setFrequency] = useState('One time');
   const [amount, setAmount] = useState('');
-  const [location, setLocation] = useState(''); // communityId
+  const [location, setLocation] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [showPaymentSheet, setShowPaymentSheet] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Mobile money');
   const [selectedNetwork, setSelectedNetwork] = useState(mobileNetworks[0].name);
   const [token, setToken] = useState(null);
-  const [userEmail, setUserEmail] = useState(''); // We'll load this
+  const [userEmail, setUserEmail] = useState('');
   const [joinedCommunities, setJoinedCommunities] = useState([]);
   const [offerings, setOfferings] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -60,19 +59,15 @@ export default function GiveScreen() {
   const sheetAnim = useRef(new Animated.Value(height)).current;
   const successAnim = useRef(new Animated.Value(height)).current;
 
-  // Load token + user email on mount
   useEffect(() => {
     (async () => {
       const t = await AsyncStorage.getItem('userToken');
       const userData = await AsyncStorage.getItem('userData');
-      
       if (!t) {
         router.replace('/login');
         return;
       }
-
       setToken(t);
-
       if (userData) {
         const parsed = JSON.parse(userData);
         setUserEmail(parsed.email || '');
@@ -80,7 +75,6 @@ export default function GiveScreen() {
     })();
   }, [router]);
 
-  // Fetch joined communities
   const fetchCommunities = async () => {
     if (!token) return;
     try {
@@ -91,17 +85,14 @@ export default function GiveScreen() {
       const json = await res.json();
       setJoinedCommunities(res.ok && Array.isArray(json.data) ? json.data : []);
     } catch (e) {
-      // console.error(e);
+      console.error('Communities error:', e);
     } finally {
       setCommunitiesLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (token) fetchCommunities();
-  }, [token]);
+  useEffect(() => { if (token) fetchCommunities(); }, [token]);
 
-  // Fetch offerings
   const fetchOfferings = async (id) => {
     if (!id || !token) {
       setOfferings([]);
@@ -118,7 +109,7 @@ export default function GiveScreen() {
         : [];
       setOfferings(list);
     } catch (e) {
-      // console.error(e);
+      console.error('Offerings error:', e);
     } finally {
       setOfferingsLoading(false);
     }
@@ -139,7 +130,7 @@ export default function GiveScreen() {
 
   const showNotification = (type, msg) => {
     setNotification({ visible: true, type, message: msg });
-    setTimeout(() => setNotification({ visible: false, type: '', message: '' }), 4000);
+    setTimeout(() => setNotification({ visible: false, type: '', message: '' }), 6000);
   };
 
   const openSheet = () => {
@@ -161,31 +152,27 @@ export default function GiveScreen() {
   };
 
   const closeSuccess = () => {
-    Animated.timing(successAnim, { toValue: height, duration: 300, useNativeDriver: true }).start(() => setShowSuccessSheet(false));
+    Animated.timing(successAnim, { toValue: height, duration: 300, useNativeDriver: true }).start(() => {
+      setShowSuccessSheet(false);
+    });
   };
 
   const openPaymentLink = async (url) => {
-    if (!url || typeof url !== 'string') {
-      showNotification('error', 'Invalid payment link');
-      return;
-    }
-    const cleanUrl = url.trim();
-
+    if (!url || typeof url !== 'string') return showNotification('error', 'Invalid payment link');
     try {
       if (Platform.OS === 'web') {
-        const win = window.open(cleanUrl, '_blank', 'noopener,noreferrer');
-        if (!win) window.location.href = cleanUrl;
+        window.open(url.trim(), '_blank');
       } else {
-        const supported = await Linking.canOpenURL(cleanUrl);
-        if (supported) await Linking.openURL(cleanUrl);
-        else await WebBrowser.openBrowserAsync(cleanUrl);
+        const supported = await Linking.canOpenURL(url);
+        if (supported) await Linking.openURL(url);
+        else await WebBrowser.openBrowserAsync(url);
       }
     } catch (err) {
       showNotification('error', 'Could not open payment page');
     }
   };
 
-  // MAIN FUNCTION – CARD PAYMENT USES EXACT BODY YOU REQUESTED
+  // ULTIMATE BULLETPROOF sendContribution — NO RED SCREEN, NO MATTER WHAT
   const sendContribution = async () => {
     if (!location || !amount || !offering || !mobileNumber) {
       showNotification('error', 'Please fill all required fields');
@@ -200,19 +187,19 @@ export default function GiveScreen() {
 
     setLoading(true);
 
+    let responseText = '';
+    let jsonData = {};
+
     try {
       if (paymentMethod === 'Card payment') {
-        // Exact payload as requested
         const cardPayload = {
           amount: rawAmount,
-          payTo: location,                    // community ID or name
+          payTo: location,
           transactionDetails: offering,
-          email: userEmail || `${mobileNumber}@tithe.app`, // fallback
-          communityId: location,              // REQUIRED
-          address: "Dar es Salaam, Tanzania", // you can enhance later
+          email: userEmail || `${mobileNumber}@tithe.app`,
+          communityId: location,
+          address: "Dar es Salaam, Tanzania",
         };
-
-        console.log('Sending Card Payload →', cardPayload); // Debug
 
         const res = await fetch(`${BASE_URL}/payments/card`, {
           method: 'POST',
@@ -224,56 +211,75 @@ export default function GiveScreen() {
         });
 
         const data = await res.json();
-
         if (!res.ok || !data.success || !data.data?.paymentUrl) {
-          throw new Error(data.message || 'Card payment failed');
+          showNotification('error', data.message || 'Card payment failed');
+          setLoading(false);
+          return;
         }
 
         closeSheet();
         showNotification('success', 'Redirecting to payment...');
         setTimeout(() => openPaymentLink(data.data.paymentUrl), 800);
-      } 
-      else {
-        // Mobile Money
-        const res = await fetch(`${BASE_URL}/contributions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            offerType: offering,
-            amount: rawAmount,
-            purpose: frequency,
-            phoneNo: mobileNumber.trim(),
-            communityId: location,
-            paymentMethod: selectedNetwork,
-          }),
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || 'Contribution failed');
-        }
-
-        showNotification('success', 'Sent successfully!');
-        closeSheet();
-        openSuccess();
-        setAmount('');
-        setOffering('');
-        setMobileNumber('');
-        setLocation('');
-        setFrequency('One time');
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      console.error('Error:', err);
-      showNotification('error', err.message || 'Network error');
-    } finally {
+
+      // MOBILE MONEY — THE NUCLEAR-PROOF VERSION
+      const res = await fetch(`${BASE_URL}/contributions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          offerType: offering,
+          amount: rawAmount,
+          purpose: frequency,
+          phoneNo: mobileNumber.trim(),
+          communityId: location,
+          paymentMethod: selectedNetwork,
+        }),
+      });
+
+      responseText = await res.text();
+
+      try {
+        jsonData = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        jsonData = {};
+      }
+
+    } catch (networkError) {
+      showNotification('error', 'Network error. Please check your connection.');
       setLoading(false);
+      return;
     }
+
+    // FINAL DECISION BASED ON ACTUAL PAYMENT RESPONSE
+    const isSuccess = jsonData.response_code === "0" || String(jsonData.response_code) === "0";
+    const isNotEnoughFunds = jsonData.response_code === "9009" || jsonData.response_desc === "SENDER_NOT_ENOUGH_FUND";
+
+    if (isSuccess) {
+      showNotification('success', 'Payment request sent! Please approve on your phone.');
+      closeSheet();
+      openSuccess();
+      setAmount('');
+      setOffering('');
+      setMobileNumber('');
+      setLocation('');
+      setFrequency('One time');
+    } else if (isNotEnoughFunds) {
+      showNotification('error', 'Insufficient balance. Please top up and try again.');
+      closeSheet();
+    } else {
+      const msg = jsonData.response_desc || jsonData.message || 'Payment failed. Please try again.';
+      showNotification('error', msg);
+      closeSheet();
+    }
+
+    setLoading(false);
   };
 
-  // Dropdown Component
   const ModernDropdown = ({ label, items = [], value, onSelect, placeholder, disabled = false, loading = false }) => {
     const [open, setOpen] = useState(false);
     const selectedItem = items.find(i => i.id === value);
@@ -318,12 +324,11 @@ export default function GiveScreen() {
   const isDisabled = !communitiesLoading && joinedCommunities.length === 0;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           refreshControl={<RefreshControl refreshing={communitiesLoading} onRefresh={fetchCommunities} colors={[GOLD]} />}
-          showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
             <Text style={styles.title}>Give</Text>
@@ -366,7 +371,6 @@ export default function GiveScreen() {
                   onChangeText={handleAmountChange}
                   keyboardType="numeric"
                   placeholder="0"
-                  placeholderTextColor="#aaa"
                 />
               </View>
 
@@ -398,7 +402,7 @@ export default function GiveScreen() {
 
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Amount</Text>
-                <Text style={styles.summaryValue}>TZS {amount || '0'}</Text>
+                <Text style={styles.summaryValue}>TZS {amount}</Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Phone</Text>
@@ -428,13 +432,13 @@ export default function GiveScreen() {
                       style={[styles.netBtn, selectedNetwork === n.name && styles.netActive]}
                       onPress={() => setSelectedNetwork(n.name)}
                     >
-                      <Image source={{ uri: n.logo }} style={styles.netLogo} resizeMode="contain" />
+                      <Image source={{ uri: n.logo }} style={styles.netLogo} />
                     </TouchableOpacity>
                   ))}
                 </View>
               )}
 
-              <TouchableOpacity style={styles.sendBtn} onPress={sendContribution} disabled={loading}>
+              <TouchableOpacity style={[styles.sendBtn, loading && { opacity: 0.6 }]} onPress={sendContribution} disabled={loading}>
                 <Text style={styles.sendText}>{loading ? 'Processing...' : 'Send Contribution'}</Text>
               </TouchableOpacity>
             </Animated.View>
@@ -450,7 +454,9 @@ export default function GiveScreen() {
               <View style={styles.handle} />
               <Ionicons name="checkmark-circle" size={80} color={GOLD} />
               <Text style={styles.successTitle}>Thank You!</Text>
-              <Text style={styles.successMsg}>Your offering was sent successfully</Text>
+              <Text style={styles.successMsg}>
+                Payment request sent successfully!{'\n'}Please approve the prompt on your phone.
+              </Text>
               <TouchableOpacity style={styles.doneBtn} onPress={closeSuccess}>
                 <Text style={styles.doneText}>Done</Text>
               </TouchableOpacity>
@@ -458,14 +464,13 @@ export default function GiveScreen() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
-// Styles unchanged — beautiful as always
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  scrollContent: { paddingHorizontal: 18, paddingTop: 15, paddingBottom: 50 },
+  scrollContent: { paddingHorizontal: 18, paddingTop: Platform.OS === 'android' ? 27 : 9, paddingBottom: 80 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   title: { fontSize: 20, fontWeight: 'bold', color: '#222' },
   dropdownWrapper: { marginBottom: 12 },
@@ -488,7 +493,7 @@ const styles = StyleSheet.create({
   input: { height: 40, borderWidth: 1, borderColor: GOLD, borderRadius: 6, paddingHorizontal: 12, fontSize: 14, backgroundColor: '#fff', marginTop: 8 },
   continueBtn: { backgroundColor: GOLD, paddingVertical: 15, borderRadius: 30, alignItems: 'center', marginTop: 20 },
   continueText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  toast: { padding: 12, borderRadius: 10, marginVertical: 10, alignItems: 'center' },
+  toast: { padding: 14, borderRadius: 10, marginVertical: 10, alignItems: 'center', marginHorizontal: 20 },
   toastSuccess: { backgroundColor: '#d4edda', borderColor: '#c3e6cb', borderWidth: 1 },
   toastError: { backgroundColor: '#f8d7da', borderColor: '#f5c6cb', borderWidth: 1 },
   toastText: { fontSize: 14, fontWeight: '600', color: '#333' },
@@ -512,7 +517,7 @@ const styles = StyleSheet.create({
   sendText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   successSheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 32, alignItems: 'center' },
   successTitle: { fontSize: 26, fontWeight: 'bold', color: GOLD, marginVertical: 12 },
-  successMsg: { fontSize: 16, color: '#555', textAlign: 'center', marginBottom: 30 },
+  successMsg: { fontSize: 16, color: '#555', textAlign: 'center', marginBottom: 30, lineHeight: 24 },
   doneBtn: { backgroundColor: GOLD, paddingHorizontal: 50, paddingVertical: 16, borderRadius: 30 },
   doneText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },

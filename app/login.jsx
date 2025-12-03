@@ -245,16 +245,16 @@ const styles = StyleSheet.create({
   },
   scrollContent: { padding: 12, paddingBottom: 32, backgroundColor: "#fff" },
 
-  card: {
-    borderRadius: 14,
-    overflow: "hidden",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    backgroundColor: "#fff",
-  },
+  // card: {
+  //   borderRadius: 14,
+  //   overflow: "hidden",
+  //   elevation: 3,
+  //   shadowColor: "#000",
+  //   shadowOffset: { width: 0, height: 2 },
+  //   shadowOpacity: 0.12,
+  //   shadowRadius: 4,
+  //   backgroundColor: "#fff",
+  // },
   cardContent: { padding: 18 },
   cardTitle: {
     fontSize: 20,

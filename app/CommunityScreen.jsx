@@ -1,660 +1,438 @@
+// app/main/Community.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   FlatList,
   Image,
   TouchableOpacity,
-  Dimensions,
+  SafeAreaView,
+  StyleSheet,
+  Platform,
   Animated,
   RefreshControl,
-  SafeAreaView,
-  Button,
+  ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 import { BASE_URL } from './apiConfig';
 
-const GOLD = '#FFA500';
-const FALLBACK_IMAGE = 'https://m.media-amazon.com/images/I/816Etq5qEwL._AC_SL1500_.jpg';
-const { width } = Dimensions.get('window');
-
-const SkeletonLoader = ({ style }) => {
-  const animatedValue = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(animatedValue, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(animatedValue, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [animatedValue]);
-
-  const backgroundColor = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['#e0e0e0', '#f5f5f5'],
-  });
-
-  return <Animated.View style={[style, { backgroundColor }]} />;
-};
-
-const PopularCommunitiesSkeleton = () => (
-  <FlatList
-    data={[1, 2, 3, 4]}
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    contentContainerStyle={[styles.popularList, { backgroundColor: '#fff' }]}
-    keyExtractor={(item, index) => index.toString()}
-    renderItem={() => (
-      <View style={styles.popularItem}>
-        <SkeletonLoader style={styles.circularImage} />
-        <SkeletonLoader style={{ width: 80, height: 12, marginTop: 6, borderRadius: 4 }} />
-      </View>
-    )}
-  />
-);
-
-const CommunitiesSkeleton = () => (
-  <View style={{ paddingHorizontal: 14, paddingTop: 8, marginTop: 18, backgroundColor: '#fff' }}>
-    {[1, 2, 3].map((_, index) => (
-      <View key={index} style={[styles.communityItem, { backgroundColor: '#fff' }]}>
-        <SkeletonLoader style={styles.communityImage} />
-        <View style={styles.communityDetails}>
-          <SkeletonLoader style={{ width: '80%', height: 14, marginBottom: 6, borderRadius: 4 }} />
-          <SkeletonLoader style={{ width: '60%', height: 12, marginBottom: 4, borderRadius: 4 }} />
-          <SkeletonLoader style={{ width: '40%', height: 12, borderRadius: 4 }} />
-        </View>
-      </View>
-    ))}
-  </View>
-);
+const ORANGE = "#FF8C00";
+const GOLD = "#E18731";
+const FALLBACK_IMAGE = "https://m.media-amazon.com/images/I/816Etq5qEwL._AC_SL1500_.jpg";
 
 export default function Community() {
   const router = useRouter();
+
   const [searchText, setSearchText] = useState('');
   const [popularCommunities, setPopularCommunities] = useState([]);
   const [allCommunities, setAllCommunities] = useState([]);
   const [myCommunities, setMyCommunities] = useState([]);
-  const [loadingPopular, setLoadingPopular] = useState(false);
-  const [loadingAll, setLoadingAll] = useState(false);
-  const [loadingMy, setLoadingMy] = useState(false);
+  const [loadingPopular, setLoadingPopular] = useState(true);
+  const [loadingAll, setLoadingAll] = useState(true);
+  const [loadingMy, setLoadingMy] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('my');
-  const [error, setError] = useState(null);
-  const [token, setToken] = useState(null);
+  const [isConnected, setIsConnected] = useState(true);
 
-  // Animation states
-  const popularAnims = useRef([]);
-  const communityAnims = useRef([]);
+  // Toast State (Same as all other screens)
+  const [toast, setToast] = useState({ visible: false, message: "", type: "error" });
 
-  const getHost = () => BASE_URL;
+  const showToast = (message, type = "error") => {
+    setToast({ visible: true, message, type });
+    setTimeout(() => setToast({ ...toast, visible: false }), 3500);
+  };
 
-  const fetchWithRetry = async (url, options, retries = 3, delay = 1000) => {
-    for (let i = 0; i < retries; i++) {
+  // Network Detection
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const connected = state.isConnected ?? true;
+      setIsConnected(connected);
+      if (!connected) {
+        showToast("No internet connection.", "error");
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch with token + retry
+  const fetchWithToken = async (url, retries = 2) => {
+    for (let i = 0; i <= retries; i++) {
       try {
-        const response = await fetch(url, options);
-        if (!response.ok) {
-          if (response.status === 401) {
-            setError('Session expired. Please login again.');
-            router.replace('/login');
-            return null;
-          }
-          throw new Error(`HTTP error! Status: ${response.status}`);
+        const token = await AsyncStorage.getItem("userToken");
+        if (!token) {
+          showToast("Please log in to continue.", "error");
+          router.replace("/login");
+          return null;
         }
-        return await response.json();
+
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (res.status === 401) {
+          await AsyncStorage.removeItem("userToken");
+          showToast("Session expired. Logging you out...", "error");
+          router.replace("/login");
+          return null;
+        }
+
+        if (!res.ok) throw new Error("Network error");
+        return await res.json();
       } catch (err) {
-        console.error(`Fetch attempt ${i + 1} failed:`, err);
-        if (i === retries - 1) throw err;
-        await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+        if (i === retries) throw err;
+        await new Promise(r => setTimeout(r, 1000 * (i + 1)));
       }
     }
   };
 
-  useEffect(() => {
-    const loadToken = async () => {
-      try {
-        const savedToken = await AsyncStorage.getItem('userToken');
-        if (savedToken) {
-          setToken(savedToken);
-        } else {
-          setError('Please log in to view communities.');
-          router.replace('/login');
-        }
-      } catch (e) {
-        setError('Failed to initialize session. Please try again.');
-        console.error('Token load error:', e);
-      }
-    };
-    loadToken();
-  }, [router]);
-
   const fetchCommunities = useCallback(async () => {
-    if (!token) return;
+    if (!isConnected) {
+      setLoadingPopular(false);
+      setLoadingAll(false);
+      setLoadingMy(false);
+      return;
+    }
 
     setRefreshing(true);
-    setError(null);
 
-    // Clear caches to ensure fresh data
-    await AsyncStorage.removeItem('all_communities');
-    await AsyncStorage.removeItem('my_communities');
-
-    const headers = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    };
-
-    // Fetch all communities
-    setLoadingAll(true);
-    setLoadingPopular(true);
     try {
-      const allResult = await fetchWithRetry(`${getHost()}/communities/user`, { headers });
-      if (!allResult) return;
-      const allData = Array.isArray(allResult.data) ? allResult.data : [];
-      await AsyncStorage.setItem('all_communities', JSON.stringify(allData)); // Cache new data
-
-      const formattedAll = allData.map((c) => ({
-        id: c.id.toString(),
-        name: c.name || 'Unnamed Community',
-        description: c.description || 'No description available',
-        image: c.logo || FALLBACK_IMAGE,
-        memberCount: c.members !== undefined ? c.members : c.memberCount || 0,
-      }));
-
-      setAllCommunities(formattedAll);
-      setPopularCommunities(formattedAll);
-
-      popularAnims.current = formattedAll.map(() => ({
-        fade: new Animated.Value(0),
-        slide: new Animated.Value(30),
-      }));
-      if (activeTab === 'all') {
-        communityAnims.current = formattedAll.map(() => ({
-          fade: new Animated.Value(0),
-          slide: new Animated.Value(30),
+      // Fetch All Communities
+      setLoadingAll(true);
+      setLoadingPopular(true);
+      const allRes = await fetchWithToken(`${BASE_URL}/communities/user`);
+      if (allRes?.success && Array.isArray(allRes.data)) {
+        const formatted = allRes.data.map(c => ({
+          id: c.id.toString(),
+          name: c.name || "Unnamed Community",
+          description: c.description || "No description",
+          image: c.logo?.startsWith("http") ? c.logo : FALLBACK_IMAGE,
+          memberCount: c.members || c.memberCount || 0,
         }));
+        setAllCommunities(formatted);
+        setPopularCommunities(formatted.slice(0, 10)); // Top 10 popular
+      } else {
+        setAllCommunities([]);
+        setPopularCommunities([]);
       }
     } catch (err) {
-      console.error('Error fetching all communities:', err);
-      setError('Failed to load communities. Check your internet connection and try again.');
+      showToast("Failed to load communities.", "error");
       setAllCommunities([]);
       setPopularCommunities([]);
-      popularAnims.current = [];
     } finally {
       setLoadingAll(false);
       setLoadingPopular(false);
     }
 
-    // Fetch joined communities
-    setLoadingMy(true);
+    // Fetch My Communities
     try {
-      const myResult = await fetchWithRetry(`${getHost()}/communities/joined`, { headers });
-      if (!myResult) return;
-      const myData = Array.isArray(myResult.data) ? myResult.data : [];
-      await AsyncStorage.setItem('my_communities', JSON.stringify(myData)); // Cache new data
-
-      const formattedMy = myData.map((c) => ({
-        id: c.id.toString(),
-        name: c.name || 'Unnamed Community',
-        description: c.description || 'No description available',
-        image: c.logo || FALLBACK_IMAGE,
-        memberCount: c.members !== undefined ? c.members : c.memberCount || 0,
-      }));
-
-      setMyCommunities(formattedMy);
-      if (activeTab === 'my') {
-        communityAnims.current = formattedMy.map(() => ({
-          fade: new Animated.Value(0),
-          slide: new Animated.Value(30),
+      setLoadingMy(true);
+      const myRes = await fetchWithToken(`${BASE_URL}/communities/joined`);
+      if (myRes?.success && Array.isArray(myRes.data)) {
+        const formatted = myRes.data.map(c => ({
+          id: c.id.toString(),
+          name: c.name || "Unnamed Community",
+          description: c.description || "No description",
+          image: c.logo?.startsWith("http") ? c.logo : FALLBACK_IMAGE,
+          memberCount: c.members || c.memberCount || 0,
         }));
+        setMyCommunities(formatted);
+      } else {
+        setMyCommunities([]);
       }
     } catch (err) {
-      console.error('Error fetching joined communities:', err);
-      setError('Failed to load your communities. Check your internet connection and try again.');
+      showToast("Failed to load your communities.", "error");
       setMyCommunities([]);
-      communityAnims.current = [];
     } finally {
       setLoadingMy(false);
       setRefreshing(false);
     }
+  }, [isConnected]);
 
-    animateSections();
-  }, [token, activeTab, router]);
-
-  // Trigger fetchCommunities on screen focus
   useFocusEffect(
     useCallback(() => {
-      if (token) {
-        fetchCommunities();
-      }
-    }, [token, fetchCommunities])
+      fetchCommunities();
+    }, [fetchCommunities])
   );
 
-  const animateSections = () => {
-    const animations = [];
+  const onRefresh = () => fetchCommunities();
 
-    popularAnims.current.forEach((anim, index) => {
-      animations.push(
-        Animated.sequence([
-          Animated.delay(index * 100),
-          Animated.parallel([
-            Animated.timing(anim.fade, {
-              toValue: 1,
-              duration: 400,
-              useNativeDriver: true,
-            }),
-            Animated.timing(anim.slide, {
-              toValue: 0,
-              duration: 400,
-              useNativeDriver: true,
-            }),
-          ]),
-        ])
-      );
-    });
-
-    communityAnims.current.forEach((anim, index) => {
-      animations.push(
-        Animated.sequence([
-          Animated.delay(index * 200),
-          Animated.parallel([
-            Animated.timing(anim.fade, {
-              toValue: 1,
-              duration: 400,
-              useNativeDriver: true,
-            }),
-            Animated.timing(anim.slide, {
-              toValue: 0,
-              duration: 400,
-              useNativeDriver: true,
-            }),
-          ]),
-        ])
-      );
-    });
-
-    Animated.parallel(animations).start();
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchCommunities();
-  };
-
-  const retryFetch = () => {
-    setError(null);
-    fetchCommunities();
-  };
-
-  const filteredMy = myCommunities.filter((c) =>
+  const filteredMy = myCommunities.filter(c =>
     c.name.toLowerCase().includes(searchText.toLowerCase())
   );
-  const filteredAll = allCommunities.filter((c) =>
+  const filteredAll = allCommunities.filter(c =>
     c.name.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  const handleTabPress = (tab) => {
-    setActiveTab(tab);
-    communityAnims.current = (tab === 'my' ? filteredMy : filteredAll).map(() => ({
-      fade: new Animated.Value(0),
-      slide: new Animated.Value(30),
-    }));
-    animateSections();
-  };
-
-  const renderCommunityItem = ({ item, index }) => (
-    <Animated.View
-      style={{
-        opacity: communityAnims.current[index]?.fade || 1,
-        transform: [{ translateY: communityAnims.current[index]?.slide || 0 }],
-      }}
+  const renderCommunity = ({ item }) => (
+    <TouchableOpacity
+      style={styles.communityCard}
+      onPress={() => router.push({ pathname: "/CommunityDetail", params: { communityId: item.id } })}
     >
-      <TouchableOpacity
-        style={styles.communityItem}
-        activeOpacity={0.7}
-        onPress={() =>
-          router.push({ pathname: '/CommunityDetail', params: { communityId: item.id } })
-        }
-      >
-        <Image
-          source={{ uri: item.image }}
-          style={styles.communityImage}
-          resizeMode="cover"
-          defaultSource={{ uri: FALLBACK_IMAGE }}
-        />
-        <View style={styles.communityDetails}>
-          <Text style={styles.communityTitle}>{item.name}</Text>
-          <Text
-            style={styles.communityDescription}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {item.description}
-          </Text>
-          <Text style={styles.memberCount}>
-            {item.memberCount} {item.memberCount === 1 ? 'Member' : 'Members'}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    </Animated.View>
+      <Image source={{ uri: item.image }} style={styles.communityImage} resizeMode="cover" />
+      <View style={styles.communityInfo}>
+        <Text style={styles.communityName}>{item.name}</Text>
+        <Text style={styles.communityDesc} numberOfLines={2}>{item.description}</Text>
+        <Text style={styles.memberCount}>{item.memberCount.toLocaleString()} Members</Text>
+      </View>
+    </TouchableOpacity>
   );
 
-  if (!token && !error) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-        <View style={[styles.container, styles.center, { backgroundColor: '#fff' }]}>
-          <CommunitiesSkeleton />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const renderPopular = ({ item }) => (
+    <TouchableOpacity
+      style={styles.popularItem}
+      onPress={() => router.push({ pathname: "/CommunityDetail", params: { communityId: item.id } })}
+    >
+      <Image source={{ uri: item.image }} style={styles.popularImage} resizeMode="cover" />
+      <Text style={styles.popularName} numberOfLines={1}>{item.name}</Text>
+    </TouchableOpacity>
+  );
+
+  const currentData = activeTab === 'my' ? filteredMy : filteredAll;
+  const isLoading = (activeTab === 'my' && loadingMy) || (activeTab === 'all' && loadingAll);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <View style={[styles.container, { backgroundColor: '#fff' }]}>
-        {/* Header */}
-        <View style={[styles.header, { backgroundColor: '#fff' }]}>
-         <TouchableOpacity
-                   style={styles.backButton}
-                   onPress={() => router.push('/main/more')}
-                 >
-                   <Ionicons name="chevron-back" size={24} color="#000" />
-                 </TouchableOpacity>
-          <Text style={styles.headerTitle}>Communities</Text>
-          <TouchableOpacity onPress={() => router.push('/notification')}>
-            {/* <Ionicons name="notifications-outline" size={24} color="#000" /> */}
-          </TouchableOpacity>
-        </View>
-
-        {/* Search */}
-        <View style={[styles.searchContainer, { backgroundColor: '#FAFAFA' }]}>
-          <Ionicons name="search-outline" size={16} color="#888" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholder="Search communities..."
-            placeholderTextColor="#888"
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-          {searchText.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchText('')}>
-              <Ionicons name="close-circle" size={18} color="#888" style={styles.clearIcon} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-            <Button title="Retry" onPress={retryFetch} color={GOLD} />
-          </View>
-        )}
-
-        <FlatList
-          data={activeTab === 'my' ? filteredMy : filteredAll}
-          keyExtractor={(item) => item.id}
-          renderItem={renderCommunityItem}
-          contentContainerStyle={{ paddingBottom: 40, paddingTop: 8, backgroundColor: '#fff' }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[GOLD]}
-              tintColor={GOLD}
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      {/* Toast */}
+      {toast.visible && (
+        <View style={styles.toastContainer}>
+          <View style={[styles.toast, toast.type === "success" ? styles.toastSuccess : styles.toastError]}>
+            <Ionicons
+              name={toast.type === "success" ? "checkmark-circle" : "close-circle"}
+              size={22}
+              color="#fff"
             />
-          }
-          ListEmptyComponent={
-            (loadingAll && activeTab === 'all') || (loadingMy && activeTab === 'my') ? (
-              <CommunitiesSkeleton />
-            ) : searchText.length > 0 ? (
-              <Text style={styles.noCommunitiesText}>No searched community</Text>
-            ) : (
-              <Text style={styles.noCommunitiesText}>
-                {activeTab === 'my'
-                  ? 'You have not joined any communities.'
-                  : 'No communities found.'}
-              </Text>
-            )
-          }
-          ListHeaderComponent={
-            <>
-              <Text style={styles.sectionTitle}>Popular Communities</Text>
-              {loadingPopular ? (
-                <PopularCommunitiesSkeleton />
-              ) : popularCommunities.length > 0 ? (
-                <FlatList
-                  data={popularCommunities}
-                  horizontal
-                  keyExtractor={(item) => item.id}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={[styles.popularList, { backgroundColor: '#fff' }]}
-                  renderItem={({ item, index }) => (
-                    <Animated.View
-                      style={{
-                        opacity: popularAnims.current[index]?.fade || 1,
-                        transform: [{ translateY: popularAnims.current[index]?.slide || 0 }],
-                      }}
-                    >
-                      <TouchableOpacity
-                        style={styles.popularItem}
-                        activeOpacity={0.7}
-                        onPress={() =>
-                          router.push({ pathname: '/CommunityDetail', params: { communityId: item.id } })
-                        }
-                      >
-                        <Image
-                          source={{ uri: item.image }}
-                          style={styles.circularImage}
-                          resizeMode="cover"
-                          defaultSource={{ uri: FALLBACK_IMAGE }}
-                        />
-                        <Text style={styles.popularText} numberOfLines={1}>
-                          {item.name}
-                        </Text>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  )}
-                />
-              ) : (
-                <Text style={styles.noCommunitiesText}>No popular communities found.</Text>
-              )}
+            <Text style={styles.toastText}>{toast.message}</Text>
+          </View>
+        </View>
+      )}
 
-              {/* Tabs */}
-              <View style={styles.tabs}>
-                <TouchableOpacity onPress={() => handleTabPress('my')}>
-                  <Text
-                    style={[styles.tabText, activeTab === 'my' ? styles.activeTab : styles.inactiveTab]}
-                  >
-                    My Communities
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleTabPress('all')}>
-                  <Text
-                    style={[styles.tabText, activeTab === 'all' ? styles.activeTab : styles.inactiveTab]}
-                  >
-                    All Communities
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          }
-        />
+      {/* Top Bar */}
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/main/more')}>
+          <Ionicons name="chevron-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Communities</Text>
+        <View style={{ width: 36 }} />
       </View>
+
+      {/* Search */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={18} color="#888" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search communities..."
+          placeholderTextColor="#999"
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+        {searchText.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchText("")}>
+            <Ionicons name="close-circle" size={20} color="#888" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <FlatList
+        data={currentData}
+        keyExtractor={(item) => item.id}
+        renderItem={renderCommunity}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[ORANGE]} />}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <>
+            {/* Popular Communities */}
+            <Text style={styles.sectionTitle}>Popular Communities</Text>
+            {loadingPopular ? (
+              <View style={styles.skeletonRow}>
+                {[1, 2, 3, 4].map(i => (
+                  <View key={i} style={styles.skeletonPopular} />
+                ))}
+              </View>
+            ) : popularCommunities.length > 0 ? (
+              <FlatList
+                horizontal
+                data={popularCommunities}
+                keyExtractor={item => item.id}
+                renderItem={renderPopular}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.popularList}
+              />
+            ) : (
+              <Text style={styles.emptyText}>No popular communities found.</Text>
+            )}
+
+            {/* Tabs */}
+            <View style={styles.tabs}>
+              <TouchableOpacity onPress={() => setActiveTab('my')}>
+                <Text style={[styles.tab, activeTab === 'my' && styles.activeTab]}>My Communities</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setActiveTab('all')}>
+                <Text style={[styles.tab, activeTab === 'all' && styles.activeTab]}>All Communities</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        }
+        ListEmptyComponent={
+          isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={ORANGE} />
+              <Text style={styles.loadingText}>Loading communities...</Text>
+            </View>
+          ) : searchText.length > 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="search-outline" size={64} color="#ccc" />
+              <Text style={styles.emptyTitle}>No Results</Text>
+              <Text style={styles.emptySubtitle}>Try searching with different keywords</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="people-outline" size={80} color="#ccc" />
+              <Text style={styles.emptyTitle}>
+                {activeTab === 'my' ? "No Joined Communities" : "No Communities Available"}
+              </Text>
+              <Text style={styles.emptySubtitle}>
+                {activeTab === 'my'
+                  ? "You haven't joined any community yet."
+                  : "There are no communities to show right now."}
+              </Text>
+            </View>
+          )
+        }
+      />
     </SafeAreaView>
   );
 }
 
+// CONSISTENT STYLES - Matches Login & ChangeCommunityScreen
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#fff', 
-    paddingHorizontal: 20,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  safeArea: { flex: 1, backgroundColor: "#fff" },
+
+  topBar: {
+    height: Platform.OS === 'android' ? 90 : 56,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingTop: Platform.OS === 'android' ? 0 : -1,
+    // backgroundColor: "#fff",
+    // borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#eee",
   },
-  center: { 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-    backgroundColor: '#fff',
-  },
-  headerTitle: { 
-    fontSize: 18,
-    color: '#000', 
-    fontFamily: 'GothamBold' 
-  },
+  backButton: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
+  title: { fontSize: 18, fontWeight: "700", color: "#000", fontFamily: "GothamBold" },
+
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FAFAFA',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: GOLD,
-    marginBottom: 14,
-    height: 36,
-  },
-  searchIcon: { 
-    marginRight: 10 
-  },
-  searchInput: { 
-    flex: 1, 
-    height: 34,
-    fontSize: 15,
-    fontFamily: 'GothamRegular',
-    color: '#000',
-  },
-  clearIcon: {
-    marginLeft: 10,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    marginBottom: 10,
-    color: '#333',
-    fontFamily: 'GothamBold',
-  },
-  popularList: { 
-    paddingBottom: 14,
-    backgroundColor: '#fff',
-  },
-  popularItem: { 
-    marginRight: 14, 
-    alignItems: 'center', 
-    padding: 6,
-    width: 100,
-  },
-  circularImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: GOLD,
-  },
-  popularText: { 
-    fontSize: 12,
-    textAlign: 'center', 
-    color: '#000', 
-    marginTop: 6,
-    fontFamily: 'GothamMedium',
-  },
-  tabs: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  tabText: {
-    fontSize: 14,
-    marginHorizontal: 18,
-    fontFamily: 'GothamMedium',
-  },
-  activeTab: {
-    color: GOLD,
-    borderBottomWidth: 2,
-    borderColor: GOLD,
-    paddingBottom: 5,
-    fontFamily: 'GothamBold',
-  },
-  inactiveTab: {
-    color: '#000',
-    paddingBottom: 5,
-    fontFamily: 'GothamMedium',
-  },
-  communityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
     borderRadius: 12,
+    marginHorizontal: 12,
+    marginVertical: 12,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 14,
-    marginRight: 14,
-    backgroundColor: '#fff',
+    // borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  searchIcon: { marginRight: 10 },
+  searchInput: { flex: 1, paddingVertical: 12, fontSize: 15, fontFamily: "GothamMedium" },
+
+  listContent: { paddingHorizontal: 12, paddingBottom: 32 },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#000",
+    marginHorizontal: 12,
+    marginTop: 20,
+    marginBottom: 12,
+    fontFamily: "GothamBold",
+  },
+
+  popularList: { paddingLeft: 12 },
+  popularItem: { alignItems: "center", marginRight: 16, width: 80 },
+  popularImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: ORANGE,
+  },
+  popularName: { marginTop: 8, fontSize: 13, textAlign: "center", fontFamily: "GothamMedium" },
+
+  tabs: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginVertical: 16,
+    paddingBottom: 8,
+    // borderBottomWidth: 1,
+    borderColor: "#eee",
+  },
+  tab: { fontSize: 16, paddingHorizontal: 24, paddingBottom: 8, fontFamily: "GothamMedium" },
+  activeTab: { color: ORANGE, fontFamily: "GothamBold", borderBottomWidth: 2, borderColor: ORANGE },
+
+  communityCard: {
+    flexDirection: "row",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   communityImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: GOLD,
-    marginRight: 14,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: ORANGE,
   },
-  communityDetails: { 
-    flex: 1 
+  communityInfo: { flex: 1, marginLeft: 14, justifyContent: "center" },
+  communityName: { fontSize: 16, fontWeight: "600", color: "#000", fontFamily: "GothamBold" },
+  communityDesc: { fontSize: 13, color: "#666", marginTop: 4, fontFamily: "GothamMedium" },
+  memberCount: { fontSize: 13, color: ORANGE, marginTop: 6, fontFamily: "GothamMedium" },
+
+  // States
+  loadingContainer: { alignItems: "center", paddingVertical: 80 },
+  loadingText: { marginTop: 16, color: "#666", fontSize: 15, fontFamily: "GothamMedium" },
+
+  emptyContainer: { alignItems: "center", paddingVertical: 100, paddingHorizontal: 40 },
+  emptyTitle: { fontSize: 20, fontWeight: "600", color: "#333", marginTop: 20, fontFamily: "GothamBold" },
+  emptySubtitle: { fontSize: 15, color: "#888", textAlign: "center", marginTop: 10, lineHeight: 22, fontFamily: "GothamMedium" },
+
+  skeletonRow: { flexDirection: "row", paddingLeft: 12, paddingVertical: 10 },
+  skeletonPopular: {
+    width: 80,
+    height: 100,
+    backgroundColor: "#eee",
+    borderRadius: 12,
+    marginRight: 16,
   },
-  communityTitle: { 
-    fontSize: 14,
-    color: '#000', 
-    fontFamily: 'GothamMedium' 
+
+  // Toast (Same as all screens)
+  toastContainer: { position: "absolute", top: 60, left: 20, right: 20, zIndex: 9999, alignItems: "center" },
+  toast: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 10,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  communityDescription: { 
-    fontSize: 13,
-    color: '#555', 
-    marginTop: 3, 
-    fontFamily: 'GothamRegular' 
-  },
-  memberCount: {
-    fontSize: 12,
-    color: GOLD,
-    marginTop: 3,
-    fontFamily: 'GothamRegular',
-  },
-  noCommunitiesText: { 
-    textAlign: 'center', 
-    color: '#888', 
-    marginTop: 18,
-    fontSize: 13,
-    fontFamily: 'GothamRegular',
-  },
-  errorContainer: {
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  errorText: { 
-    textAlign: 'center', 
-    color: 'red', 
-    marginBottom: 8,
-    fontSize: 13,
-    fontFamily: 'GothamRegular',
-  },
+  toastSuccess: { backgroundColor: "#4CAF50" },
+  toastError: { backgroundColor: "#FF3B30" },
+  toastText: { color: "#fff", fontSize: 15, fontWeight: "600", fontFamily: "GothamBold" },
 });

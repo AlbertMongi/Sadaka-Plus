@@ -23,7 +23,9 @@ const { width, height } = Dimensions.get('window');
 const GOLD = '#E18731';
 const FALLBACK_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
 
-// Skeleton Components
+// ──────────────────────────────────────────────────────────────
+// Skeleton Components (unchanged + new ones added below)
+// ──────────────────────────────────────────────────────────────
 const SkeletonPulse = ({ style }) => {
   const opacity = useRef(new Animated.Value(0.3)).current;
   useEffect(() => {
@@ -46,11 +48,50 @@ const ScriptureSkeleton = () => (
   </View>
 );
 
+// New: Sermon item skeleton
+const SermonItemSkeleton = () => (
+  <View style={styles.eventCardVertical}>
+    <SkeletonPulse style={{ width: 110, height: 90, borderRadius: 12 }} />
+    <View style={{ flex: 1, paddingLeft: 16, justifyContent: 'center' }}>
+      <SkeletonPulse style={{ width: '80%', height: 16, borderRadius: 8, marginBottom: 8 }} />
+      <SkeletonPulse style={{ width: '60%', height: 14, borderRadius: 8, marginBottom: 8 }} />
+      <SkeletonPulse style={{ width: '90%', height: 32, borderRadius: 8 }} />
+    </View>
+  </View>
+);
+
+// New: Sermons list skeleton (2 items)
+const SermonsSkeleton = () => (
+  <View style={{ paddingHorizontal: 16 }}>
+    <SermonItemSkeleton />
+    <SermonItemSkeleton />
+  </View>
+);
+
+// New: Bible Quiz skeleton
+const QuizSkeleton = () => (
+  <View style={styles.quizCard}>
+    <SkeletonPulse style={{ width: 76, height: 76, borderRadius: 38 }} />
+    <View style={{ flex: 1, marginLeft: 16 }}>
+      <SkeletonPulse style={{ width: '70%', height: 20, borderRadius: 8 }} />
+    </View>
+    <SkeletonPulse style={{ width: 100, height: 48, borderRadius: 30 }} />
+  </View>
+);
+
 const FullPageSkeleton = () => (
   <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
     <ScrollView contentContainerStyle={{ paddingTop: 50, paddingHorizontal: 16 }}>
       <SkeletonPulse style={{ width: 180, height: 24, borderRadius: 8, marginBottom: 16 }} />
       <ScriptureSkeleton />
+      <View style={{ marginTop: 32 }}>
+        <SkeletonPulse style={{ width: 120, height: 20, borderRadius: 8, marginBottom: 16 }} />
+        <SermonsSkeleton />
+      </View>
+      <View style={{ marginTop: 32 }}>
+        <SkeletonPulse style={{ width: 100, height: 20, borderRadius: 8, marginBottom: 16 }} />
+        <QuizSkeleton />
+      </View>
     </ScrollView>
   </SafeAreaView>
 );
@@ -92,11 +133,12 @@ const HomeScreen = () => {
       scripture: 'Verse of the Day',
       sermons: 'Sermons',
       noScripture: 'No verse available',
-      // noScripture 'Check back later for today\'s verse.',
       noSermons: 'No sermons available',
       noSermonsSub: 'Connect with your church community to access reflections.',
     },
   };
+
+  // ... (all your existing fetch functions remain unchanged)
 
   const fetchJoinedCommunities = async () => {
     setLoadingCommunities(true);
@@ -233,7 +275,7 @@ const HomeScreen = () => {
     }
   }, [loadingCommunities, loadingScripture, loadingSermons]);
 
-  // LIKE / UNLIKE
+  // LIKE / UNLIKE & SHARE (unchanged)
   const handleLike = async () => {
     const current = scriptures[currentScriptureIndex];
     if (!current?.id) return;
@@ -241,7 +283,6 @@ const HomeScreen = () => {
     const wasLiked = likedStatus[current.id] || false;
     const prevLikes = likes[current.id] || 0;
 
-    // Optimistic UI
     setLikes(prev => ({ ...prev, [current.id]: wasLiked ? prevLikes - 1 : prevLikes + 1 }));
     setLikedStatus(prev => ({ ...prev, [current.id]: !wasLiked }));
 
@@ -252,13 +293,11 @@ const HomeScreen = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch {
-      // Revert on error
       setLikes(prev => ({ ...prev, [current.id]: prevLikes }));
       setLikedStatus(prev => ({ ...prev, [current.id]: wasLiked }));
     }
   };
 
-  // SHARE
   const handleShare = async () => {
     const current = scriptures[currentScriptureIndex];
     if (!current) return;
@@ -280,13 +319,20 @@ const HomeScreen = () => {
     }
   };
 
+  // ──────────────────────────────
+  // Full-page skeleton while loading communities
+  // ──────────────────────────────
   if (loadingCommunities || refreshing) return <FullPageSkeleton />;
 
+  // ──────────────────────────────
+  // No community joined
+  // ──────────────────────────────
   if (joinedCommunities.length === 0) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
         <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
           <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[GOLD]} />}>
+            {/* Same empty UI you already had */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{labels[language].scripture}</Text>
               <EmptyState icon="book-outline" title="No verse available" subtitle="Join a community to see daily verses" />
@@ -328,6 +374,9 @@ const HomeScreen = () => {
     );
   }
 
+  // ──────────────────────────────
+  // Main screen with data
+  // ──────────────────────────────
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <Animated.View style={{ opacity: fadeAnim }}>
@@ -337,10 +386,13 @@ const HomeScreen = () => {
           contentContainerStyle={{ paddingBottom: 100 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[GOLD]} />}
         >
-          {/* VERSE OF THE DAY — WITH LIKE & SHARE */}
+          {/* VERSE OF THE DAY */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{labels[language].scripture}</Text>
-            {loadingScripture ? <ScriptureSkeleton /> : scriptures.length > 0 ? (
+            <Text style={styles.sectionTitle1}>{labels[language].scripture}</Text>
+            {loadingScripture ? (
+              <ScriptureSkeleton />
+            ) : scriptures.length > 0 ? (
+              /* existing verse UI unchanged */
               <View style={styles.scriptureContainer}>
                 <View style={styles.smallImageContainer}>
                   <FlatList
@@ -376,7 +428,6 @@ const HomeScreen = () => {
                     <Text style={styles.verseReference}>{scriptures[currentScriptureIndex]?.verse_reference}</Text>
                   </View>
 
-                  {/* LIKE & SHARE BUTTONS */}
                   <View style={styles.actionButtons}>
                     {scriptures.length > 1 && (
                       <>
@@ -406,7 +457,7 @@ const HomeScreen = () => {
                 </View>
               </View>
             ) : (
-              <EmptyState icon="book-outline" title={labels[language].noScripture} subtitle={labels[language].noScriptureSub} />
+              <EmptyState icon="book-outline" title={labels[language].noScripture} subtitle={labels[language].noScriptureSub || ''} />
             )}
           </View>
 
@@ -414,9 +465,7 @@ const HomeScreen = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{labels[language].sermons}</Text>
             {loadingSermons ? (
-              <View style={{ paddingHorizontal: 16 }}>
-                {[1, 2].map(i => <SkeletonPulse key={i} style={{ height: 90, borderRadius: 12, marginBottom: 12 }} />)}
-              </View>
+              <SermonsSkeleton />
             ) : sermons.length > 0 ? (
               <View style={{ paddingHorizontal: 2 }}>
                 {sermons.map((sermon) => (
@@ -446,18 +495,22 @@ const HomeScreen = () => {
           {/* BIBLE QUIZ */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Bible Quiz</Text>
-            <View style={styles.quizCard}>
-              <View style={styles.quizIconCircle}>
-                <MaterialCommunityIcons name="brain" size={42} color={GOLD} />
+            {loadingSermons || loadingScripture ? (  // You can tie it to any loading state you prefer
+              <QuizSkeleton />
+            ) : (
+              <View style={styles.quizCard}>
+                <View style={styles.quizIconCircle}>
+                  <MaterialCommunityIcons name="brain" size={42} color={GOLD} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 16 }}>
+                  <Text style={styles.quizTitle}>Bible Quiz of the Day</Text>
+                </View>
+                <TouchableOpacity style={styles.startBtn} onPress={() => router.push('bible-quize/screens/WelcomeScreen')}>
+                  <Text style={styles.startText}>Start</Text>
+                  <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
+                </TouchableOpacity>
               </View>
-              <View style={{ flex: 1, marginLeft: 16 }}>
-                <Text style={styles.quizTitle}>Bible Quiz of the Day</Text>
-              </View>
-              <TouchableOpacity style={styles.startBtn} onPress={() => router.push('bible-quize/screens/WelcomeScreen')}>
-                <Text style={styles.startText}>Start</Text>
-                <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
-              </TouchableOpacity>
-            </View>
+            )}
           </View>
         </ScrollView>
       </Animated.View>
@@ -465,9 +518,13 @@ const HomeScreen = () => {
   );
 };
 
+// ──────────────────────────────
+// Styles (unchanged)
+// ──────────────────────────────
 const styles = StyleSheet.create({
   section: { marginBottom: 12, backgroundColor: '#fff' },
   sectionTitle: { fontSize: 15, color: '#222', paddingHorizontal: 10, paddingVertical: 6, fontFamily: 'GothamBold' },
+   sectionTitle1: { fontSize: 15, color: '#222', paddingHorizontal: 10, paddingVertical: Platform.OS === 'android' ? 20 : 6, fontFamily: 'GothamBold' },
 
   scriptureContainer: { flexDirection: 'row', marginHorizontal: 10, alignItems: 'center', paddingVertical: 6 },
   smallImageContainer: { width: 60, height: 260, borderRadius: 10, overflow: 'hidden', marginRight: 8 },
@@ -482,7 +539,6 @@ const styles = StyleSheet.create({
   verseText: { color: '#fff', fontSize: 14, lineHeight: 20, textAlign: 'center', fontFamily: 'GothamMedium' },
   verseReference: { color: '#fff', fontSize: 12, marginTop: 6, textAlign: 'center', fontFamily: 'GothamBold' },
 
-  // LIKE & SHARE BUTTONS
   actionButtons: { position: 'absolute', bottom: 12, left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   navButton: { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 20, padding: 6 },
   socialButtons: { flexDirection: 'row', gap: 16 },
