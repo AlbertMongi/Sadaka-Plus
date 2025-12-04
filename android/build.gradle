@@ -83,6 +83,10 @@ allprojects {
     }
 }
 
+ext {
+    hermesEnabled = findProperty('hermesEnabled') ?: 'true'
+}
+
 subprojects {
     afterEvaluate { project ->
         if (project.hasProperty("android")) {
