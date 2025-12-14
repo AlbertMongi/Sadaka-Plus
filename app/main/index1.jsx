@@ -192,7 +192,8 @@ export default function WalletScreen() {
   const [mobileNumber, setMobileNumber] = useState('');
   const [selectedNetwork, setSelectedNetwork] = useState(mobileNetworks[0].name);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
-  const [notification, setNotification] = useState({ visible: false, type: '', message: '' });
+  // const [notification, setNotification] = useState({ visible: false, type: '', message: '' });
+  const [toast, setToast] = useState({ visible: false, message: "", type: "error" });
 
   const [events, setEvents] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -502,10 +503,14 @@ const historyAnims = useRef(new Map()).current;   // ← This fixes the crash fo
   const handleAmountChange = (val) => setAmount(formatAmount(val));
   const handlePhoneChange = (val) => setMobileNumber(val);
 
-  const showNotification = (type, msg) => {
-    setNotification({ visible: true, type, message: msg });
-    setTimeout(() => setNotification({ visible: false, type: '', message: '' }), 3000);
-  };
+  // const showNotification = (type, msg) => {
+  //   setNotification({ visible: true, type, message: msg });
+  //   setTimeout(() => setNotification({ visible: false, type: '', message: '' }), 3000);
+  // };
+  const showToast = (message, type = "error") => {
+  setToast({ visible: true, message, type });
+  setTimeout(() => setToast({ visible: false, message: "", type: "error" }), 3500);
+};
 
   const handleSubmit = async () => {
     if (paymentMethod === 'Card payment') {
@@ -513,8 +518,9 @@ const historyAnims = useRef(new Map()).current;   // ← This fixes the crash fo
       setTimeout(async () => {
         setLoadingSubmit(false);
         closeModal();
-        showNotification('success', 'Redirecting to secure card payment...');
-        await WebBrowser.openBrowserAsync('https://your-payment-gateway.com');
+        showToast('Coming soon...', 'success');
+        // showNotification('success', 'Redirecting to secure card payment...');
+        // await WebBrowser.openBrowserAsync('https://your-payment-gateway.com');
       }, 1500);
     } else {
       await submitWalletAction();
@@ -523,11 +529,11 @@ const historyAnims = useRef(new Map()).current;   // ← This fixes the crash fo
 
   const submitWalletAction = async () => {
     if (!amount || parseInt(amount.replace(/,/g, ''), 10) <= 0) {
-      showNotification('error', 'Please enter a valid amount');
+     showToast('Please enter a valid amount');
       return;
     }
     if (!walletId) {
-      showNotification('error', 'Wallet not found');
+ showToast('Wallet not found');
       return;
     }
 
@@ -556,14 +562,17 @@ const historyAnims = useRef(new Map()).current;   // ← This fixes the crash fo
       const json = await res.json();
 
       if (json.success) {
-        showNotification('success', `${selectedAction} successful!`);
+        // showNotification('success', `${selectedAction} successful!`);
+        showToast(`${selectedAction} successful!`, 'success');
         await fetchWallet();
         closeModal();
       } else {
+        // showNotification('error', json.message || 'Transaction failed');
         showNotification('error', json.message || 'Transaction failed');
       }
     } catch (err) {
-      showNotification('error', 'Network error');
+      // showNotification('error', 'Network error');
+      showToast('Network error');
     } finally {
       setLoadingSubmit(false);
     }
@@ -925,11 +934,25 @@ transactions.slice(0, 5).forEach((tx, i) => {
       )}
 
       {/* Notification */}
-      {notification.visible && (
+      {/* {notification.visible && (
         <View style={[styles.notificationContainer, notification.type === 'success' ? styles.notificationSuccess : styles.notificationError]}>
           <Text style={styles.notificationText}>{notification.message}</Text>
         </View>
       )}
+       */}
+       {/* Custom Toast - same as LoginScreen */}
+{toast.visible && (
+  <View style={toastStyles.toastContainer}>
+    <View style={[toastStyles.toast, toast.type === "success" ? toastStyles.toastSuccess : toastStyles.toastError]}>
+      <Ionicons
+        name={toast.type === "success" ? "checkmark-circle" : "close-circle"}
+        size={22}
+        color="#fff"
+      />
+      <Text style={toastStyles.toastText}>{toast.message}</Text>
+    </View>
+  </View>
+)}
 
       {/* Wallet Modal (unchanged) */}
       <Modal visible={showWalletModal} transparent onRequestClose={closeModal}>
@@ -1146,4 +1169,40 @@ const sheetStyles = StyleSheet.create({
   detailBox: { marginBottom: 12, backgroundColor: '#FAFAFA', padding: 12, borderRadius: 10, borderLeftWidth: 3, borderLeftColor: GOLD },
   modalLabel: { fontWeight: '600', fontSize: 14, marginBottom: 4, color: '#333' },
   modalText: { fontSize: 14, color: '#555' },
+});
+
+const toastStyles = StyleSheet.create({
+  toastContainer: {
+    position: "absolute",
+    top: 60,
+    left: 20,
+    right: 20,
+    zIndex: 9999,
+    alignItems: "center",
+  },
+  toast: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 10,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  toastSuccess: { 
+    backgroundColor: "#4CAF50"   // Green for success & "Redirecting..."
+  },
+  toastError: { 
+    backgroundColor: "#FF3B30"   // Red for errors
+  },
+  toastText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+    fontFamily: "GothamBold",
+  },
 });
