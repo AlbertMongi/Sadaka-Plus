@@ -533,7 +533,8 @@ const historyAnims = useRef(new Map()).current;   // ← This fixes the crash fo
       return;
     }
     if (!walletId) {
- showToast('Wallet not found');
+//  showToast('Wallet not found');
+ showToast('Coming soon...', 'success');
       return;
     }
 
