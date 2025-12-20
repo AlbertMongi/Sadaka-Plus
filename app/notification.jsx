@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';  
 import {
   View,
   Text,
@@ -19,13 +19,13 @@ import { useRouter } from 'expo-router';
 import { BASE_URL } from './apiConfig';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const GOLD = '#E18731'; // Match MorePage
 
 export default function NotificationScreen() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const sheetAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const router = useRouter();
 
@@ -108,6 +108,33 @@ export default function NotificationScreen() {
     })
   ).current;
 
+  const markAsRead = async () => {
+    if (!selected) return;
+    setProcessing(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+
+      const response = await fetch(`${BASE_URL}/notifications/${selected.id}/read`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      // Remove the notification from the list
+      setNotifications((prev) => prev.filter((n) => n.id !== selected.id));
+      closeSheet();
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const renderNotification = ({ item }) => (
     <TouchableOpacity
       activeOpacity={0.7}
@@ -183,7 +210,7 @@ export default function NotificationScreen() {
         </View>
       )}
 
-      {/* === CUSTOM BOTTOM SHEET (like MorePage) === */}
+      {/* Bottom Sheet */}
       <Modal transparent visible={sheetVisible} onRequestClose={closeSheet}>
         <TouchableWithoutFeedback onPress={closeSheet}>
           <View style={sheetStyles.modalOverlay}>
@@ -212,6 +239,19 @@ export default function NotificationScreen() {
                         })
                       : ''}
                   </Text>
+
+                  {/* Delete Button */}
+                  <TouchableOpacity
+                    style={sheetStyles.deleteButton}
+                    onPress={markAsRead}
+                    disabled={processing}
+                  >
+                    {processing ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={sheetStyles.deleteButtonText}>Delete</Text>
+                    )}
+                  </TouchableOpacity>
                 </ScrollView>
               </Animated.View>
             </TouchableWithoutFeedback>
@@ -222,7 +262,7 @@ export default function NotificationScreen() {
   );
 }
 
-/* === ORIGINAL STYLES === */
+/* === STYLES === */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -310,7 +350,7 @@ const styles = StyleSheet.create({
   },
 });
 
-/* === BOTTOM SHEET STYLES (MATCH MorePage) === */
+/* === BOTTOM SHEET STYLES === */
 const sheetStyles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
@@ -345,19 +385,28 @@ const sheetStyles = StyleSheet.create({
     color: '#222',
     textAlign: 'center',
     marginBottom: 16,
-    fontFamily: 'GothamBold',
   },
   message: {
     fontSize: 14.5,
     color: '#444',
     lineHeight: 23,
     marginBottom: 12,
-    fontFamily: 'GothamMedium',
   },
   date: {
     fontSize: 12,
     color: '#888',
     textAlign: 'right',
-    fontFamily: 'GothamMedium',
+  },
+  deleteButton: {
+    marginTop: 20,
+    backgroundColor: '#FF3B30',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

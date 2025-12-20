@@ -134,6 +134,14 @@ const NoCommunityState = ({ router }) => (
   </View>
 );
 
+const EmptyState = () => (
+  <View style={styles.emptyContainer}>
+    <Ionicons name="megaphone-outline" size={70} color={GOLD} />
+    <Text style={styles.emptyTitle}>No campaigns yet</Text>
+    <Text style={styles.emptySubtitle}>There are no campaigns to show right now.</Text>
+  </View>
+);
+
 /* ──────────────────────────────────────────────────────────────
    MAIN COMPONENT
 ────────────────────────────────────────────────────────────── */
@@ -255,23 +263,38 @@ export default function CampaignsScreen() {
       `${BASE_URL}/updates/category/CAMPAIGN/${selectedCommunityId}`
     );
 
-    if (res?.success && Array.isArray(res.data)) {
-      const formatted = res.data.map((item) => ({
-        id: item.id.toString(),
-        title: item.title || 'No Title',
-        content: item.content || 'No content available.',
-        category: item.category || 'CAMPAIGN',
-        scheduledAt: item.scheduledAt || new Date().toISOString(),
-        likes: item.likes || 0,
-        liked: item.liked || false,
-        shares: item.shares || 0,
-        imageUrl: isValidImageUrl(item.photo) ? item.photo : FALLBACK_IMAGE,
-      }));
+    if (!res) {
+      console.warn('fetchCampaigns: no response from server');
+      setCampaigns([]);
+      cardAnims.current = [];
+      setLoading(false);
+      return;
+    }
 
+    if (res?.success && Array.isArray(res.data)) {
+      const formatted = res.data.map((item) => {
+        const img = item.imageUrl || item.image || item.photo || '';
+        const finalImg = isValidImageUrl(img) ? img : FALLBACK_IMAGE;
+        return {
+          id: (item.id || '').toString(),
+          title: item.title || item.content || 'No Title',
+          content: item.content || 'No content available.',
+          category: item.category || 'CAMPAIGN',
+          scheduledAt: item.scheduledAt || item.createdAt || new Date().toISOString(),
+          likes: item.likes || 0,
+          liked: item.liked || false,
+          shares: item.shares || 0,
+          imageUrl: finalImg,
+          raw: item,
+        };
+      });
+
+      console.log(`fetchCampaigns: mapped ${formatted.length} campaigns`);
       setCampaigns(formatted);
       initializeAnims(formatted);
       initializeInteractions(formatted);
     } else {
+      console.log('fetchCampaigns: success=false or data not array', res);
       setCampaigns([]);
       cardAnims.current = [];
     }

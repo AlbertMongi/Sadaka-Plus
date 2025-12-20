@@ -1,7 +1,7 @@
 // services/QuestionService.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE = "https://sadaka-plus-api.ludovick.site/api/bible/quizzes";
+const API_BASE = "https://apis.sadakaplus.co.tz/api/bible/quizzes";
 
 // Helper: Safely get token (never throws, returns null if not found)
 const getToken = async () => {

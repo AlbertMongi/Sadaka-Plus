@@ -54,7 +54,7 @@ export default function Layout() {
       ))}
 
       <Tabs.Screen name="index1" options={{ title: 'Home', animation: 'none' }} />
-      <Tabs.Screen name="bible" options={{ title: 'Daily Verse', animation: 'none' }} />
+      <Tabs.Screen name="bible" options={{ title: 'Events', animation: 'none' }} />
       <Tabs.Screen name="contribution" options={{ title: 'Give', animation: 'none' }} />
       <Tabs.Screen name="community" options={{ title: 'Live', animation: 'none' }} />
       <Tabs.Screen name="more" options={{ title: 'More', animation: 'none' }} />

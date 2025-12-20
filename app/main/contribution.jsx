@@ -2,9 +2,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
+import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -21,7 +22,6 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import React, { useEffect, useRef, useState } from 'react';
 import { BASE_URL } from '../apiConfig';
 
 const { height } = Dimensions.get('window');
@@ -30,7 +30,6 @@ const GOLD = '#E18731';
 const mobileNetworks = [
   { name: 'HaloPesa', logo: 'https://portal.powertec.com.au/sites/default/files/styles/scale_square/public/2024-01/Viettel_Tanzania_Halotel_logo.png.webp?itok=1EgsL4zb' },
   { name: 'TigoPesa', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRbiP_Qnuwr0BRypVtoHN3fFKwwxdd89_sqQw&s' },
-  { name: 'Mpesa', logo: 'https://download.logo.wine/logo/Vodacom/Vodacom-Logo.wine.png' },
   { name: 'AirtelMoney', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTdtdumPWtXlSSZ_nEnxNzl2JLce4N7aPh-Jg&s' },
 ];
 
@@ -46,6 +45,10 @@ export default function GiveScreen() {
   const [showPaymentSheet, setShowPaymentSheet] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Mobile money');
   const [selectedNetwork, setSelectedNetwork] = useState(mobileNetworks[0].name);
+  const [currency, setCurrency] = useState('TZS');
+  const [countryCode, setCountryCode] = useState('+255');
+  const [postalCode, setPostalCode] = useState('');
+  const [address, setAddress] = useState('');
   const [token, setToken] = useState(null);
   const [userEmail, setUserEmail] = useState('');
   const [joinedCommunities, setJoinedCommunities] = useState([]);
@@ -135,11 +138,19 @@ export default function GiveScreen() {
 
   const openSheet = () => {
     setShowPaymentSheet(true);
-    Animated.timing(sheetAnim, { toValue: 0, duration: 350, useNativeDriver: true }).start();
+    Animated.timing(sheetAnim, {
+      toValue: 0,
+      duration: 350,
+      useNativeDriver: true,
+    }).start();
   };
 
   const closeSheet = () => {
-    Animated.timing(sheetAnim, { toValue: height, duration: 300, useNativeDriver: true }).start(() => {
+    Animated.timing(sheetAnim, {
+      toValue: height,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
       setShowPaymentSheet(false);
       setPaymentMethod('Mobile money');
       setSelectedNetwork(mobileNetworks[0].name);
@@ -148,14 +159,25 @@ export default function GiveScreen() {
 
   const openSuccess = () => {
     setShowSuccessSheet(true);
-    Animated.timing(successAnim, { toValue: 0, duration: 350, useNativeDriver: true }).start();
+    Animated.timing(successAnim, {
+      toValue: 0,
+      duration: 350,
+      useNativeDriver: true,
+    }).start();
   };
 
   const closeSuccess = () => {
-    Animated.timing(successAnim, { toValue: height, duration: 300, useNativeDriver: true }).start(() => {
+    Animated.timing(successAnim, {
+      toValue: height,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
       setShowSuccessSheet(false);
     });
   };
+
+  // Dynamic sheet height: show full content for Mobile money (no scrolling needed), expanded for Card
+  const sheetHeight = paymentMethod === 'Mobile money' ? Math.min(height * 0.6, 520) : height * 0.92;
 
   const openPaymentLink = async (url) => {
     if (!url || typeof url !== 'string') return showNotification('error', 'Invalid payment link');
@@ -172,7 +194,6 @@ export default function GiveScreen() {
     }
   };
 
-  // ULTIMATE BULLETPROOF sendContribution — NO RED SCREEN, NO MATTER WHAT
   const sendContribution = async () => {
     if (!location || !amount || !offering || !mobileNumber) {
       showNotification('error', 'Please fill all required fields');
@@ -198,7 +219,10 @@ export default function GiveScreen() {
           transactionDetails: offering,
           email: userEmail || `${mobileNumber}@tithe.app`,
           communityId: location,
-          address: "Dar es Salaam, Tanzania",
+          currency,
+          countryCode,
+          postalCode,
+          address: address || "Dar es Salaam, Tanzania",
         };
 
         const res = await fetch(`${BASE_URL}/payments/card`, {
@@ -224,7 +248,6 @@ export default function GiveScreen() {
         return;
       }
 
-      // MOBILE MONEY — THE NUCLEAR-PROOF VERSION
       const res = await fetch(`${BASE_URL}/contributions`, {
         method: 'POST',
         headers: {
@@ -238,6 +261,13 @@ export default function GiveScreen() {
           phoneNo: mobileNumber.trim(),
           communityId: location,
           paymentMethod: selectedNetwork,
+          payTo: location,
+          transactionDetails: offering,
+          email: userEmail || `${mobileNumber}@tithe.app`,
+          currency,
+          countryCode,
+          postalCode,
+          address,
         }),
       });
 
@@ -255,7 +285,6 @@ export default function GiveScreen() {
       return;
     }
 
-    // FINAL DECISION BASED ON ACTUAL PAYMENT RESPONSE
     const isSuccess = jsonData.response_code === "0" || String(jsonData.response_code) === "0";
     const isNotEnoughFunds = jsonData.response_code === "9009" || jsonData.response_desc === "SENDER_NOT_ENOUGH_FUND";
 
@@ -381,7 +410,7 @@ export default function GiveScreen() {
                 onChangeText={setMobileNumber}
                 placeholder="0712345678"
                 keyboardType="phone-pad"
-                maxLength={10}
+                maxLength={15}
               />
 
               <TouchableOpacity style={styles.continueBtn} onPress={openSheet}>
@@ -392,12 +421,27 @@ export default function GiveScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Payment Sheet */}
+      {/* PERFECT BOTTOM SHEET - NO WHITE SPACE BELOW */}
       <Modal visible={showPaymentSheet} transparent animationType="none">
+        {/* Dark overlay - tap outside to close */}
         <TouchableWithoutFeedback onPress={closeSheet}>
-          <View style={styles.overlay}>
-            <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetAnim }] }]}>
-              <View style={styles.handle} />
+          <View style={styles.modalOverlay} />
+        </TouchableWithoutFeedback>
+
+        {/* Animated sheet - sticks to bottom with no gap */}
+        <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetAnim }], height: sheetHeight }]}>
+          <View style={styles.handle} />
+
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          >
+            <ScrollView
+              contentContainerStyle={styles.sheetContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
               <Text style={styles.sheetTitle}>Confirm Contribution</Text>
 
               <View style={styles.summaryRow}>
@@ -423,7 +467,7 @@ export default function GiveScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-
+     <Text style={styles.label}>Choose mobile network</Text>
               {paymentMethod === 'Mobile money' && (
                 <View style={styles.networkRow}>
                   {mobileNetworks.map(n => (
@@ -438,18 +482,78 @@ export default function GiveScreen() {
                 </View>
               )}
 
-              <TouchableOpacity style={[styles.sendBtn, loading && { opacity: 0.6 }]} onPress={sendContribution} disabled={loading}>
-                <Text style={styles.sendText}>{loading ? 'Processing...' : 'Send Contribution'}</Text>
+              {paymentMethod === 'Card payment' && (
+                <>
+                  <Text style={styles.label}>Email</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={userEmail}
+                    onChangeText={setUserEmail}
+                    placeholder="you@example.com"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+
+                  <Text style={styles.label}>Currency</Text>
+                  <View style={styles.currencyRow}>
+                    {['TZS', 'USD'].map(c => (
+                      <TouchableOpacity
+                        key={c}
+                        style={[styles.freqBtn, currency === c && styles.freqActive]}
+                        onPress={() => setCurrency(c)}
+                      >
+                        <Text style={[styles.freqText, currency === c && styles.freqTextActive]}>{c}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <Text style={styles.label}>Country Code</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={countryCode}
+                    onChangeText={setCountryCode}
+                    placeholder="+255"
+                    keyboardType="phone-pad"
+                  />
+
+                  <Text style={styles.label}>Postal Code</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={postalCode}
+                    onChangeText={setPostalCode}
+                    placeholder="Postal code"
+                  />
+
+                  <Text style={styles.label}>Address</Text>
+                  <TextInput
+                    style={[styles.input, styles.multilineInput]}
+                    value={address}
+                    onChangeText={setAddress}
+                    placeholder="Street, City"
+                    multiline
+                    textAlignVertical="top"
+                  />
+                </>
+              )}
+
+              <TouchableOpacity
+                style={[styles.sendBtn, loading && { opacity: 0.6 }]}
+                onPress={sendContribution}
+                disabled={loading}
+              >
+                <Text style={styles.sendText}>
+                  {loading ? 'Processing...' : 'Send Contribution'}
+                </Text>
               </TouchableOpacity>
-            </Animated.View>
-          </View>
-        </TouchableWithoutFeedback>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </Animated.View>
       </Modal>
 
       {/* Success Sheet */}
       <Modal visible={showSuccessSheet} transparent>
         <TouchableWithoutFeedback onPress={closeSuccess}>
-          <View style={styles.overlay}>
+          <View style={styles.modalOverlay}>
             <Animated.View style={[styles.successSheet, { transform: [{ translateY: successAnim }] }]}>
               <View style={styles.handle} />
               <Ionicons name="checkmark-circle" size={80} color={GOLD} />
@@ -474,7 +578,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   title: { fontSize: 20, fontWeight: 'bold', color: '#222' },
   dropdownWrapper: { marginBottom: 12 },
-  label: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 6, marginTop: 8 },
+  label: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 6, marginTop: 9 },
   customDropdown: { height: 40, borderWidth: 1, borderColor: GOLD, borderRadius: 6, backgroundColor: '#fff', paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   disabledDropdown: { opacity: 0.5 },
   dropdownText: { fontSize: 14, color: '#333', fontWeight: '600' },
@@ -497,10 +601,42 @@ const styles = StyleSheet.create({
   toastSuccess: { backgroundColor: '#d4edda', borderColor: '#c3e6cb', borderWidth: 1 },
   toastError: { backgroundColor: '#f8d7da', borderColor: '#f5c6cb', borderWidth: 1 },
   toastText: { fontSize: 14, fontWeight: '600', color: '#333' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
-  handle: { width: 40, height: 5, backgroundColor: '#ddd', borderRadius: 3, alignSelf: 'center', marginBottom: 16 },
-  sheetTitle: { fontSize: 19, fontWeight: 'bold', textAlign: 'center', marginBottom: 16, color: '#222' },
+  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
+  emptyText: { marginTop: 20, fontSize: 16, color: '#888', textAlign: 'center' },
+
+  // Fixed Bottom Sheet - No white space below
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -5 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 30,
+  },
+  handle: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#ccc',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  sheetContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 100, // Enough space for keyboard + button
+  },
+  sheetTitle: { fontSize: 19, fontWeight: 'bold', textAlign: 'center', marginVertical: 12, color: '#222' },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
   summaryLabel: { fontSize: 14, color: '#666' },
   summaryValue: { fontSize: 15, fontWeight: 'bold', color: '#222' },
@@ -513,13 +649,31 @@ const styles = StyleSheet.create({
   netBtn: { padding: 8 },
   netActive: { borderWidth: 3, borderColor: GOLD, borderRadius: 14 },
   netLogo: { width: 54, height: 54, borderRadius: 12 },
-  sendBtn: { backgroundColor: GOLD, padding: 18, borderRadius: 14, alignItems: 'center', marginTop: 20 },
+  currencyRow: { flexDirection: 'row', gap: 12, marginTop: 8, marginBottom: 16 },
+  multilineInput: { height: 80, textAlignVertical: 'top' },
+  sendBtn: {
+    backgroundColor: GOLD,
+    padding: 18,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 30,
+    marginBottom: 20,
+  },
   sendText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  successSheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 32, alignItems: 'center' },
+
+  successSheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+  },
   successTitle: { fontSize: 26, fontWeight: 'bold', color: GOLD, marginVertical: 12 },
   successMsg: { fontSize: 16, color: '#555', textAlign: 'center', marginBottom: 30, lineHeight: 24 },
   doneBtn: { backgroundColor: GOLD, paddingHorizontal: 50, paddingVertical: 16, borderRadius: 30 },
   doneText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-  emptyText: { marginTop: 20, fontSize: 16, color: '#888', textAlign: 'center' },
 });

@@ -23,21 +23,20 @@ if (typeof setImmediate === 'undefined') {
   global.setImmediate = (callback) => setTimeout(callback, 0);
 }
 
-// Ensure images are correctly referenced
 const images = [
   require('../assets/images/onboarding1.jpg'),
   require('../assets/images/onboarding2.jpg'),
   require('../assets/images/onboarding3.jpg'),
 ];
 
-// Fallback image in case of loading issues
 const fallbackImage = require('../assets/images/onboarding1.jpg');
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('screen');
 
 const translations = {
   en: {
-    buttonText: 'Get Started',
+    next: 'Next',
+    getStarted: 'Get Started',
     skip: 'Skip',
     language: 'SW',
     slide1: { heading: 'Join Live Church Service', subText: 'Tune into live-streamed services and special events.' },
@@ -45,7 +44,8 @@ const translations = {
     slide3: { heading: 'Stay Updated With Church News', subText: 'Get real-time updates, event reminders and more' },
   },
   sw: {
-    buttonText: 'Anza',
+    next: 'Inayofuata',
+    getStarted: 'Anza',
     skip: 'Ruka',
     language: 'EN',
     slide1: { heading: 'Jiunge na Ibada ya Moja kwa Moja', subText: 'Hudhuria ibada na matukio muhimu mubashara.' },
@@ -121,7 +121,7 @@ export default function GetStarted() {
 
         await Promise.all([
           fontsLoaded ? Promise.resolve() : new Promise(() => {}),
-          new Promise((resolve) => setTimeout(resolve, 3000)), // Minimum splash screen time
+          new Promise((resolve) => setTimeout(resolve, 3000)),
         ]);
 
         if (userToken && !isTokenExpired(userToken)) {
@@ -144,17 +144,22 @@ export default function GetStarted() {
     await AsyncStorage.setItem('language', newLang);
   };
 
-  const toggleTheme = async () => {
-    const newTheme = !isDarkMode ? 'dark' : 'light';
-    setIsDarkMode(!isDarkMode);
-    await AsyncStorage.setItem('theme', newTheme);
-  };
-
-  const handleNext = () => {
+  const goToLogin = () => {
     router.push('/login');
   };
 
+  const goNext = () => {
+    if (currentIndex < images.length - 1) {
+      swiperRef.current?.scrollBy(1);
+    } else {
+      goToLogin();
+    }
+  };
+
   const themeStyles = isDarkMode ? darkStyles : lightStyles;
+  const t = translations[language];
+  const isLastSlide = currentIndex === images.length - 1;
+  const buttonText = isLastSlide ? t.getStarted : t.next;
 
   if (!appIsReady || !fontsLoaded) {
     return (
@@ -171,7 +176,6 @@ export default function GetStarted() {
               style={themeStyles.loaderLogo}
               resizeMode="contain"
             />
-            {/* Removed loaderText as it's commented out in translations */}
           </View>
         </View>
       </View>
@@ -206,8 +210,8 @@ export default function GetStarted() {
               <View style={themeStyles.overlay} />
               <View style={themeStyles.overlayContent}>
                 <View style={themeStyles.textWrapper}>
-                  <Text style={themeStyles.heading}>{translations[language][`slide${index + 1}`].heading}</Text>
-                  <Text style={themeStyles.subText}>{translations[language][`slide${index + 1}`].subText}</Text>
+                  <Text style={themeStyles.heading}>{t[`slide${index + 1}`].heading}</Text>
+                  <Text style={themeStyles.subText}>{t[`slide${index + 1}`].subText}</Text>
                 </View>
               </View>
             </ImageBackground>
@@ -217,23 +221,21 @@ export default function GetStarted() {
 
       <View style={themeStyles.overlayContent}>
         <View style={themeStyles.topRight}>
-          {/* <TouchableOpacity onPress={toggleTheme} style={themeStyles.topButton}>
-            <Ionicons
-              name={isDarkMode ? 'sunny' : 'moon'}
-              size={18}
-              color={isDarkMode ? '#000' : '#fff'}
-            />
-          </TouchableOpacity> */}
-
-          <TouchableOpacity onPress={toggleLanguage} style={themeStyles.topButton}>
+          <TouchableOpacity onPress={goToLogin} style={themeStyles.topButton}>
             <Text style={[themeStyles.topButtonText, { color: isDarkMode ? '#000' : '#fff' }]}>
-              {translations[language].language}
+              {t.skip}
             </Text>
           </TouchableOpacity>
+
+          {/* <TouchableOpacity onPress={toggleLanguage} style={themeStyles.topButton}>
+            <Text style={[themeStyles.topButtonText, { color: isDarkMode ? '#000' : '#fff' }]}>
+              {t.language}
+            </Text>
+          </TouchableOpacity> */}
         </View>
 
-        <TouchableOpacity style={themeStyles.button} onPress={handleNext}>
-          <Text style={themeStyles.buttonText}>{translations[language].buttonText}</Text>
+        <TouchableOpacity style={themeStyles.button} onPress={goNext}>
+          <Text style={themeStyles.buttonText}>{buttonText}</Text>
           <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 6 }} />
         </TouchableOpacity>
       </View>
@@ -241,7 +243,9 @@ export default function GetStarted() {
   );
 }
 
+// Styles remain unchanged (baseStyles, lightStyles, darkStyles)
 const baseStyles = {
+  // ... (all your existing styles unchanged)
   container: { flex: 1 },
   swiperContainer: { position: 'absolute', width: screenWidth, height: screenHeight },
   fullscreenImage: { width: screenWidth, height: screenHeight },
@@ -261,7 +265,6 @@ const baseStyles = {
   textWrapper: {
     flex: 1,
     justifyContent: 'center',
-    // bottom: Platform.OS === 'android' ? -250 : -130,
     alignItems: 'center',
   },
   heading: {
@@ -327,10 +330,10 @@ const baseStyles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#FFFFFF', // Force full-screen white background
+    backgroundColor: '#FFFFFF',
     width: screenWidth,
     height: screenHeight,
-    zIndex: 10000, // Highest zIndex to ensure it overlays everything
+    zIndex: 10000,
   },
   loaderContainer: {
     position: 'absolute',
@@ -338,7 +341,7 @@ const baseStyles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#FFFFFF', // Ensure loader container is white
+    backgroundColor: '#FFFFFF',
     width: '100%',
     height: '100%',
     zIndex: 9999,
@@ -349,7 +352,7 @@ const baseStyles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#FFFFFF', // Ensure content view is white
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 9998,
@@ -359,16 +362,6 @@ const baseStyles = {
     height: 100,
     zIndex: 1,
     alignSelf: 'center',
-  },
-  loaderText: {
-    fontSize: 16,
-    textAlign: 'center',
-    fontFamily: 'DMSansRegular',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    zIndex: 2,
-    marginTop: 10,
-    color: '#000',
   },
   topRight: {
     flexDirection: 'row',
@@ -391,16 +384,14 @@ const baseStyles = {
   },
 };
 
-// Light & Dark styles
 const lightStyles = StyleSheet.create({
   ...baseStyles,
   container: { ...baseStyles.container, backgroundColor: '#000' },
   overlay: { ...baseStyles.overlay, backgroundColor: 'rgba(0,0,0,0.5)' },
-  button: { ...baseStyles.button, backgroundColor: '#E18731' },
+  button: { ...baseStyles.button, backgroundColor: '#FF9F00' },
   buttonText: { ...baseStyles.buttonText, color: '#fff' },
   dot: { ...baseStyles.dot, backgroundColor: 'rgba(255,255,255,0.3)' },
-  activeDot: { ...baseStyles.activeDot, backgroundColor: '#E18731' },
-  loaderText: { ...baseStyles.loaderText, color: '#000' },
+  activeDot: { ...baseStyles.activeDot, backgroundColor: '#FF9F00' },
   topButton: {
     ...baseStyles.topButton,
     backgroundColor: 'rgba(255,255,255,0.7)',
@@ -411,11 +402,10 @@ const darkStyles = StyleSheet.create({
   ...baseStyles,
   container: { ...baseStyles.container, backgroundColor: '#000' },
   overlay: { ...baseStyles.overlay, backgroundColor: 'rgba(0,0,0,0.5)' },
-  button: { ...baseStyles.button, backgroundColor: '#E18731' },
+  button: { ...baseStyles.button, backgroundColor: '#FF9F00' },
   buttonText: { ...baseStyles.buttonText, color: '#fff' },
   dot: { ...baseStyles.dot, backgroundColor: 'rgba(255,255,255,0.3)' },
-  activeDot: { ...baseStyles.activeDot, backgroundColor: '#E18731' },
-  loaderText: { ...baseStyles.loaderText, color: '#000' },
+  activeDot: { ...baseStyles.activeDot, backgroundColor: '#FF9F00' },
   topButton: {
     ...baseStyles.topButton,
     backgroundColor: 'rgba(255,255,255,0.2)',

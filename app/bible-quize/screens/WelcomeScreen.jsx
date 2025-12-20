@@ -28,7 +28,7 @@ const WelcomeScreen = () => {
 {/* Back Arrow */}
 <TouchableOpacity
   style={{ position: 'absolute', top: 50, left: 20, zIndex: 10 }}
-  onPress={() => router.push('/main/bible')}
+  onPress={() => router.push('/main/index1')}
 >
   <Ionicons name="chevron-back" size={32} color="#000" />
 </TouchableOpacity>

@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
   Animated,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { styles } from '../styles/ResultScreen.styles';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 
 const ResultScreen = () => {
   const router = useRouter();
@@ -64,21 +64,20 @@ const ResultScreen = () => {
     return { message: "Keep Studying!", color: '#E74C3C' };
   };
 
-  // Fixed: Use router.push() instead of navigation.navigate()
+  // Navigation functions
   const handlePlayAgain = () => {
     router.push('/bible-quize/screens/QuizScreen');
   };
 
-  const handleViewAnswers = () => {
+  const handleReviewAnswers = () => {
     router.push({
-      pathname: '',
+      pathname: '/bible-quize/screens/ReviewAnswers',
       params: { results: JSON.stringify(parsedResults) },
     });
   };
 
   const handleBackHome = () => {
-    router.push('/main/bible'); // or '/' if that's your home
-    // Alternative: router.back() if you want to go back in history
+    router.push('/main/bible'); // or router.back() to go to previous screen
   };
 
   if (loading || !parsedResults) {
@@ -148,9 +147,7 @@ const ResultScreen = () => {
             <Text style={styles.performanceTitle}>Answer Breakdown</Text>
             {parsedResults.answers.map((ans, idx) => (
               <View key={idx} style={styles.performanceItem}>
-                <Text style={styles.performanceLabel}>
-                  Q{idx + 1}
-                </Text>
+                <Text style={styles.performanceLabel}>Q{idx + 1}</Text>
                 <Text style={[
                   styles.performanceValue,
                   { color: ans.isCorrect ? '#27AE60' : '#E74C3C' }
@@ -168,7 +165,7 @@ const ResultScreen = () => {
             <Text style={styles.primaryButtonText}>Play Again</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleViewAnswers}>
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleReviewAnswers}>
             <Text style={styles.secondaryButtonText}>Review Answers</Text>
           </TouchableOpacity>
 

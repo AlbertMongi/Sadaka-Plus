@@ -18,7 +18,7 @@ import { useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
 import { BASE_URL } from "./apiConfig";
 
-const ORANGE = "#FF8C00";
+const ORANGE = "#FF9F00";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -123,7 +123,7 @@ export default function LoginScreen() {
           onPress={() => router.back()}
           accessibilityLabel="Go back"
         >
-          <Ionicons name="chevron-back" size={24} color="#000" />
+          {/* <Ionicons name="chevron-back" size={24} color="#000" /> */}
         </TouchableOpacity>
         <Text style={styles.title}>Login</Text>
         <View style={{ width: 36 }} />
@@ -185,7 +185,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
 
               {/* Fingerprint Button */}
-              <View style={styles.biometricContainer}>
+              {/* <View style={styles.biometricContainer}>
                 <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
                   <TouchableOpacity
                     style={styles.fingerprintButton}
@@ -195,7 +195,7 @@ export default function LoginScreen() {
                     <Ionicons name="finger-print-outline" size={46} color={ORANGE} />
                   </TouchableOpacity>
                 </Animated.View>
-              </View>
+              </View> */}
 
               {/* Login Button */}
               <TouchableOpacity
@@ -213,7 +213,8 @@ export default function LoginScreen() {
               {/* Sign Up */}
               <View style={styles.footer}>
                 <Text style={styles.footerText}>Don't have an account?</Text>
-                <TouchableOpacity onPress={() => router.push("/role")}>
+                {/* <TouchableOpacity onPress={() => router.push("/role")}> */}
+                 <TouchableOpacity onPress={() => router.push("/main/index1")}>
                   <Text style={styles.footerLink}> Sign Up</Text>
                 </TouchableOpacity>
               </View>
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 12,
-    paddingVertical: Platform.OS === 'android' ? 30 : 0,
+    paddingVertical: Platform.OS === 'android' ? 30 : 50,
     backgroundColor: "#fff",
   },
   backButton: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
@@ -242,6 +243,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#000",
     fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
+    paddingVertical: 4,
   },
   scrollContent: { padding: 12, paddingBottom: 32, backgroundColor: "#fff" },
 
