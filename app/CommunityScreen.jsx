@@ -63,23 +63,15 @@ export default function Community() {
     for (let i = 0; i <= retries; i++) {
       try {
         const token = await AsyncStorage.getItem("userToken");
-        if (!token) {
-          showToast("Please log in to continue.", "error");
-          router.replace("/login");
-          return null;
-        }
 
-        const res = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers.Authorization = `Bearer ${token}`;
+
+        const res = await fetch(url, { headers });
 
         if (res.status === 401) {
-          await AsyncStorage.removeItem("userToken");
-          showToast("Session expired. Logging you out...", "error");
-          router.replace("/login");
+          // Do not force navigation or prompt login from this screen.
+          // Let the caller handle missing/unauthorized data gracefully.
           return null;
         }
 

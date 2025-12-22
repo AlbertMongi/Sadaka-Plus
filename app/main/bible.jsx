@@ -1118,17 +1118,20 @@ export default function EventsScreen() {
 const styles = StyleSheet.create({
   safeContainer: { flex: 1, backgroundColor: '#fff' },
   container: { flex: 1, paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? -100 : 30 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  headerText: { 
-    fontSize: 18, 
-    color: '#222', 
-    fontFamily: 'GothamBold',
-  },
+header: {
+  flexDirection: 'row',
+  alignItems: 'flex-start',     // align items to the left
+  justifyContent: 'flex-start', // move content to the left
+  marginBottom: 16,
+},
+
+headerText: { 
+  fontSize: 18, 
+  color: '#222',
+  textAlign: 'left',            // text alignment
+  fontFamily: 'GothamBold',
+},
+
   iconButton: { padding: 6 },
   searchContainer: {
     flexDirection: 'row',

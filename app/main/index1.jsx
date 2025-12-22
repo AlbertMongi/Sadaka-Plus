@@ -33,7 +33,7 @@ const EmptyState = ({ icon, title, subtitle }) => (
   </View>
 );
 
-// Skeleton Components (you can replace with any skeleton library or custom ones)
+// Skeleton Components
 const ScriptureSkeleton = () => (
   <View style={styles.scriptureContainer}>
     <View style={styles.smallImageContainer}>
@@ -41,7 +41,6 @@ const ScriptureSkeleton = () => (
     </View>
     <View style={styles.wordCard}>
       <View style={[styles.wordImage, { backgroundColor: '#eee' }]} />
-      {/* keep overlay transparent for skeleton so it matches other placeholders */}
       <View style={[styles.wordOverlay, { backgroundColor: 'transparent' }]} />
       <View style={styles.wordContent} />
     </View>
@@ -307,7 +306,6 @@ const HomeScreen = () => {
   };
 
   const onRefresh = useCallback(async () => {
-    // show skeleton immediately while refreshing
     setRefreshing(true);
     setDataLoading(true);
     await Promise.all([
@@ -320,11 +318,9 @@ const HomeScreen = () => {
     setRefreshing(false);
   }, [selectedCommunityId]);
 
-  // Show skeleton and refresh when screen regains focus (prevents blank white screen)
   useEffect(() => {
     if (isFocused) {
       setDataLoading(true);
-      // trigger refresh which will clear loading states when done
       onRefresh();
     }
   }, [isFocused, onRefresh]);
@@ -426,11 +422,9 @@ const HomeScreen = () => {
     }
   };
 
-  // Unified render: skeleton overlay + content (no early returns) — prevents remount white flashes
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* Main content uses `contentAnim` so it stays hidden until ready */}
+      {/* Real Content - fades in */}
       <Animated.View style={{ opacity: contentAnim, flex: 1 }}>
         <View style={styles.fixedHeader}>
           <View style={styles.navBar}>
@@ -459,11 +453,10 @@ const HomeScreen = () => {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingTop: Platform.OS === 'android' ? 105 : 78, paddingBottom: 100 }}
+          contentContainerStyle={styles.scrollContentContainer}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[GOLD]} />}
         >
-          {(!loadingCommunities && joinedCommunities.length === 0) ? (
-            // No community joined: show the empty UI with icons and messages
+          {(!loadingCommunities && joinedCommunities.length === 0 && !dataLoading) ? (
             <View>
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>{labels[language].scripture}</Text>
@@ -505,7 +498,6 @@ const HomeScreen = () => {
               </View>
             </View>
           ) : (
-            // Existing content when communities are present (unchanged)
             <>
               {/* VERSE OF THE DAY */}
               <View style={styles.section}>
@@ -515,7 +507,6 @@ const HomeScreen = () => {
                   <ScriptureSkeleton />
                 ) : scriptures.length > 0 ? (
                   <View style={styles.scriptureContainer}>
-                    {/* Thumbnail Strip */}
                     <View style={styles.smallImageContainer}>
                       <FlatList
                         ref={thumbnailFlatListRef}
@@ -552,7 +543,6 @@ const HomeScreen = () => {
                       />
                     </View>
 
-                    {/* Main Card */}
                     <View style={styles.wordCard}>
                       <Image
                         source={{ uri: scriptures[currentScriptureIndex]?.imageUrl || FALLBACK_IMAGE }}
@@ -598,7 +588,11 @@ const HomeScreen = () => {
                     </View>
                   </View>
                 ) : (
-                  <Text style={{ textAlign: 'center', color: '#888', padding: 20 }}>No verse available</Text>
+                  <EmptyState
+                    icon="book-outline"
+                    title="No scripture yet"
+                    subtitle="This community hasn't shared any verses."
+                  />
                 )}
               </View>
 
@@ -629,7 +623,11 @@ const HomeScreen = () => {
                     ))}
                   </View>
                 ) : (
-                  <Text style={{ textAlign: 'center', color: '#888', padding: 20 }}>No sermons available</Text>
+                  <EmptyState
+                    icon="mic-off-outline"
+                    title="No sermons yet"
+                    subtitle="This community hasn't uploaded any sermons."
+                  />
                 )}
               </View>
 
@@ -651,7 +649,7 @@ const HomeScreen = () => {
               </View>
 
               {/* RECENT TRANSACTIONS */}
-              <View style={[styles.section, { paddingBottom: 20 }]}> 
+              <View style={[styles.section, { paddingBottom: 20 }]}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14 }}>
                   <Text style={styles.sectionTitle}>Recent Transactions</Text>
                   <TouchableOpacity onPress={() => router.push('/history')}>
@@ -674,14 +672,14 @@ const HomeScreen = () => {
                       >
                         <TouchableOpacity style={styles.historyRow}>
                           <Ionicons name="repeat-outline" size={20} color="#333" />
-                                <View style={styles.historyContent}>
-                                  <Text style={styles.historyAmount}>
-                                    TZS {tx.amount.toLocaleString()}
-                                  </Text>
-                                  {tx.communityName ? (
-                                    <Text style={styles.historyCommunity}>{tx.communityName}</Text>
-                                  ) : null}
-                                </View>
+                          <View style={styles.historyContent}>
+                            <Text style={styles.historyAmount}>
+                              TZS {tx.amount.toLocaleString()}
+                            </Text>
+                            {tx.communityName ? (
+                              <Text style={styles.historyCommunity}>{tx.communityName}</Text>
+                            ) : null}
+                          </View>
                           <Ionicons name="chevron-forward-outline" size={20} color="#333" />
                         </TouchableOpacity>
                       </Animated.View>
@@ -696,7 +694,7 @@ const HomeScreen = () => {
         </ScrollView>
       </Animated.View>
 
-      {/* Animated skeleton overlay: always mounted, fades out when data is ready */}
+      {/* Skeleton Overlay - perfectly aligned, no gap */}
       <Animated.View
         pointerEvents={showSkeleton ? 'auto' : 'none'}
         style={{
@@ -704,11 +702,10 @@ const HomeScreen = () => {
           zIndex: 20,
           backgroundColor: '#fff',
           opacity: skeletonAnim,
-          justifyContent: 'flex-start',
         }}
       >
-        {/* Header skeleton (matches fixedHeader layout) */}
-        <View style={{ paddingHorizontal: 16, paddingTop: Platform.OS === 'android' ? 5 : 6, paddingBottom: 8 }}>
+        {/* Skeleton Header - identical to real header */}
+        <View style={styles.fixedHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={{ width: 45, height: 45, borderRadius: 22.5, backgroundColor: '#eee' }} />
@@ -724,11 +721,11 @@ const HomeScreen = () => {
           </View>
         </View>
 
-        {/* Body skeleton — scrollable so layout matches content spacing */}
+        {/* Skeleton Body */}
         <ScrollView
           scrollEnabled={false}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingTop: Platform.OS === 'android' ? 80 : 60, paddingBottom: 100 }}
+          contentContainerStyle={styles.scrollContentContainer}
         >
           <View style={styles.section}>
             <Text style={styles.sectionTitle1}>{labels[language].scripture}</Text>
@@ -769,23 +766,31 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   section: { marginBottom: 12, backgroundColor: '#fff' },
   sectionTitle: { fontSize: 15, color: '#222', paddingHorizontal: 10, paddingVertical: 6, fontFamily: 'GothamBold' },
-  sectionTitle1: { fontSize: 15, color: '#222', paddingHorizontal: 10, paddingVertical: Platform.OS === 'android' ? 5 : -6, fontFamily: 'GothamBold' },
+  sectionTitle1: { fontSize: 15, color: '#222', paddingHorizontal: 10, paddingTop: 10, paddingBottom: 6, fontFamily: 'GothamBold' },
+
   fixedHeader: {
     backgroundColor: '#fff',
     paddingHorizontal: 16,
-    paddingVertical: Platform.OS === 'android' ? 25 : -10,
-    paddingBottom: 8,
+    paddingTop: Platform.OS === 'android' ? 30 : 10,
+    paddingBottom: 12,
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 10,
-    // elevation: 4,
     // shadowColor: '#000',
     // shadowOffset: { width: 0, height: 2 },
     // shadowOpacity: 0.1,
-    shadowRadius: 4,
+    // shadowRadius: 4,
+    // elevation: 4,
   },
+
+  // Shared padding for both real and skeleton ScrollView
+  scrollContentContainer: {
+    paddingTop: Platform.OS === 'android' ? 115 : 85, // matches header height + padding
+    paddingBottom: 100,
+  },
+
   navBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   tabs: { flexDirection: 'row', alignItems: 'center' },
   tabActive: { fontSize: 14, color: '#000000', fontFamily: 'GothamRegular', marginLeft: 8 },
@@ -811,7 +816,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 4,
   },
-  // NEW STYLE: Single line, no wrap, vertically centered
   smallReferenceTextSingleLine: {
     color: '#fff',
     fontSize: 15,
@@ -821,7 +825,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.9)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 4,
-    width: 240, // enough space to prevent wrapping
+    width: 240,
     numberOfLines: 1,
   },
 
@@ -853,7 +857,6 @@ const styles = StyleSheet.create({
   historyRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 8, padding: 15, marginHorizontal: 16, marginBottom: 8, shadowOpacity: 0.15, shadowRadius: 4.65, elevation: 4 },
   historyContent: { marginLeft: 10, flex: 1 },
   historyAmount: { fontSize: 14, color: GOLD, fontFamily: 'GothamBold' },
-  historyType: { fontSize: 14, color: '#333', fontFamily: 'GothamRegular', padding: 5 },
   historyCommunity: { fontSize: 13, color: '#222', fontFamily: 'GothamBold', marginTop: 4 },
 
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 30, paddingHorizontal: 30 },

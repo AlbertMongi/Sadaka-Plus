@@ -402,7 +402,13 @@ const ProfileScreen = () => {
                 <Text style={styles.menuText}>Change Password</Text>
                 <Ionicons name="chevron-forward" size={20} color="#666" />
               </TouchableOpacity>
-
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('CommunityScreen')}>
+                <View style={styles.iconWrapper}>
+                  <Ionicons name="people-outline" size={22} color={GOLD} />
+                </View>
+                <Text style={styles.menuText}>Communities</Text>
+                <Ionicons name="chevron-forward" size={20} color="#666" />
+              </TouchableOpacity>
               <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('NearbyCommunity')}>
                 <View style={styles.iconWrapper}>
                   <Ionicons name="location-outline" size={22} color={GOLD} />
@@ -418,6 +424,7 @@ const ProfileScreen = () => {
                 <Text style={styles.menuText}>Change Community</Text>
                 <Ionicons name="chevron-forward" size={20} color="#666" />
               </TouchableOpacity>
+                  
 
               <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('paymentMethod')}>
                 <View style={styles.iconWrapper}>
@@ -430,7 +437,7 @@ const ProfileScreen = () => {
           </>
         )}
       </ScrollView>
-
+ {/* { title: 'My Communities', icon: 'people-outline', screen: '../CommunityScreen' }, */}
       {/* Success Sheet */}
       <Modal transparent visible={showSuccessSheet} onRequestClose={closeSheet}>
         <TouchableWithoutFeedback onPress={closeSheet}>
