@@ -77,7 +77,7 @@ const ResultScreen = () => {
   };
 
   const handleBackHome = () => {
-    router.push('/main/bible'); // or router.back() to go to previous screen
+    router.push('/main/index1'); // or router.back() to go to previous screen
   };
 
   if (loading || !parsedResults) {

@@ -12,6 +12,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Modal,
+  PanResponder,
   Platform,
   RefreshControl,
   ScrollView,
@@ -46,7 +47,7 @@ export default function GiveScreen() {
   const [paymentMethod, setPaymentMethod] = useState('Mobile money');
   const [selectedNetwork, setSelectedNetwork] = useState(mobileNetworks[0].name);
   const [currency, setCurrency] = useState('TZS');
-  const [countryCode, setCountryCode] = useState('+255');
+  const [countryCode, setCountryCode] = useState('TZ');
   const [postalCode, setPostalCode] = useState('');
   const [address, setAddress] = useState('');
   const [token, setToken] = useState(null);
@@ -61,6 +62,29 @@ export default function GiveScreen() {
 
   const sheetAnim = useRef(new Animated.Value(height)).current;
   const successAnim = useRef(new Animated.Value(height)).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 5 && Math.abs(gs.dx) < 10,
+      onPanResponderMove: (_, gs) => {
+        if (gs.dy > 0) sheetAnim.setValue(gs.dy);
+      },
+      onPanResponderRelease: (_, gs) => {
+        const shouldClose = gs.dy > height * 0.25 || gs.vy > 0.8;
+        if (shouldClose) {
+          Animated.timing(sheetAnim, { toValue: height, duration: 250, useNativeDriver: true }).start(() => {
+            setShowPaymentSheet(false);
+            setPaymentMethod('Mobile money');
+            setSelectedNetwork(mobileNetworks[0].name);
+            sheetAnim.setValue(height);
+          });
+        } else {
+          Animated.timing(sheetAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
     (async () => {
@@ -429,7 +453,7 @@ export default function GiveScreen() {
         </TouchableWithoutFeedback>
 
         {/* Animated sheet - sticks to bottom with no gap */}
-        <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetAnim }], height: sheetHeight }]}>
+        <Animated.View {...panResponder.panHandlers} style={[styles.sheet, { transform: [{ translateY: sheetAnim }], height: sheetHeight }]}>
           <View style={styles.handle} />
 
           <KeyboardAvoidingView
@@ -507,14 +531,16 @@ export default function GiveScreen() {
                     ))}
                   </View>
 
-                  <Text style={styles.label}>Country Code</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={countryCode}
-                    onChangeText={setCountryCode}
-                    placeholder="+255"
-                    keyboardType="phone-pad"
-                  />
+                 <Text style={styles.label}>Country Code</Text>
+<TextInput
+  style={styles.input}
+  value={countryCode}
+  onChangeText={setCountryCode}
+  placeholder="Country code"
+  keyboardType="default"          // ← changed to normal text keyboard
+  autoCapitalize="characters"     // optional: makes it uppercase (good for +US, +UK...)
+  maxLength={5}                   // optional: most country codes are 2–4 chars (+1, +44, +380...)
+/>
 
                   <Text style={styles.label}>Postal Code</Text>
                   <TextInput

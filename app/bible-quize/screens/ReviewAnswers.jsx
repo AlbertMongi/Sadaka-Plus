@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,177 +6,186 @@ import {
   ActivityIndicator,
   StyleSheet,
   SafeAreaView,
-  Alert,
-} from "react-native";
-import NavigationBar from "../components/NavigationBar";
-import { QuestionService } from "../services/QuestionService"; // Import your service
-import AsyncStorage from "@react-native-async-storage/async-storage";
+  TouchableOpacity,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import NavigationBar from '../components/NavigationBar';
+import { QuestionService } from '../services/QuestionService';
+
+const ORANGE = '#E18731';
 
 const ReviewAnswersScreen = ({ navigation }) => {
   const [quizData, setQuizData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [noQuizFound, setNoQuizFound] = useState(false);
 
   useEffect(() => {
-    const fetchQuizReview = async () => {
+    const loadQuizReview = async () => {
       try {
-        // Retrieve sessionId from AsyncStorage (set it after submitQuiz in QuizScreen)
-        const sessionId = await AsyncStorage.getItem("lastQuizSessionId");
+        const sessionId = await AsyncStorage.getItem('lastQuizSessionId');
 
+        // No recent quiz → show nice empty state
         if (!sessionId) {
-          throw new Error("No recent quiz found. Please complete a quiz first.");
+          setNoQuizFound(true);
+          setLoading(false);
+          return;
         }
 
-        // Reuse the same endpoint as submit — it returns results even after submission
+        const token =
+          (await QuestionService.getToken?.()) ||
+          (await AsyncStorage.getItem('userToken'));
+
+        if (!token) {
+          navigation.navigate('Login');
+          return;
+        }
+
         const response = await fetch(
           `https://apis.sadakaplus.co.tz/api/bible/quizzes/session/${sessionId}/submit`,
           {
-            method: "GET", // Important: GET to retrieve submitted results
+            method: 'GET',
             headers: {
-              Authorization: `Bearer ${await QuestionService.getToken?.() || (await AsyncStorage.getItem("userToken"))}`,
-              "Content-Type": "application/json",
-              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
             },
           }
         );
 
         if (!response.ok) {
-          const errorText = await response.text();
           if (response.status === 401) {
-            throw new Error("Session expired. Please log in again.");
+            navigation.navigate('Login');
+            return;
           }
-          throw new Error(`Failed to load review: ${response.status} ${errorText}`);
+          // Other errors → treat as no valid quiz data
+          throw new Error('invalid response');
         }
 
         const data = await response.json();
 
-        // Transform answers to show full text
-        const transformedQuestions = data.answers.map((answer) => {
-          const userAnswerText =
-            answer.selectedAnswer === null
-              ? "Not answered"
-              : answer.options[answer.selectedAnswer];
-
-          const correctAnswerText = answer.options[answer.correctAnswer];
-
-          return {
-            question: answer.question,
-            userAnswer: userAnswerText,
-            correctAnswer: correctAnswerText,
-            selectedKey: answer.selectedAnswer,
-            correctKey: answer.correctAnswer,
-            isCorrect: answer.correct,
-          };
-        });
+        const questions = data.answers.map((ans) => ({
+          question: ans.question,
+          userAnswer: ans.selectedAnswer === null ? 'Not answered' : ans.options[ans.selectedAnswer],
+          correctAnswer: ans.options[ans.correctAnswer],
+          selectedKey: ans.selectedAnswer,
+          correctKey: ans.correctAnswer,
+          isCorrect: ans.correct,
+        }));
 
         setQuizData({
           score: data.correct,
-          totalQuestions: data.answers.length,
-          wrong: data.wrong || data.answers.length - data.correct,
-          questions: transformedQuestions,
-          sessionId: data.sessionId,
+          total: data.answers.length,
+          wrong: data.wrong ?? data.answers.length - data.correct,
+          questions,
         });
       } catch (err) {
-        console.error("Review fetch error:", err);
-        setError(err.message);
-
-        // Specific user-friendly messages
-        if (err.message.includes("log in")) {
-          Alert.alert("Session Expired", "Please log in again to view your answers.", [
-            { text: "OK", onPress: () => navigation.navigate("Login") },
-          ]);
-        } else if (err.message.includes("No recent quiz")) {
-          Alert.alert("No Quiz Found", err.message, [
-            { text: "Go Back", onPress: () => navigation.goBack() },
-          ]);
-        } else {
-          Alert.alert("Error", err.message || "Could not load your answers.");
-        }
+        console.log('Review load error:', err);
+        // Most errors → treat as no quiz found
+        setNoQuizFound(true);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
-    fetchQuizReview();
+    loadQuizReview();
   }, [navigation]);
 
-  const renderQuestionItem = ({ item, index }) => {
-    const isCorrect = item.isCorrect;
-    const isNotAnswered = item.userAnswer === "Not answered";
-
+  // ── Empty State ───────────────────────────────────────────────────────
+  if (noQuizFound) {
     return (
-      <View style={styles.questionCard}>
-        <Text style={styles.questionNumber}>Question {index + 1}</Text>
-        <Text style={styles.questionText}>{item.question}</Text>
+      <SafeAreaView style={styles.container}>
+        <NavigationBar navigation={navigation} points={20} />
 
-        <View style={styles.answerContainer}>
-          <Text
-            style={[
-              styles.answerLabel,
-              isNotAnswered
-                ? styles.notAnswered
-                : isCorrect
-                ? styles.correct
-                : styles.incorrect,
-            ]}
-          >
-            Your Answer:{' '}
-            <Text style={styles.answerValue}>
-              {isNotAnswered
-                ? item.userAnswer
-                : `"${item.selectedKey}" - ${item.userAnswer}`}
-            </Text>
+        <View style={styles.emptyContainer}>
+          <View style={styles.iconCircle}>
+            <Ionicons name="book-outline" size={64} color={ORANGE} />
+          </View>
+
+          <Text style={styles.emptyTitle}>No Quiz Found</Text>
+          <Text style={styles.emptyMessage}>
+            You haven't completed any quiz yet.{'\n'}Go back and start a new one!
           </Text>
 
-          {(!isCorrect || isNotAnswered) && (
-            <Text style={[styles.answerLabel, styles.correct]}>
-              Correct Answer:{' '}
-              <Text style={styles.answerValue}>
-                "{item.correctKey}" - {item.correctAnswer}
-              </Text>
+          {/* <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backButtonText}>Go Back</Text>
+          </TouchableOpacity> */}
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Loading ────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <NavigationBar navigation={navigation} points={20} />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={ORANGE} />
+          <Text style={styles.loadingText}>Loading your review...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Main Content ───────────────────────────────────────────────────────
+  const renderQuestion = ({ item, index }) => {
+    const { userAnswer, correctAnswer, isCorrect, selectedKey, correctKey } = item;
+    const notAnswered = userAnswer === 'Not answered';
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.questionNumber}>Question {index + 1}</Text>
+        <Text style={styles.question}>{item.question}</Text>
+
+        <View style={styles.answers}>
+          <View style={styles.answerRow}>
+            <Text style={styles.label}>Your answer:</Text>
+            <Text
+              style={[
+                styles.value,
+                notAnswered ? styles.notAnswered : isCorrect ? styles.correct : styles.wrong,
+              ]}
+            >
+              {notAnswered ? userAnswer : `${selectedKey ? `"${selectedKey}" - ` : ''}${userAnswer}`}
             </Text>
+          </View>
+
+          {(!isCorrect || notAnswered) && (
+            <View style={styles.answerRow}>
+              <Text style={[styles.label, styles.correctLabel]}>Correct:</Text>
+              <Text style={[styles.value, styles.correct]}>
+                {correctKey ? `"${correctKey}" - ` : ''}{correctAnswer}
+              </Text>
+            </View>
           )}
         </View>
       </View>
     );
   };
 
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#E18731" />
-        <Text style={styles.loadingText}>Loading your answers...</Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (error || !quizData) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>{error || "Failed to load review"}</Text>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <NavigationBar navigation={navigation} points={20} />
 
       <View style={styles.header}>
-        <Text style={styles.title}>Review Answers</Text>
-        <Text style={styles.scoreText}>
-          Score: {quizData.score} / {quizData.totalQuestions}
+        <Text style={styles.title}>Review Your Answers</Text>
+        <Text style={styles.score}>
+          {quizData.score} / {quizData.total}
         </Text>
-        <Text style={styles.detailText}>
-          Correct: {quizData.score} | Wrong/Skipped: {quizData.wrong}
+        <Text style={styles.subtitle}>
+          Correct: {quizData.score} • Wrong/Skipped: {quizData.wrong}
         </Text>
       </View>
 
       <FlatList
         data={quizData.questions}
-        renderItem={renderQuestionItem}
-        keyExtractor={(item, index) => `question-${index}`}
-        contentContainerStyle={styles.questionsListContent}
+        renderItem={renderQuestion}
+        keyExtractor={(_, i) => `q-${i}`}
+        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
@@ -186,95 +195,142 @@ const ReviewAnswersScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: '#f9f9f9',
   },
-  loadingContainer: {
+  center: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F8F9FA",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#666",
-    fontFamily: "GothamMedium",
-  },
+
+  // Header
   header: {
-    padding: 24,
-    alignItems: "center",
-    backgroundColor: "#FFF",
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
+    alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: "#EEE",
+    borderBottomColor: '#eee',
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#333",
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 8,
-    fontFamily: "GothamBold",
   },
-  scoreText: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#E18731",
-    marginBottom: 4,
+  score: {
+    fontSize: 34,
+    fontWeight: 'bold',
+    color: ORANGE,
+    marginBottom: 6,
   },
-  detailText: {
-    fontSize: 16,
-    color: "#666",
-    fontFamily: "GothamMedium",
+  subtitle: {
+    fontSize: 15,
+    color: '#666',
   },
-  questionsListContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
+
+  // List
+  list: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
   },
-  questionCard: {
+  card: {
     marginTop: 16,
     padding: 18,
-    backgroundColor: "#FFF",
-    borderRadius: 14,
-    shadowColor: "#000",
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 3,
   },
   questionNumber: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#E18731",
-    marginBottom: 6,
-    fontFamily: "GothamBold",
+    fontSize: 15,
+    fontWeight: '700',
+    color: ORANGE,
+    marginBottom: 8,
   },
-  questionText: {
+  question: {
     fontSize: 17,
-    lineHeight: 26,
-    color: "#333",
+    lineHeight: 24,
+    color: '#222',
     marginBottom: 16,
-    fontFamily: "GothamMedium",
   },
-  answerContainer: {
-    marginTop: 8,
+  answers: { gap: 12 },
+  answerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
   },
-  answerLabel: {
-    fontSize: 15.5,
-    marginBottom: 6,
-    fontFamily: "GothamMedium",
+  label: {
+    fontSize: 15,
+    color: '#555',
+    minWidth: 90,
+    marginTop: 2,
   },
-  answerValue: {
-    fontWeight: "600",
-    fontFamily: "GothamBold",
+  value: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
   },
-  correct: {
-    color: "#4CAF50",
-  },
-  incorrect: {
-    color: "#F44336",
-  },
+  correct: { color: '#4CAF50' },
+  wrong: { color: '#F44336' },
   notAnswered: {
-    color: "#FF9800",
-    fontStyle: "italic",
+    color: '#FF9800',
+    fontStyle: 'italic',
+  },
+  correctLabel: {
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+
+  // Loading
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+
+  // Empty State
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  iconCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#fff5eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 12,
+  },
+  emptyMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  backButton: {
+    backgroundColor: ORANGE,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 12,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 
