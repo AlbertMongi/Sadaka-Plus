@@ -1,22 +1,23 @@
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
-  Alert,
-  Animated,
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  RefreshControl,
-  SafeAreaView,
-  StyleSheet,
+  View,
   Text,
   TextInput,
+  FlatList,
+  Image,
+  StyleSheet,
   TouchableOpacity,
-  View
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Animated,
+  Alert,
+  RefreshControl,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../apiConfig';
 
 const GOLD = '#E18731';
@@ -401,19 +402,13 @@ export default function EventsScreen() {
             ) : (
               <View style={{ flex: 1 }}>
                 {activeTab === 'my' ? (
-                    <FlatList
-                      data={filteredMyEvents}
-                      keyExtractor={(item) => item.id.toString()}
-                      showsVerticalScrollIndicator={false}
-                      contentContainerStyle={{ paddingBottom: 40, paddingTop: 8, flexGrow: 1, justifyContent: 'center' }}
-                      ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                          <Ionicons name="calendar-outline" size={48} color={GOLD} />
-                          <Text style={styles.emptyTitle}>No events yet</Text>
-                          <Text style={styles.emptySubtitle}>Join a community to discover fellowships, worship nights, and special services near you.</Text>
-                        </View>
-                      }
-                      renderItem={renderEventCard}
+                  <FlatList
+                    data={filteredMyEvents}
+                    keyExtractor={(item) => item.id.toString()}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
+                    ListEmptyComponent={<Text style={styles.noResults}>No events yet. Join a community to discover fellowships, worship nights, and special services near you.</Text>}
+                    renderItem={renderEventCard}
                     refreshControl={
                       <RefreshControl
                         refreshing={refreshing}
@@ -428,14 +423,8 @@ export default function EventsScreen() {
                     data={filteredAllEvents}
                     keyExtractor={(item) => item.id.toString()}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 40, paddingTop: 8, flexGrow: 1, justifyContent: 'center' }}
-                    ListEmptyComponent={
-                      <View style={styles.emptyContainer}>
-                        <Ionicons name="calendar-outline" size={48} color={GOLD} />
-                        <Text style={styles.emptyTitle}>No events yet</Text>
-                        <Text style={styles.emptySubtitle}>Join a community to discover fellowships, worship nights, and special services near you.</Text>
-                      </View>
-                    }
+                    contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
+                    ListEmptyComponent={<Text style={styles.noResults}>No events yet. Join a community to discover fellowships, worship nights, and special services near you.</Text>}
                     renderItem={renderEventCard}
                     refreshControl={
                       <RefreshControl
@@ -502,31 +491,10 @@ headerText: {
   activeTab: { color: GOLD, borderBottomWidth: 2, borderColor: GOLD, paddingBottom: 4 },
   inactiveTab: { color: '#888', paddingBottom: 4 },
   noResults: { 
-    textAlign: 'center',
-    marginTop: 28,
-    color: '#999',
-    fontSize: 13,
-    fontFamily: 'GothamRegular',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: 220,
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-  },
-  emptyTitle: {
-    marginTop: 12,
-    fontSize: 16,
-    color: GOLD,
-    fontFamily: 'GothamBold',
-  },
-  emptySubtitle: {
-    marginTop: 6,
-    fontSize: 13,
-    color: '#666',
-    textAlign: 'center',
+    textAlign: 'center', 
+    marginTop: 28, 
+    color: '#999', 
+    fontSize: 13, 
     fontFamily: 'GothamRegular',
   },
   card: {
