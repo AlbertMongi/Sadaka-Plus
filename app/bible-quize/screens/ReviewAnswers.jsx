@@ -1,118 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  ActivityIndicator,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native';
 
 import NavigationBar from '../components/NavigationBar';
-import { QuestionService } from '../services/QuestionService';
 
 const ORANGE = '#E18731';
 
-const ReviewAnswersScreen = ({ navigation }) => {
-  const [quizData, setQuizData] = useState(null);
+const ReviewAnswersScreen = () => {
+  const { results } = useLocalSearchParams();
+  const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [noQuizFound, setNoQuizFound] = useState(false);
 
   useEffect(() => {
-    const loadQuizReview = async () => {
-      try {
-        const sessionId = await AsyncStorage.getItem('lastQuizSessionId');
-
-        // No recent quiz → show nice empty state
-        if (!sessionId) {
-          setNoQuizFound(true);
-          setLoading(false);
-          return;
-        }
-
-        const token =
-          (await QuestionService.getToken?.()) ||
-          (await AsyncStorage.getItem('userToken'));
-
-        if (!token) {
-          navigation.navigate('Login');
-          return;
-        }
-
-        const response = await fetch(
-          `https://apis.sadakaplus.co.tz/api/bible/quizzes/session/${sessionId}/submit`,
-          {
-            method: 'GET',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/json',
-            },
-          }
-        );
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            navigation.navigate('Login');
-            return;
-          }
-          // Other errors → treat as no valid quiz data
-          throw new Error('invalid response');
-        }
-
-        const data = await response.json();
-
-        const questions = data.answers.map((ans) => ({
-          question: ans.question,
-          userAnswer: ans.selectedAnswer === null ? 'Not answered' : ans.options[ans.selectedAnswer],
-          correctAnswer: ans.options[ans.correctAnswer],
-          selectedKey: ans.selectedAnswer,
-          correctKey: ans.correctAnswer,
-          isCorrect: ans.correct,
-        }));
-
-        setQuizData({
-          score: data.correct,
-          total: data.answers.length,
-          wrong: data.wrong ?? data.answers.length - data.correct,
-          questions,
-        });
-      } catch (err) {
-        console.log('Review load error:', err);
-        // Most errors → treat as no quiz found
-        setNoQuizFound(true);
-      } finally {
+    try {
+      if (!results) {
+        setQuestions([]);
         setLoading(false);
+        return;
       }
-    };
 
-    loadQuizReview();
-  }, [navigation]);
+      const parsedResults = JSON.parse(results);
 
-  // ── Empty State ───────────────────────────────────────────────────────
-  if (noQuizFound) {
+      if (!parsedResults?.answers || !Array.isArray(parsedResults.answers)) {
+        setQuestions([]);
+        setLoading(false);
+        return;
+      }
+
+      const mappedQuestions = parsedResults.answers.map((ans) => ({
+        question: ans.question || 'Question text not available',
+        userAnswer: ans.selectedAnswer 
+          ? (ans.options?.[ans.selectedAnswer] || 'Option not found') 
+          : 'Not answered',
+        correctAnswer: ans.options?.[ans.correctAnswer] || '—',
+        selectedKey: ans.selectedAnswer || null,
+        correctKey: ans.correctAnswer || null,
+      }));
+
+      setQuestions(mappedQuestions);
+      setLoading(false);
+    } catch (error) {
+      console.log('Error parsing review data:', error);
+      setQuestions([]);
+      setLoading(false);
+    }
+  }, [results]);
+
+  // ── Empty / No Data State ──────────────────────────────────────────────
+  if (!loading && questions.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
-        <NavigationBar navigation={navigation} points={20} />
+        <NavigationBar points={20} />
 
         <View style={styles.emptyContainer}>
           <View style={styles.iconCircle}>
             <Ionicons name="book-outline" size={64} color={ORANGE} />
           </View>
 
-          <Text style={styles.emptyTitle}>No Quiz Found</Text>
+          <Text style={styles.emptyTitle}>No Answers to Review</Text>
           <Text style={styles.emptyMessage}>
-            You haven't completed any quiz yet.{'\n'}Go back and start a new one!
+            You haven't completed any quiz yet.{'\n'}
+            Try completing one first!
           </Text>
-
-          {/* <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backButtonText}>Go Back</Text>
-          </TouchableOpacity> */}
         </View>
       </SafeAreaView>
     );
@@ -122,7 +79,7 @@ const ReviewAnswersScreen = ({ navigation }) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <NavigationBar navigation={navigation} points={20} />
+        <NavigationBar points={20} />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={ORANGE} />
           <Text style={styles.loadingText}>Loading your review...</Text>
@@ -133,35 +90,33 @@ const ReviewAnswersScreen = ({ navigation }) => {
 
   // ── Main Content ───────────────────────────────────────────────────────
   const renderQuestion = ({ item, index }) => {
-    const { userAnswer, correctAnswer, isCorrect, selectedKey, correctKey } = item;
-    const notAnswered = userAnswer === 'Not answered';
+    const { userAnswer, correctAnswer, selectedKey, correctKey } = item;
+    const notAnswered = !selectedKey;
 
     return (
       <View style={styles.card}>
         <Text style={styles.questionNumber}>Question {index + 1}</Text>
         <Text style={styles.question}>{item.question}</Text>
 
-        <View style={styles.answers}>
+        <View style={styles.answersContainer}>
           <View style={styles.answerRow}>
-            <Text style={styles.label}>Your answer:</Text>
-            <Text
-              style={[
-                styles.value,
-                notAnswered ? styles.notAnswered : isCorrect ? styles.correct : styles.wrong,
-              ]}
-            >
-              {notAnswered ? userAnswer : `${selectedKey ? `"${selectedKey}" - ` : ''}${userAnswer}`}
+            <Text style={styles.label}>Your choice:</Text>
+            <Text style={[
+              styles.answerText,
+              notAnswered ? styles.notAnswered : null
+            ]}>
+              {notAnswered 
+                ? 'Not answered' 
+                : `${selectedKey ? `"${selectedKey}" - ` : ''}${userAnswer}`}
             </Text>
           </View>
 
-          {(!isCorrect || notAnswered) && (
-            <View style={styles.answerRow}>
-              <Text style={[styles.label, styles.correctLabel]}>Correct:</Text>
-              <Text style={[styles.value, styles.correct]}>
-                {correctKey ? `"${correctKey}" - ` : ''}{correctAnswer}
-              </Text>
-            </View>
-          )}
+          <View style={styles.answerRow}>
+            <Text style={[styles.label, styles.correctLabel]}>Correct answer:</Text>
+            <Text style={[styles.answerText, styles.correct]}>
+              {correctKey ? `"${correctKey}" - ` : ''}{correctAnswer}
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -169,29 +124,22 @@ const ReviewAnswersScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <NavigationBar navigation={navigation} points={20} />
+      <NavigationBar points={20} />
 
       <View style={styles.header}>
         <Text style={styles.title}>Review Your Answers</Text>
-        <Text style={styles.score}>
-          {quizData.score} / {quizData.total}
-        </Text>
-        <Text style={styles.subtitle}>
-          Correct: {quizData.score} • Wrong/Skipped: {quizData.wrong}
-        </Text>
       </View>
 
       <FlatList
-        data={quizData.questions}
+        data={questions}
         renderItem={renderQuestion}
         keyExtractor={(_, i) => `q-${i}`}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
-      />
+      />z++++
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -209,24 +157,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: '#fff',
     alignItems: 'center',
-    borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   title: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'GothamBold',
     color: '#1a1a1a',
-    marginBottom: 8,
-  },
-  score: {
-    fontSize: 34,
-    fontWeight: 'bold',
-    color: ORANGE,
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#666',
   },
 
   // List
@@ -247,48 +183,57 @@ const styles = StyleSheet.create({
   },
   questionNumber: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'GothamBold',
     color: ORANGE,
     marginBottom: 8,
   },
   question: {
     fontSize: 17,
     lineHeight: 24,
+    fontFamily: 'GothamMedium',
     color: '#222',
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  answers: { gap: 12 },
+  answersContainer: {
+    gap: 14,
+  },
   answerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 12,
   },
   label: {
     fontSize: 15,
+    fontFamily: 'GothamMedium',
     color: '#555',
-    minWidth: 90,
+    minWidth: 100,
     marginTop: 2,
   },
-  value: {
+  answerText: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontFamily: 'GothamMedium',
+    color: '#333',
   },
-  correct: { color: '#4CAF50' },
-  wrong: { color: '#F44336' },
-  notAnswered: {
-    color: '#FF9800',
-    fontStyle: 'italic',
+  correct: {
+    color: '#4CAF50',
+    fontFamily: 'GothamBold',
   },
   correctLabel: {
     color: '#4CAF50',
-    fontWeight: '600',
+    fontFamily: 'GothamBold',
+  },
+  notAnswered: {
+    color: '#FF9800',
+    fontFamily: 'GothamMedium',
+    fontStyle: 'italic',
   },
 
   // Loading
   loadingText: {
     marginTop: 16,
     fontSize: 16,
+    fontFamily: 'GothamMedium',
     color: '#666',
   },
 
@@ -310,27 +255,16 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'GothamBold',
     color: '#333',
     marginBottom: 12,
   },
   emptyMessage: {
     fontSize: 16,
+    fontFamily: 'GothamMedium',
     color: '#666',
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 32,
-  },
-  backButton: {
-    backgroundColor: ORANGE,
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 12,
-  },
-  backButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
   },
 });
 

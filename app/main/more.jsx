@@ -80,13 +80,13 @@ const MorePage = () => {
       { title: 'My Communities', icon: 'people-outline', screen: '../CommunityScreen' },
     ],
     [
-     { title: 'Security', icon: 'lock-closed-outline', screen: '../security' },
+    //  { title: 'Security', icon: 'lock-closed-outline', screen: '../security' },
       { title: 'Campaigns', icon: 'megaphone-outline', screen: '../campaigns' },
       // { title: 'Saved', icon: 'bookmark-outline', screen: '../saved' },
           { title: 'Help Centre', icon: 'help-circle-outline', screen: '../HelpCentre' },
     ],
     [
-      { title: 'Payment Method', icon: 'card-outline', screen: '../paymentMethod' },
+      // { title: 'Payment Method', icon: 'card-outline', screen: '../paymentMethod' },
     
   
           

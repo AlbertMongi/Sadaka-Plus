@@ -417,7 +417,7 @@ export default function ChurchRegistrationScreen() {
               style={styles.nextButton}
               onPress={() => router.replace("/login")}
             >
-              {/* <Text style={styles.nextButtonText}>Go to Login</Text> */}
+              <Text style={styles.nextButtonText}>Go to Login</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>

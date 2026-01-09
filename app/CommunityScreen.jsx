@@ -98,7 +98,7 @@ export default function Community() {
       // Fetch All Communities
       setLoadingAll(true);
       setLoadingPopular(true);
-      const allRes = await fetchWithToken(`${BASE_URL}/communities/user`);
+      const allRes = await fetchWithToken(`${BASE_URL}/communities/active`);
       if (allRes?.success && Array.isArray(allRes.data)) {
         const formatted = allRes.data.map(c => ({
           id: c.id.toString(),

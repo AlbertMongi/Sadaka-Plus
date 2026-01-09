@@ -1,3 +1,4 @@
+// screens/ResultScreen.js
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -15,23 +16,26 @@ const ResultScreen = () => {
   const router = useRouter();
   const { results } = useLocalSearchParams();
 
-  // Safely parse results
-  let parsedResults = null;
-  try {
-    parsedResults = results ? JSON.parse(results) : null;
-  } catch (e) {
-    console.error("Failed to parse results:", e);
-  }
-
+  const [parsedResults, setParsedResults] = useState(null);
   const [loading, setLoading] = useState(true);
   const [celebrationAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
-    if (parsedResults) {
+    if (!results) {
       setLoading(false);
-      startCelebrationAnimation();
+      return;
     }
-  }, []);
+
+    try {
+      const data = JSON.parse(results);
+      setParsedResults(data);
+      startCelebrationAnimation();
+    } catch (e) {
+      console.error('Failed to parse results:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [results]);
 
   const startCelebrationAnimation = () => {
     Animated.sequence([
@@ -55,8 +59,7 @@ const ResultScreen = () => {
     ]).start();
   };
 
-  const getScoreMessage = () => {
-    const percentage = parsedResults?.totalScore || 0;
+  const getScoreMessage = (percentage = 0) => {
     if (percentage >= 90) return { message: "Outstanding!", color: '#27AE60' };
     if (percentage >= 80) return { message: "Excellent!", color: '#2ECC71' };
     if (percentage >= 70) return { message: "Good Job!", color: '#E18731' };
@@ -64,23 +67,7 @@ const ResultScreen = () => {
     return { message: "Keep Studying!", color: '#E74C3C' };
   };
 
-  // Navigation functions
-  const handlePlayAgain = () => {
-    router.push('/bible-quize/screens/QuizScreen');
-  };
-
-  const handleReviewAnswers = () => {
-    router.push({
-      pathname: '/bible-quize/screens/ReviewAnswers',
-      params: { results: JSON.stringify(parsedResults) },
-    });
-  };
-
-  const handleBackHome = () => {
-    router.push('/main/index1'); // or router.back() to go to previous screen
-  };
-
-  if (loading || !parsedResults) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#E18731" />
@@ -89,12 +76,27 @@ const ResultScreen = () => {
     );
   }
 
-  const scoreMessage = getScoreMessage();
+  if (!parsedResults) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <Text style={{ fontSize: 18, color: '#666' }}>No results available</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // Calculate percentage safely
+  const correct = Number(parsedResults.correct) || 0;
+  const total = Number(parsedResults.totalQuestions) || 
+                Number(parsedResults.answers?.length) || 
+                10; // fallback to 10 if nothing is available
+
+  const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const scoreMessage = getScoreMessage(percentage);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
+        {/* Header - Score Circle with PERCENTAGE */}
         <View style={styles.header}>
           <Animated.View
             style={[
@@ -103,73 +105,52 @@ const ResultScreen = () => {
             ]}
           >
             <Text style={[styles.scorePercentage, { color: scoreMessage.color }]}>
-              {parsedResults.totalScore}%
+              {percentage}%
             </Text>
           </Animated.View>
 
           <Text style={[styles.scoreMessage, { color: scoreMessage.color }]}>
             {scoreMessage.message}
           </Text>
-          <Text style={styles.levelCompleted}>
-            Level {parsedResults.level} Completed
-          </Text>
         </View>
 
         {/* Results Summary */}
         <View style={styles.resultsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{parsedResults.correctAnswers}</Text>
+            <Text style={styles.statNumber}>{correct}</Text>
             <Text style={styles.statLabel}>Correct</Text>
             <Text style={styles.statSubLabel}>Great job!</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{parsedResults.wrongAnswers}</Text>
+            <Text style={styles.statNumber}>{Number(parsedResults.wrong) || 0}</Text>
             <Text style={styles.statLabel}>Wrong</Text>
             <Text style={styles.statSubLabel}>Review below</Text>
           </View>
         </View>
 
-        {/* Rank Improvement (Optional) */}
-        {parsedResults.rankChange && (
-          <View style={styles.rankCard}>
-            <Text style={styles.rankTitle}>Your Rank</Text>
-            <Text style={parsedResults.rankChange > 0 ? styles.rankImproved : styles.rankMaintained}>
-              {parsedResults.rankChange > 0 
-                ? `Improved by ${parsedResults.rankChange} positions` 
-                : "Rank maintained"}
-            </Text>
-          </View>
-        )}
-
-        {/* Answer Breakdown */}
-        {parsedResults.answers && parsedResults.answers.length > 0 && (
-          <View style={styles.performanceCard}>
-            <Text style={styles.performanceTitle}>Answer Breakdown</Text>
-            {parsedResults.answers.map((ans, idx) => (
-              <View key={idx} style={styles.performanceItem}>
-                <Text style={styles.performanceLabel}>Q{idx + 1}</Text>
-                <Text style={[
-                  styles.performanceValue,
-                  { color: ans.isCorrect ? '#27AE60' : '#E74C3C' }
-                ]}>
-                  {ans.isCorrect ? 'Correct' : 'Incorrect'}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
-
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handlePlayAgain}>
+          <TouchableOpacity 
+            style={styles.primaryButton} 
+            onPress={() => router.push('/bible-quize/screens/QuizScreen')}
+          >
             <Text style={styles.primaryButtonText}>Play Again</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleReviewAnswers}>
+          <TouchableOpacity 
+            style={styles.secondaryButton}
+            onPress={() => router.push({
+              pathname: '/bible-quize/screens/ReviewAnswers',
+              params: { results: JSON.stringify(parsedResults) },
+            })}
+          >
             <Text style={styles.secondaryButtonText}>Review Answers</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tertiaryButton} onPress={handleBackHome}>
+          <TouchableOpacity 
+            style={styles.tertiaryButton}
+            onPress={() => router.push('/main/index1')}
+          >
             <Text style={styles.tertiaryButtonText}>Back to Home</Text>
           </TouchableOpacity>
         </View>

@@ -402,6 +402,14 @@ const ProfileScreen = () => {
                 <Text style={styles.menuText}>Change Password</Text>
                 <Ionicons name="chevron-forward" size={20} color="#666" />
               </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangeCommunityScreen')}>
+                <View style={styles.iconWrapper}>
+                  <Ionicons name="swap-horizontal-outline" size={22} color={GOLD} />
+                </View>
+                <Text style={styles.menuText}>Change Community</Text>
+                <Ionicons name="chevron-forward" size={20} color="#666" />
+              </TouchableOpacity>
+                  
           <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('CommunityScreen')}>
                 <View style={styles.iconWrapper}>
                   <Ionicons name="people-outline" size={22} color={GOLD} />
@@ -417,22 +425,15 @@ const ProfileScreen = () => {
                 <Ionicons name="chevron-forward" size={20} color="#666" />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangeCommunityScreen')}>
-                <View style={styles.iconWrapper}>
-                  <Ionicons name="swap-horizontal-outline" size={22} color={GOLD} />
-                </View>
-                <Text style={styles.menuText}>Change Community</Text>
-                <Ionicons name="chevron-forward" size={20} color="#666" />
-              </TouchableOpacity>
-                  
+            
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('paymentMethod')}>
+              {/* <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('paymentMethod')}>
                 <View style={styles.iconWrapper}>
                   <Ionicons name="card-outline" size={22} color={GOLD} />
                 </View>
                 <Text style={styles.menuText}>Payment Settings</Text>
                 <Ionicons name="chevron-forward" size={20} color="#666" />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           </>
         )}
@@ -445,7 +446,7 @@ const ProfileScreen = () => {
             <TouchableWithoutFeedback>
               <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetAnim }] }]}>
                 <View style={styles.sheetHandle} />
-                <Text style={styles.sheetTitle}>Profile Picture Updated!</Text>
+                {/* <Text style={styles.sheetTitle}>Profile Picture Updated!</Text> */}
                 {uploadedImageUrl && (
                   <View style={styles.updatedData}>
                     <Image source={{ uri: uploadedImageUrl }} style={styles.previewImage} resizeMode="cover" />

@@ -1,4 +1,3 @@
-
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -21,7 +20,6 @@ const GOLD = '#E18731';
 
 export default function SignUpScreen() {
   const router = useRouter();
-
   const [step, setStep] = useState(1);
   const translateX = useRef(new Animated.Value(0)).current;
 
@@ -32,9 +30,11 @@ export default function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const role = 'ROLE_USER';
 
   /* 🔔 TOAST STATE */
@@ -112,8 +112,14 @@ export default function SignUpScreen() {
       const data = await res.json();
 
       if (res.ok) {
-        showToast('Account created successfully!', 'success');
-        setTimeout(() => router.replace('/main'), 800);
+        showToast('Account created! Verify your phone number', 'success');
+
+        // Changed behaviour → go to OTP screen instead of main
+        setTimeout(() => {
+          router.replace('/otp');           // ← or '/verify-otp' or whatever your OTP route is
+          // You can also pass phone number if your OTP screen expects it:
+          // router.replace({ pathname: '/otp', params: { phone } });
+        }, 1200);
       } else {
         showToast(data?.message || 'Registration failed');
       }
@@ -138,17 +144,11 @@ export default function SignUpScreen() {
           <View
             style={[
               styles.toast,
-              toast.type === 'success'
-                ? styles.toastSuccess
-                : styles.toastError,
+              toast.type === 'success' ? styles.toastSuccess : styles.toastError,
             ]}
           >
             <Ionicons
-              name={
-                toast.type === 'success'
-                  ? 'checkmark-circle'
-                  : 'close-circle'
-              }
+              name={toast.type === 'success' ? 'checkmark-circle' : 'close-circle'}
               size={22}
               color="#fff"
             />
@@ -276,10 +276,7 @@ export default function SignUpScreen() {
             </TouchableOpacity>
 
             {step === 2 && (
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={handleBackStep}
-              >
+              <TouchableOpacity style={styles.backButton} onPress={handleBackStep}>
                 <Text style={styles.backText}>Back</Text>
               </TouchableOpacity>
             )}
@@ -290,9 +287,7 @@ export default function SignUpScreen() {
             >
               <Text style={styles.loginText}>
                 Already have an account?{' '}
-                <Text style={{ color: GOLD, fontWeight: 'bold' }}>
-                  Log In
-                </Text>
+                <Text style={{ color: GOLD, fontWeight: 'bold' }}>Log In</Text>
               </Text>
             </TouchableOpacity>
           </Animated.View>
@@ -301,7 +296,6 @@ export default function SignUpScreen() {
     </KeyboardAvoidingView>
   );
 }
-
 /* 🎨 STYLES */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },

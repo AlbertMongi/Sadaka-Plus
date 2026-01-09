@@ -18,12 +18,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { BASE_URL } from './apiConfig';
 
 const GOLD = '#FF8C00';
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function TransactionHistory() {
+  const router = useRouter();
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -139,9 +141,13 @@ export default function TransactionHistory() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={24} color="#000" />
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push('/main/more')}
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="chevron-back" size={24} color="#000" />
+        </TouchableOpacity>
           <Text style={styles.headerTitle}>Offering Transactions</Text>
           <View style={{ width: 24 }} />
         </View>
@@ -153,7 +159,7 @@ export default function TransactionHistory() {
             <Text style={styles.balanceAmount}>TZS {totalBalance.toLocaleString()}</Text>
           </View>
           <View style={styles.accountNumberContainer}>
-            <Text style={styles.accountNumberText}>9048753241</Text>
+            {/* <Text style={styles.accountNumberText}>9048753241</Text> */}
           </View>
         </View>
 
