@@ -417,13 +417,13 @@ const ProfileScreen = () => {
                 <Text style={styles.menuText}>Communities</Text>
                 <Ionicons name="chevron-forward" size={20} color="#666" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('NearbyCommunity')}>
+              {/* <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('NearbyCommunity')}>
                 <View style={styles.iconWrapper}>
                   <Ionicons name="location-outline" size={22} color={GOLD} />
                 </View>
                 <Text style={styles.menuText}>Nearby Communities</Text>
                 <Ionicons name="chevron-forward" size={20} color="#666" />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
             
 

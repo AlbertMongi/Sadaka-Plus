@@ -413,12 +413,14 @@ export default function ChurchRegistrationScreen() {
               Thank you for registering. We will contact you soon for completing your KYC.
             </Text>
 
-            <TouchableOpacity
-              style={styles.nextButton}
-              onPress={() => router.replace("/login")}
-            >
-              <Text style={styles.nextButtonText}>Go to Login</Text>
-            </TouchableOpacity>
+           <TouchableOpacity
+  style={styles.nextButton1}
+  activeOpacity={0.8}
+  onPress={() => router.replace("/login")}
+>
+  <Text style={styles.nextButtonText1}>Login</Text>
+</TouchableOpacity>
+
           </Animated.View>
         </View>
       </Modal>
@@ -552,4 +554,28 @@ const styles = StyleSheet.create({
   },
   sheetTitle: { fontSize: 22, fontWeight: "bold", marginTop: 10 },
   sheetText: { textAlign: "center", color: "#666", marginVertical: 10 },
+  
+  nextButton1: {
+  backgroundColor: GOLD,   // nice blue
+  paddingVertical: 14,
+  borderRadius: 12,
+  width: "80%",          // 🔥 increase width
+  alignSelf: "center",   // center the button
+  justifyContent: "center",
+  marginTop: 20,
+  // shadowColor: "#000",
+  shadowOffset: { width: 3, height: 4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 6,
+  elevation: 6, // Android shadow
+},
+
+nextButtonText1: {
+  color: "#FFFFFF",
+  fontSize: 15,
+  alignSelf: "center",
+  fontWeight: "700",
+  letterSpacing: 0.5,
+},
+
 });
