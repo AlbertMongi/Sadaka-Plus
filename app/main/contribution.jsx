@@ -1146,7 +1146,7 @@ export default function GiveScreen() {
           refreshControl={<RefreshControl refreshing={communitiesLoading} onRefresh={fetchCommunities} colors={[GOLD]} />}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Give</Text>
+            <Text style={styles.title}>Contribution</Text>
             <TouchableOpacity onPress={() => navigation.navigate('history')}>
               <Ionicons name="receipt-outline" size={24} color={GOLD} />
             </TouchableOpacity>
@@ -1357,7 +1357,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   scrollContent: { paddingHorizontal: 18, paddingTop: Platform.OS === 'android' ? 27 : 9, paddingBottom: 80 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  title: { fontSize: 20, fontWeight: 'bold', color: '#222' },
+  title: { fontSize: 22, fontWeight: 'bold', color: '#222' },
   dropdownWrapper: { marginBottom: 12 },
   label: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 6, marginTop: 9 },
   customDropdown: { height: 40, borderWidth: 1, borderColor: GOLD, borderRadius: 6, backgroundColor: '#fff', paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

@@ -152,7 +152,7 @@ const LeaderboardScreen = ({ navigation }) => {
       <NavigationBar navigation={navigation} points={20} />
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>🏆 Leaderboard</Text>
+        <Text style={styles.title}>Leaderboard</Text>
         <Text style={styles.subtitle}>Top Bible Quiz Champions</Text>
       </View>
 

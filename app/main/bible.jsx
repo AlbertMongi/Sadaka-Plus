@@ -47,7 +47,14 @@ export default function EventsScreen() {
   const eventAnims = useRef([]);
   const [error, setError] = useState(null);
   const [token, setToken] = useState(null);
-
+// Add this new component
+const EmptyState = ({ icon = "calendar-outline", title, subtitle }) => (
+  <View style={styles.emptyContainer}>
+    <Ionicons name={icon} size={64} color={GOLD} />
+    <Text style={styles.emptyTitle}>{title}</Text>
+    <Text style={styles.emptySubtitle}>{subtitle}</Text>
+  </View>
+);
   const fetchAllEvents = async (savedToken) => {
     try {
       if (!savedToken) {
@@ -400,43 +407,44 @@ export default function EventsScreen() {
               </View>
               
             ) : (
-              <View style={{ flex: 1 }}>
-                {activeTab === 'my' ? (
-                  <FlatList
-                    data={filteredMyEvents}
-                    keyExtractor={(item) => item.id.toString()}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
-                    ListEmptyComponent={<Text style={styles.noResults}>No events yet. Join a community to discover fellowships, worship nights, and special services near you.</Text>}
-                    renderItem={renderEventCard}
-                    refreshControl={
-                      <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor={GOLD}
-                        colors={[GOLD]}
-                      />
-                    }
-                  />
-                ) : (
-                  <FlatList
-                    data={filteredAllEvents}
-                    keyExtractor={(item) => item.id.toString()}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
-                    ListEmptyComponent={<Text style={styles.noResults}>No events yet. Join a community to discover fellowships, worship nights, and special services near you.</Text>}
-                    renderItem={renderEventCard}
-                    refreshControl={
-                      <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor={GOLD}
-                        colors={[GOLD]}
-                      />
-                    }
-                  />
-                )}
-              </View>
+             <View style={{ flex: 1 }}>
+  {loading ? (
+    <FlatList
+      data={[1, 2, 3]}
+      keyExtractor={(item) => `skeleton-${item}`}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
+      renderItem={renderSkeletonCard}
+    />
+  ) : (
+    <FlatList
+      data={activeTab === 'my' ? filteredMyEvents : filteredAllEvents}
+      keyExtractor={(item) => item.id.toString()}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
+      ListEmptyComponent={
+        <EmptyState
+          icon="calendar-outline"
+          title={activeTab === 'my' ? "No Events Yet" : "No Events Found"}
+          subtitle={
+            activeTab === 'my'
+              ? "You haven't joined to any events yet. Explore and be part of upcoming gatherings!"
+              : "No events available at the moment.\nJoin a community to discover more!"
+          }
+        />
+      }
+      renderItem={renderEventCard}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={GOLD}
+          colors={[GOLD]}
+        />
+      }
+    />
+  )}
+</View>
             )}
           </View>
         </Animated.View>
@@ -456,7 +464,7 @@ header: {
 },
 
 headerText: { 
-  fontSize: 18, 
+  fontSize: 22, 
   color: '#222',
   textAlign: 'left',            // text alignment
   fontFamily: 'GothamBold',
@@ -596,6 +604,30 @@ headerText: {
     color: '#fff',
     fontSize: 14,
     fontFamily: 'GothamBold',
+  },
+    // Add these new styles
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 80,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 20,
+    marginBottom: 8,
+    textAlign: 'center',
+    fontFamily: 'GothamBold',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#777',
+    textAlign: 'center',
+    lineHeight: 22,
+    fontFamily: 'GothamRegular',
   },
 });
 

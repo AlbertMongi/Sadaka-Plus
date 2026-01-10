@@ -7,12 +7,14 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  View
+  View,
 } from 'react-native';
 
 import NavigationBar from '../components/NavigationBar';
 
 const ORANGE = '#E18731';
+const GREEN = '#4CAF50';
+const ORANGE_DARK = '#FF9800';
 
 const ReviewAnswersScreen = () => {
   const { results } = useLocalSearchParams();
@@ -27,35 +29,50 @@ const ReviewAnswersScreen = () => {
         return;
       }
 
-      const parsedResults = JSON.parse(results);
+      const parsed = JSON.parse(results);
 
-      if (!parsedResults?.answers || !Array.isArray(parsedResults.answers)) {
+      if (!parsed?.answers || !Array.isArray(parsed.answers)) {
         setQuestions([]);
         setLoading(false);
         return;
       }
 
-      const mappedQuestions = parsedResults.answers.map((ans) => ({
+      const mapped = parsed.answers.map((ans) => ({
         question: ans.question || 'Question text not available',
-        userAnswer: ans.selectedAnswer 
-          ? (ans.options?.[ans.selectedAnswer] || 'Option not found') 
-          : 'Not answered',
+        userAnswer:
+          ans.selectedAnswer && ans.options?.[ans.selectedAnswer]
+            ? ans.options[ans.selectedAnswer]
+            : 'Not answered',
         correctAnswer: ans.options?.[ans.correctAnswer] || '—',
         selectedKey: ans.selectedAnswer || null,
         correctKey: ans.correctAnswer || null,
       }));
 
-      setQuestions(mappedQuestions);
-      setLoading(false);
+      setQuestions(mapped);
     } catch (error) {
-      console.log('Error parsing review data:', error);
+      console.log('Error parsing review answers:', error);
       setQuestions([]);
+    } finally {
       setLoading(false);
     }
   }, [results]);
 
-  // ── Empty / No Data State ──────────────────────────────────────────────
-  if (!loading && questions.length === 0) {
+  // ── Loading State ──────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <NavigationBar points={20} />
+
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={ORANGE} />
+          <Text style={styles.loadingText}>Loading your answers...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Empty State ────────────────────────────────────────────────────────
+  if (questions.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <NavigationBar points={20} />
@@ -68,53 +85,53 @@ const ReviewAnswersScreen = () => {
           <Text style={styles.emptyTitle}>No Answers to Review</Text>
           <Text style={styles.emptyMessage}>
             You haven't completed any quiz yet.{'\n'}
-            Try completing one first!
+            Finish a quiz to see your results here!
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // ── Loading ────────────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <NavigationBar points={20} />
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={ORANGE} />
-          <Text style={styles.loadingText}>Loading your review...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // ── Main Content ───────────────────────────────────────────────────────
+  // ── Render single question card ────────────────────────────────────────
   const renderQuestion = ({ item, index }) => {
-    const { userAnswer, correctAnswer, selectedKey, correctKey } = item;
-    const notAnswered = !selectedKey;
+    const { question, userAnswer, correctAnswer, selectedKey, correctKey } = item;
+
+    const isNotAnswered = !selectedKey;
+    const isCorrect = selectedKey === correctKey;
+    const isWrong = !isNotAnswered && !isCorrect;
 
     return (
       <View style={styles.card}>
         <Text style={styles.questionNumber}>Question {index + 1}</Text>
-        <Text style={styles.question}>{item.question}</Text>
+        <Text style={styles.question}>{question}</Text>
 
         <View style={styles.answersContainer}>
+          {/* Your Answer */}
           <View style={styles.answerRow}>
             <Text style={styles.label}>Your choice:</Text>
-            <Text style={[
-              styles.answerText,
-              notAnswered ? styles.notAnswered : null
-            ]}>
-              {notAnswered 
-                ? 'Not answered' 
-                : `${selectedKey ? `"${selectedKey}" - ` : ''}${userAnswer}`}
+
+            <Text
+              style={[
+                styles.answerText,
+                isNotAnswered && styles.notAnswered,
+                isCorrect && styles.correct,
+                isWrong && styles.wrong,
+              ]}
+            >
+              {isNotAnswered
+                ? 'Not answered'
+                : selectedKey
+                ? `"${selectedKey}" - ${userAnswer}`
+                : userAnswer}
             </Text>
           </View>
 
+          {/* Correct Answer */}
           <View style={styles.answerRow}>
-            <Text style={[styles.label, styles.correctLabel]}>Correct answer:</Text>
+            <Text style={[styles.label, styles.correctLabel]}>Correct:</Text>
             <Text style={[styles.answerText, styles.correct]}>
-              {correctKey ? `"${correctKey}" - ` : ''}{correctAnswer}
+              {correctKey ? `"${correctKey}" - ` : ''}
+              {correctAnswer}
             </Text>
           </View>
         </View>
@@ -133,13 +150,14 @@ const ReviewAnswersScreen = () => {
       <FlatList
         data={questions}
         renderItem={renderQuestion}
-        keyExtractor={(_, i) => `q-${i}`}
+        keyExtractor={(_, index) => `q-${index}`}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
-      />z++++
+      />
     </SafeAreaView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -157,6 +175,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: '#fff',
     alignItems: 'center',
+    // borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   title: {
@@ -165,37 +184,38 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
   },
 
-  // List
+  // List & Cards
   list: {
     paddingHorizontal: 16,
     paddingBottom: 40,
   },
   card: {
     marginTop: 16,
-    padding: 18,
+    padding: 20,
     backgroundColor: '#fff',
     borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 4,
   },
   questionNumber: {
     fontSize: 15,
     fontFamily: 'GothamBold',
     color: ORANGE,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   question: {
     fontSize: 17,
     lineHeight: 24,
     fontFamily: 'GothamMedium',
     color: '#222',
-    marginBottom: 20,
+    marginBottom: 24,
   },
+
   answersContainer: {
-    gap: 14,
+    gap: 16,
   },
   answerRow: {
     flexDirection: 'row',
@@ -207,26 +227,32 @@ const styles = StyleSheet.create({
     fontFamily: 'GothamMedium',
     color: '#555',
     minWidth: 100,
-    marginTop: 2,
+    marginTop: 3,
   },
   answerText: {
     flex: 1,
     fontSize: 16,
     fontFamily: 'GothamMedium',
     color: '#333',
+    lineHeight: 22,
   },
+
+  // Status colors
   correct: {
-    color: '#4CAF50',
+    color: GREEN,
     fontFamily: 'GothamBold',
   },
-  correctLabel: {
-    color: '#4CAF50',
+  wrong: {
+    color: '#f44336',
     fontFamily: 'GothamBold',
   },
   notAnswered: {
-    color: '#FF9800',
-    fontFamily: 'GothamMedium',
+    color: ORANGE_DARK,
     fontStyle: 'italic',
+  },
+  correctLabel: {
+    color: GREEN,
+    fontFamily: 'GothamBold',
   },
 
   // Loading
