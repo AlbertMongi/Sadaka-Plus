@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
   fixedHeader: {
     backgroundColor: '#fff',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 30 : 10,
+    paddingTop: Platform.OS === 'android' ? 30 : 1,
     paddingBottom: 12,
     position: 'absolute',
     top: 0,

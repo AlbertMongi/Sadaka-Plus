@@ -529,7 +529,7 @@ const FALLBACK_IMAGE =
 const IMAGE_HORIZONTAL_PADDING = 16;
 
 // ──────────────────────────────────────────────────────────────
-// SUCCESS BOTTOM SHEET
+// SUCCESS BOTTOM SHEET (unchanged)
 // ──────────────────────────────────────────────────────────────
 const SuccessBottomSheet = ({ visible, message, onClose }) => {
   const translateY = useRef(new Animated.Value(300)).current;
@@ -576,7 +576,7 @@ const SuccessBottomSheet = ({ visible, message, onClose }) => {
 };
 
 // ──────────────────────────────────────────────────────────────
-// CONFIRMATION BOTTOM SHEET
+// CONFIRMATION BOTTOM SHEET (unchanged)
 // ──────────────────────────────────────────────────────────────
 const ConfirmBottomSheet = ({ visible, onConfirm, onCancel, isAttending }) => {
   const translateY = useRef(new Animated.Value(300)).current;
@@ -641,7 +641,7 @@ const ConfirmBottomSheet = ({ visible, onConfirm, onCancel, isAttending }) => {
 };
 
 // ──────────────────────────────────────────────────────────────
-// MAIN COMPONENT
+// MAIN COMPONENT – only image fetching made more robust
 // ──────────────────────────────────────────────────────────────
 export default function EventDetailScreen() {
   const navigation = useNavigation();
@@ -650,6 +650,7 @@ export default function EventDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true); // ← new: show spinner on hero
 
   const [successSheetVisible, setSuccessSheetVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -690,7 +691,18 @@ export default function EventDetailScreen() {
 
           const rawImage = json.data.imageUrl || json.data.image || json.data.photo;
           if (rawImage) {
-            processedImage = (await fetchBase64Image(rawImage)) || FALLBACK_IMAGE;
+            try {
+              setImageLoading(true);
+              const result = await fetchBase64Image(rawImage);
+              processedImage = result || FALLBACK_IMAGE;
+            } catch (imgErr) {
+              console.warn('Failed to process event image:', imgErr);
+              processedImage = FALLBACK_IMAGE;
+            } finally {
+              setImageLoading(false);
+            }
+          } else {
+            setImageLoading(false);
           }
 
           setEventData({
@@ -698,7 +710,7 @@ export default function EventDetailScreen() {
             displayImage: processedImage,
           });
         } else {
-          throw new Error('Invalid response');
+          throw new Error(json.message || 'Invalid response');
         }
       } catch (err) {
         console.log('Fetch event error:', err);
@@ -710,6 +722,10 @@ export default function EventDetailScreen() {
 
     fetchEventDetails();
   }, [eventId, navigation]);
+
+  // ────────────────────────────────────────────────
+  // rest of your logic remains 100% unchanged
+  // ────────────────────────────────────────────────
 
   const openConfirmSheet = (willAttend) => {
     setPendingAttendanceAction(willAttend);
@@ -785,7 +801,6 @@ export default function EventDetailScreen() {
         .filter(Boolean)
         .join(', ') || 'Location TBA';
 
-      // Shortened description (first part only)
       const shortDesc = eventData.description
         ? eventData.description.substring(0, 140) + (eventData.description.length > 140 ? '...' : '')
         : 'No description provided';
@@ -797,11 +812,10 @@ export default function EventDetailScreen() {
         `${shortDesc}`;
 
       const shareOptions = {
-        message: message,
+        message,
         title: eventData.name || 'Event',
       };
 
-      // Try to share the image (best effort)
       if (eventData.displayImage && eventData.displayImage !== FALLBACK_IMAGE) {
         shareOptions.url = eventData.displayImage;
       }
@@ -836,7 +850,7 @@ export default function EventDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* TOP BAR */}
+      {/* TOP BAR – unchanged */}
       <View style={styles.topBar}>
         <TouchableOpacity
           style={styles.backButton}
@@ -848,25 +862,31 @@ export default function EventDetailScreen() {
         <Text style={styles.mainTitle} numberOfLines={1}>
           {eventData.name}
         </Text>
-{/* 
-        <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+
+        {/* <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
           <Ionicons name="share-social-outline" size={22} color="#000" />
         </TouchableOpacity> */}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* HERO IMAGE */}
+        {/* HERO IMAGE – with loading overlay */}
         <View style={styles.imageContainer}>
+          {imageLoading && (
+            <View style={styles.imageLoadingOverlay}>
+              <ActivityIndicator size="large" color={ORANGE} />
+            </View>
+          )}
           <Image
             source={{ uri: eventData.displayImage }}
             style={styles.heroImage}
             resizeMode="cover"
             defaultSource={{ uri: FALLBACK_IMAGE }}
+            onLoadEnd={() => setImageLoading(false)}
           />
           <View style={styles.imageOverlay} />
         </View>
 
-        {/* LOCATION & DATE */}
+        {/* LOCATION & DATE – unchanged */}
         <View style={styles.detailRow}>
           <Ionicons name="location-outline" size={16} color={ORANGE} />
           <Text style={styles.detailText}>
@@ -886,7 +906,7 @@ export default function EventDetailScreen() {
           </Text>
         </View>
 
-        {/* ACTION BUTTONS */}
+        {/* ACTION BUTTONS – unchanged */}
         <View style={styles.buttonContainer}>
           <View style={styles.actionButtons}>
             <TouchableOpacity
@@ -914,7 +934,7 @@ export default function EventDetailScreen() {
           </View>
         </View>
 
-        {/* DESCRIPTION */}
+        {/* DESCRIPTION – unchanged */}
         <Text style={styles.description}>
           {eventData.description || 'No description provided.'}
         </Text>
@@ -938,7 +958,6 @@ export default function EventDetailScreen() {
     </SafeAreaView>
   );
 }
-
 // ──────────────────────────────────────────────────────────────
 // STYLES
 // ──────────────────────────────────────────────────────────────

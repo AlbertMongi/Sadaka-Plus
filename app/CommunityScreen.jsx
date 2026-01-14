@@ -19,10 +19,11 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { BASE_URL } from './apiConfig';
+import { fetchBase64Image } from './fetchBase64Image';  // ← added
 
 const ORANGE = "#FF8C00";
 const GOLD = "#E18731";
-const FALLBACK_IMAGE = "https://m.media-amazon.com/images/I/816Etq5qEwL._AC_SL1500_.jpg";
+const FALLBACK_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';  // same as other screens
 
 export default function Community() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function Community() {
   const [activeTab, setActiveTab] = useState('my');
   const [isConnected, setIsConnected] = useState(true);
 
-  // Toast State (Same as all other screens)
+  // Toast State (unchanged)
   const [toast, setToast] = useState({ visible: false, message: "", type: "error" });
 
   const showToast = (message, type = "error") => {
@@ -46,7 +47,7 @@ export default function Community() {
     setTimeout(() => setToast({ ...toast, visible: false }), 3500);
   };
 
-  // Network Detection
+  // Network Detection (unchanged)
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       const connected = state.isConnected ?? true;
@@ -58,7 +59,7 @@ export default function Community() {
     return () => unsubscribe();
   }, []);
 
-  // Fetch with token + retry
+  // Fetch with token + retry (unchanged)
   const fetchWithToken = async (url, retries = 2) => {
     for (let i = 0; i <= retries; i++) {
       try {
@@ -70,8 +71,6 @@ export default function Community() {
         const res = await fetch(url, { headers });
 
         if (res.status === 401) {
-          // Do not force navigation or prompt login from this screen.
-          // Let the caller handle missing/unauthorized data gracefully.
           return null;
         }
 
@@ -100,13 +99,28 @@ export default function Community() {
       setLoadingPopular(true);
       const allRes = await fetchWithToken(`${BASE_URL}/communities/active`);
       if (allRes?.success && Array.isArray(allRes.data)) {
-        const formatted = allRes.data.map(c => ({
-          id: c.id.toString(),
-          name: c.name || "Unnamed Community",
-          description: c.description || "No description",
-          image: c.logo?.startsWith("http") ? c.logo : FALLBACK_IMAGE,
-          memberCount: c.members || c.memberCount || 0,
-        }));
+        const formatted = await Promise.all(
+          allRes.data.map(async (c) => {
+            let imageUri = FALLBACK_IMAGE;
+            if (c.logo) {
+              try {
+                const processed = await fetchBase64Image(c.logo);
+                if (processed) imageUri = processed;
+              } catch (imgErr) {
+                console.log('Community image fetch failed:', imgErr);
+              }
+            }
+
+            return {
+              id: c.id.toString(),
+              name: c.name || "Unnamed Community",
+              description: c.description || "No description",
+              image: imageUri,
+              memberCount: c.members || c.memberCount || 0,
+            };
+          })
+        );
+
         setAllCommunities(formatted);
         setPopularCommunities(formatted.slice(0, 10)); // Top 10 popular
       } else {
@@ -127,13 +141,28 @@ export default function Community() {
       setLoadingMy(true);
       const myRes = await fetchWithToken(`${BASE_URL}/communities/joined`);
       if (myRes?.success && Array.isArray(myRes.data)) {
-        const formatted = myRes.data.map(c => ({
-          id: c.id.toString(),
-          name: c.name || "Unnamed Community",
-          description: c.description || "No description",
-          image: c.logo?.startsWith("http") ? c.logo : FALLBACK_IMAGE,
-          memberCount: c.members || c.memberCount || 0,
-        }));
+        const formatted = await Promise.all(
+          myRes.data.map(async (c) => {
+            let imageUri = FALLBACK_IMAGE;
+            if (c.logo) {
+              try {
+                const processed = await fetchBase64Image(c.logo);
+                if (processed) imageUri = processed;
+              } catch (imgErr) {
+                console.log('My community image fetch failed:', imgErr);
+              }
+            }
+
+            return {
+              id: c.id.toString(),
+              name: c.name || "Unnamed Community",
+              description: c.description || "No description",
+              image: imageUri,
+              memberCount: c.members || c.memberCount || 0,
+            };
+          })
+        );
+
         setMyCommunities(formatted);
       } else {
         setMyCommunities([]);
@@ -303,6 +332,7 @@ export default function Community() {
 }
 
 // CONSISTENT STYLES - Matches Login & ChangeCommunityScreen
+// (unchanged - no modifications here)
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#fff" },
 
@@ -313,8 +343,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingTop: Platform.OS === 'android' ? 0 : -1,
-    // backgroundColor: "#fff",
-    // borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#eee",
   },
   backButton: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
@@ -328,7 +356,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginVertical: 12,
     paddingHorizontal: 14,
-    // borderWidth: 1,
     borderColor: "#ddd",
   },
   searchIcon: { marginRight: 10 },
@@ -362,7 +389,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginVertical: 16,
     paddingBottom: 8,
-    // borderBottomWidth: 1,
     borderColor: "#eee",
   },
   tab: { fontSize: 16, paddingHorizontal: 24, paddingBottom: 8, fontFamily: "GothamMedium" },
@@ -392,7 +418,6 @@ const styles = StyleSheet.create({
   communityDesc: { fontSize: 13, color: "#666", marginTop: 4, fontFamily: "GothamMedium" },
   memberCount: { fontSize: 13, color: ORANGE, marginTop: 6, fontFamily: "GothamMedium" },
 
-  // States
   loadingContainer: { alignItems: "center", paddingVertical: 80 },
   loadingText: { marginTop: 16, color: "#666", fontSize: 15, fontFamily: "GothamMedium" },
 
@@ -409,7 +434,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
 
-  // Toast (Same as all screens)
   toastContainer: { position: "absolute", top: 60, left: 20, right: 20, zIndex: 9999, alignItems: "center" },
   toast: {
     flexDirection: "row",

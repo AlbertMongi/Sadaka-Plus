@@ -19,8 +19,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../apiConfig';
+import { fetchBase64Image } from '../fetchBase64Image';
 
 const GOLD = '#E18731';
+const FALLBACK_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
 
 function formatDate(dateString) {
   const dateObj = new Date(dateString);
@@ -47,21 +49,22 @@ export default function EventsScreen() {
   const eventAnims = useRef([]);
   const [error, setError] = useState(null);
   const [token, setToken] = useState(null);
-// Add this new component
-const EmptyState = ({ icon = "calendar-outline", title, subtitle }) => (
-  <View style={styles.emptyContainer}>
-    <Ionicons name={icon} size={64} color={GOLD} />
-    <Text style={styles.emptyTitle}>{title}</Text>
-    <Text style={styles.emptySubtitle}>{subtitle}</Text>
-  </View>
-);
+
+  // Add this new component
+  const EmptyState = ({ icon = "calendar-outline", title, subtitle }) => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name={icon} size={64} color={GOLD} />
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptySubtitle}>{subtitle}</Text>
+    </View>
+  );
+
   const fetchAllEvents = async (savedToken) => {
     try {
       if (!savedToken) {
         throw new Error('No token found');
       }
       const storedCommunityId = await AsyncStorage.getItem('selectedCommunityId');
-      // Construct URL without communityId if it is null or undefined
       const url = storedCommunityId
         ? `${BASE_URL}/events/user/${storedCommunityId}`
         : `${BASE_URL}/events/user/`;
@@ -73,27 +76,38 @@ const EmptyState = ({ icon = "calendar-outline", title, subtitle }) => (
       const json = await response.json();
 
       if (json.success && Array.isArray(json.data)) {
-        const enriched = json.data.map((evt) => {
-          const { day, month, time } = formatDate(evt.eventDate);
-          const locationText = `${evt.street}, ${evt.district}, ${evt.region}`;
-          return {
-            id: evt.id,
-            title: evt.name,
-            description: evt.description,
-            location: locationText,
-            day,
-            month,
-            time,
-            image:
-              evt.imageUrl ||
-              'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s',
-          };
-        });
+        const enriched = await Promise.all(
+          json.data.map(async (evt) => {
+            let image = FALLBACK_IMAGE;
+            if (evt.imageUrl) {
+              try {
+                const processedImage = await fetchBase64Image(evt.imageUrl);
+                if (processedImage) {
+                  image = processedImage;
+                }
+              } catch (imgErr) {
+                console.log('Image fetch failed:', imgErr);
+              }
+            }
+
+            const { day, month, time } = formatDate(evt.eventDate);
+            const locationText = `${evt.street}, ${evt.district}, ${evt.region}`;
+            return {
+              id: evt.id,
+              title: evt.name,
+              description: evt.description,
+              location: locationText,
+              day,
+              month,
+              time,
+              image,
+            };
+          })
+        );
         setAllEvents(enriched);
         return enriched;
       } else {
         console.error('Invalid API response for all events:', json);
-        
         setError('No events yet. Join a community to discover fellowships, worship nights, and special services near you.');
         return [];
       }
@@ -110,7 +124,6 @@ const EmptyState = ({ icon = "calendar-outline", title, subtitle }) => (
         throw new Error('No token found');
       }
       const storedCommunityId = await AsyncStorage.getItem('selectedCommunityId');
-      // Construct URL without communityId if it is null or undefined
       const url = storedCommunityId
         ? `${BASE_URL}/events/confirmed/${storedCommunityId}`
         : `${BASE_URL}/events/confirmed/`;
@@ -122,22 +135,34 @@ const EmptyState = ({ icon = "calendar-outline", title, subtitle }) => (
       const json = await response.json();
 
       if (json.success && Array.isArray(json.data)) {
-        const enriched = json.data.map((evt) => {
-          const { day, month, time } = formatDate(evt.eventDate);
-          const locationText = `${evt.street}, ${evt.district}, ${evt.region}`;
-          return {
-            id: evt.id,
-            title: evt.name,
-            description: evt.description,
-            location: locationText,
-            day,
-            month,
-            time,
-            image:
-              evt.imageUrl ||
-              'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s',
-          };
-        });
+        const enriched = await Promise.all(
+          json.data.map(async (evt) => {
+            let image = FALLBACK_IMAGE;
+            if (evt.imageUrl) {
+              try {
+                const processedImage = await fetchBase64Image(evt.imageUrl);
+                if (processedImage) {
+                  image = processedImage;
+                }
+              } catch (imgErr) {
+                console.log('Image fetch failed:', imgErr);
+              }
+            }
+
+            const { day, month, time } = formatDate(evt.eventDate);
+            const locationText = `${evt.street}, ${evt.district}, ${evt.region}`;
+            return {
+              id: evt.id,
+              title: evt.name,
+              description: evt.description,
+              location: locationText,
+              day,
+              month,
+              time,
+              image,
+            };
+          })
+        );
         setMyEvents(enriched);
         return enriched;
       } else {
@@ -405,46 +430,35 @@ const EmptyState = ({ icon = "calendar-outline", title, subtitle }) => (
                   <Text style={styles.retryButtonText}>Retry</Text>
                 </TouchableOpacity>
               </View>
-              
             ) : (
-             <View style={{ flex: 1 }}>
-  {loading ? (
-    <FlatList
-      data={[1, 2, 3]}
-      keyExtractor={(item) => `skeleton-${item}`}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
-      renderItem={renderSkeletonCard}
-    />
-  ) : (
-    <FlatList
-      data={activeTab === 'my' ? filteredMyEvents : filteredAllEvents}
-      keyExtractor={(item) => item.id.toString()}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
-      ListEmptyComponent={
-        <EmptyState
-          icon="calendar-outline"
-          title={activeTab === 'my' ? "No Events Yet" : "No Events Found"}
-          subtitle={
-            activeTab === 'my'
-              ? "You haven't joined to any events yet. Explore and be part of upcoming gatherings!"
-              : "No events available at the moment.\nJoin a community to discover more!"
-          }
-        />
-      }
-      renderItem={renderEventCard}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={GOLD}
-          colors={[GOLD]}
-        />
-      }
-    />
-  )}
-</View>
+              <View style={{ flex: 1 }}>
+                <FlatList
+                  data={activeTab === 'my' ? filteredMyEvents : filteredAllEvents}
+                  keyExtractor={(item) => item.id.toString()}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
+                  ListEmptyComponent={
+                    <EmptyState
+                      icon="calendar-outline"
+                      title={activeTab === 'my' ? "No Events Yet" : "No Events Found"}
+                      subtitle={
+                        activeTab === 'my'
+                          ? "You haven't joined to any events yet. Explore and be part of upcoming gatherings!"
+                          : "No events available at the moment.\nJoin a community to discover more!"
+                      }
+                    />
+                  }
+                  renderItem={renderEventCard}
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={refreshing}
+                      onRefresh={onRefresh}
+                      tintColor={GOLD}
+                      colors={[GOLD]}
+                    />
+                  }
+                />
+              </View>
             )}
           </View>
         </Animated.View>
@@ -456,20 +470,18 @@ const EmptyState = ({ icon = "calendar-outline", title, subtitle }) => (
 const styles = StyleSheet.create({
   safeContainer: { flex: 1, backgroundColor: '#fff' },
   container: { flex: 1, paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? -100 : 30 },
-header: {
-  flexDirection: 'row',
-  alignItems: 'flex-start',     // align items to the left
-  justifyContent: 'flex-start', // move content to the left
-  marginBottom: 16,
-},
-
-headerText: { 
-  fontSize: 22, 
-  color: '#222',
-  textAlign: 'left',            // text alignment
-  fontFamily: 'GothamBold',
-},
-
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',     // align items to the left
+    justifyContent: 'flex-start', // move content to the left
+    marginBottom: 16,
+  },
+  headerText: { 
+    fontSize: 22, 
+    color: '#222',
+    textAlign: 'left',            // text alignment
+    fontFamily: 'GothamBold',
+  },
   iconButton: { padding: 6 },
   searchContainer: {
     flexDirection: 'row',
@@ -605,7 +617,7 @@ headerText: {
     fontSize: 14,
     fontFamily: 'GothamBold',
   },
-    // Add these new styles
+  // Add these new styles
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -630,4 +642,3 @@ headerText: {
     fontFamily: 'GothamRegular',
   },
 });
-
