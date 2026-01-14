@@ -1,237 +1,373 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  Animated,
-  Keyboard,
-  Platform,
-  ScrollView,
-  StyleSheet,
+  View,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  KeyboardAvoidingView,
+  ScrollView,
+  SafeAreaView,
+  StyleSheet,
+  Platform,
+  ActivityIndicator,
   TouchableWithoutFeedback,
-  StatusBar,
-} from 'react-native';
-import { BASE_URL } from './apiConfig';
+  Keyboard,
+  Animated,
+  Dimensions,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import NetInfo from "@react-native-community/netinfo";
+import { BASE_URL } from "./apiConfig";
 
-const API_BASE_URL = BASE_URL;
-const GOLD = '#FF8C00';
-const BORDER_COLOR = '#000';
+const PRIMARY = "#FF9F00";
+const PRIMARY_DARK = "#E88A00";
+const TEXT_DARK = "#1A1A1A";
+const TEXT_GRAY = "#606060";
+const BG = "#FFFFFF";
+const INPUT_BG = "#FAFAFA";
+const BORDER = "#E0E0E0";
 
-export default function ChangePasswordScreen() {
-  const [otp, setOtp] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState('');
-  const [buttonOpacity] = useState(new Animated.Value(1));
+const { height } = Dimensions.get("window");
+
+export default function LoginScreen() {
   const router = useRouter();
+  const [phoneNo, setPhoneNo] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
 
-  const animateButton = (toValue) => {
-    Animated.timing(buttonOpacity, {
-      toValue,
-      duration: 100,
-      useNativeDriver: true,
-    }).start();
+  // Toast control
+  const [toast, setToast] = useState({
+    visible: false,
+    message: "",
+    type: "error", // "error" | "success" | "info"
+  });
+
+  const toastOpacity = new Animated.Value(0);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsConnected(state.isConnected ?? true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const showToast = (message, type = "error") => {
+    setToast({ visible: true, message, type });
+
+    Animated.sequence([
+      Animated.timing(toastOpacity, {
+        toValue: 1,
+        duration: 280,
+        useNativeDriver: true,
+      }),
+      Animated.delay(2600),
+      Animated.timing(toastOpacity, {
+        toValue: 0,
+        duration: 380,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setToast((prev) => ({ ...prev, visible: false }));
+    });
   };
 
-  const handleChangePassword = async () => {
-    if (otp.length !== 6) {
-      setNotificationMessage('Please enter the 6-digit OTP.');
+  const validatePhoneNumber = (phone) => {
+    const cleaned = phone.trim().replace(/\s+/g, "");
+    return /^\+?\d{9,15}$/.test(cleaned);
+  };
+
+  const handleLogin = async () => {
+    // ── Client-side validation ── all shown via toast only
+    if (!phoneNo.trim() || !password.trim()) {
+      showToast("Phone number and password are required", "error");
       return;
     }
-    if (password.length < 8) {
-      setNotificationMessage('Password must be at least 8 characters.');
+
+    if (!validatePhoneNumber(phoneNo)) {
+      showToast("Please enter a valid phone number (9–15 digits)", "error");
       return;
     }
-    if (password !== confirmPassword) {
-      setNotificationMessage('Passwords do not match.');
+
+    if (!isConnected) {
+      showToast("No internet connection. Please check your network", "error");
       return;
     }
 
     setLoading(true);
-    setNotificationMessage('');
 
     try {
-      // Construct URL with OTP as token
-      const url = `${BASE_URL}/auth/reset-password?token=${otp}`;
-
-      // Send newPassword and confirmPassword in the request body
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newPassword: password, confirmPassword: confirmPassword }),
+      const res = await fetch(`${BASE_URL}/auth/user/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phoneNo: phoneNo.trim(),
+          password: password.trim(),
+        }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        setNotificationMessage('Password changed successfully.');
-        router.replace('main/index1');
+        showToast("Login successful!", "success");
+        setTimeout(() => router.push("otp2"), 1100);
       } else {
-        setNotificationMessage(data?.message || 'Failed to change password.');
+        // Server message or fallback — always via toast
+        showToast(data.message || "Login failed. Please check your credentials", "error");
       }
-    } catch (error) {
-      console.error('Change password error:', error);
-      setNotificationMessage('Network error. Please try again later.');
+    } catch (err) {
+      showToast("Network error — please try again later", "error");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#fff', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <SafeAreaView style={styles.container}>
+      {/* ── Toast (only place where messages appear) ── */}
+      {toast.visible && (
+        <Animated.View
+          style={[
+            styles.toastWrapper,
+            {
+              opacity: toastOpacity,
+              backgroundColor:
+                toast.type === "success"
+                  ? "#4CAF50"
+                  : toast.type === "info"
+                  ? "#2196F3"
+                  : "#EF5350",
+            },
+          ]}
+        >
+          <Ionicons
+            name={
+              toast.type === "success"
+                ? "checkmark-circle"
+                : toast.type === "info"
+                ? "information-circle"
+                : "alert-circle"
+            }
+            size={22}
+            color="#fff"
+          />
+          <Text style={styles.toastText}>{toast.message}</Text>
+        </Animated.View>
+      )}
+
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView contentContainerStyle={styles.container}>
-          <View style={styles.innerWrapper}>
-            <Text style={styles.title}>Change Password</Text>
-            <Text style={styles.subtitle}>Enter OTP and your new password</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.formWrapper}>
+            <Text style={styles.screenTitle}>Welcome Back</Text>
+            <Text style={styles.screenSubtitle}>Sign in to continue</Text>
 
-            {/* OTP Input */}
-            <TextInput
-              style={styles.input}
-              placeholder="Enter 6-digit OTP"
-              placeholderTextColor="#999"
-              keyboardType="number-pad"
-              maxLength={6}
-              value={otp}
-              onChangeText={setOtp}
-            />
-
-            {/* Password Input */}
-            <View style={styles.inputContainer}>
+            {/* Phone */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Phone Number</Text>
               <TextInput
-                style={styles.inputField}
-                placeholder="New Password"
-                placeholderTextColor="#999"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={setPassword}
+                style={styles.input}
+                placeholder="e.g. +255712345678"
+                placeholderTextColor="#AAA"
+                value={phoneNo}
+                onChangeText={setPhoneNo}
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="telephoneNumber"
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#999" />
-              </TouchableOpacity>
             </View>
 
-            {/* Confirm Password Input */}
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.inputField}
-                placeholder="Confirm Password"
-                placeholderTextColor="#999"
-                secureTextEntry={!showConfirmPassword}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-              />
-              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color="#999" />
-              </TouchableOpacity>
+            {/* Password */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.passwordWrapper}>
+                <TextInput
+                  style={[styles.input, { borderWidth: 0 }]}
+                  placeholder="Enter your password"
+                  placeholderTextColor="#AAA"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  autoCapitalize="none"
+                  textContentType="password"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                >
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={22}
+                    color="#777"
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
-            {/* Submit Button */}
-            <Animated.View style={{ width: '80%', opacity: buttonOpacity }}>
-              <TouchableOpacity
-                disabled={loading}
-                style={[styles.sendButton, { backgroundColor: otp && password && confirmPassword ? GOLD : '#e0c8a3' }]}
-                onPressIn={() => animateButton(0.7)}
-                onPressOut={() => animateButton(1)}
-                onPress={handleChangePassword}
-              >
-                <Text style={styles.buttonText}>{loading ? 'Processing...' : 'Change Password'}</Text>
-                {!loading && <Ionicons name="checkmark-done-outline" size={18} color="#fff" style={{ marginLeft: 6 }} />}
-              </TouchableOpacity>
-            </Animated.View>
+            <TouchableOpacity
+              style={styles.forgotLink}
+              onPress={() => router.push("/ForgotPassword")}
+            >
+              <Text style={styles.forgotText}>Forgot password?</Text>
+            </TouchableOpacity>
 
-            {notificationMessage !== '' && <Text style={styles.notificationText}>{notificationMessage}</Text>}
+            <TouchableOpacity
+              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.loginButtonText}>Sign In</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.signupRow}>
+              <Text style={styles.signupText}>Don't have an account? </Text>
+              <TouchableOpacity onPress={() => router.push("/role")}>
+                <Text style={styles.signupLink}>Sign Up</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: BG,
+  },
+  scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingTop: 20,
-    backgroundColor: '#fff',
+    paddingHorizontal: 28,
+    paddingTop: height > 800 ? 80 : 60,
+    paddingBottom: 40,
   },
-  innerWrapper: {
-    width: '90%',
-    alignItems: 'center',
+  formWrapper: {
+    flex: 1,
+    maxWidth: 460,
+    alignSelf: "center",
+    width: "100%",
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: GOLD,
+  screenTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: TEXT_DARK,
     marginBottom: 8,
-    textAlign: 'center',
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 25,
-    textAlign: 'center',
+  screenSubtitle: {
+    fontSize: 16,
+    color: TEXT_GRAY,
+    marginBottom: 48,
+  },
+  field: {
+    marginBottom: 28,
+  },
+  label: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: TEXT_DARK,
+    marginBottom: 10,
   },
   input: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: GOLD,
-    borderRadius: 8,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
-    paddingHorizontal: 12,
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 15,
-    backgroundColor: '#f2f2f2',
+    height: 56,
+    backgroundColor: INPUT_BG,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    fontSize: 16,
+    color: TEXT_DARK,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: GOLD,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 15,
-    width: '100%',
-    height: 50,
-    backgroundColor: '#f2f2f2',
+  passwordWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: INPUT_BG,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    borderRadius: 14,
+    paddingHorizontal: 18,
   },
-  inputField: {
+  forgotLink: {
+    alignSelf: "flex-end",
+    marginTop: -8,
+    marginBottom: 36,
+  },
+  forgotText: {
+    color: PRIMARY,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  loginButton: {
+    height: 58,
+    backgroundColor: PRIMARY,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  loginButtonDisabled: {
+    backgroundColor: "#FFB74D",
+    shadowOpacity: 0.14,
+    elevation: 3,
+  },
+  loginButtonText: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  signupRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 12,
+  },
+  signupText: {
+    color: TEXT_GRAY,
+    fontSize: 15,
+  },
+  signupLink: {
+    color: PRIMARY,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  // Toast ── the ONLY place messages are shown
+  toastWrapper: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 54 : 38,
+    left: 20,
+    right: 20,
+    zIndex: 9999,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  toastText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
     flex: 1,
-    fontSize: 14,
-    color: '#333',
-  },
-  sendButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-    borderRadius: 8,
-    marginBottom: 12,
-    width: '100%',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  notificationText: {
-    color: GOLD,
-    marginTop: 10,
-    fontSize: 12,
-    fontWeight: '500',
-    textAlign: 'center',
   },
 });

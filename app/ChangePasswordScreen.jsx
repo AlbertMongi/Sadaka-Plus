@@ -1,5 +1,5 @@
 // app/main/ChangePasswordScreen.jsx
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,10 +11,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  Alert,
-  Modal,
   Animated,
-  Dimensions,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,8 +19,8 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "./apiConfig";
 
-const { height } = Dimensions.get("window");
 const GOLD = "#E18731";
+const ORANGE = "#FF9F00"; // using same accent as login for consistency
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
@@ -35,41 +32,33 @@ export default function ChangePasswordScreen() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showSuccessSheet, setShowSuccessSheet] = useState(false);
 
-  // Bottom Sheet Animation
-  const sheetAnim = useRef(new Animated.Value(height)).current;
+  // Toast state — exactly like in LoginScreen
+  const [toast, setToast] = useState({ visible: false, message: "", type: "error" });
 
-  const openSheet = () => {
-    setShowSuccessSheet(true);
-    Animated.timing(sheetAnim, {
-      toValue: 0,
-      duration: 350,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const closeSheet = () => {
-    Animated.timing(sheetAnim, {
-      toValue: height,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => setShowSuccessSheet(false));
+  const showToast = (message, type = "error") => {
+    setToast({ visible: true, message, type });
+    setTimeout(() => setToast({ ...toast, visible: false }), 3500);
   };
 
   const handleSubmit = async () => {
-    // === Validation ===
+    // Client-side validation
     if (!currentPassword.trim()) {
-      Alert.alert("Required", "Please enter your current password");
+      showToast("Please enter your current password");
       return;
     }
     if (!newPassword.trim()) {
-      Alert.alert("Required", "Please enter a new password");
+      showToast("Please enter a new password");
       return;
     }
-   
     if (newPassword !== confirmPassword) {
-      Alert.alert("Mismatch", "New passwords do not match");
+      showToast("New passwords do not match");
+      return;
+    }
+
+    // Optional: you can add more rules here (length, complexity...)
+    if (newPassword.length < 6) {
+      showToast("New password must be at least 6 characters");
       return;
     }
 
@@ -78,7 +67,8 @@ export default function ChangePasswordScreen() {
     try {
       const token = await AsyncStorage.getItem("userToken");
       if (!token) {
-        Alert.alert("Error", "You are not logged in. Please log in again.");
+        showToast("Session expired. Please log in again.");
+        router.replace("/login"); // or wherever your login is
         return;
       }
 
@@ -98,18 +88,21 @@ export default function ChangePasswordScreen() {
       const json = await response.json();
 
       if (response.ok && json.success) {
-        openSheet();
-        // Optionally clear fields
+        showToast("Password changed successfully!", "success");
+        // Clear fields
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
+        // Go back after short delay so user sees the toast
+        setTimeout(() => router.back(), 1200);
       } else {
+        // Use whatever message backend sends — very important!
         const errorMsg = json.message || "Failed to change password";
-        Alert.alert("Error", errorMsg);
+        showToast(errorMsg);
       }
     } catch (error) {
       console.error("Change password error:", error);
-      Alert.alert("Error", "Network error. Please try again.");
+      showToast("Network error. Please check your connection.");
     } finally {
       setLoading(false);
     }
@@ -117,6 +110,20 @@ export default function ChangePasswordScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* Custom Toast — same as LoginScreen */}
+      {toast.visible && (
+        <View style={styles.toastContainer}>
+          <View style={[styles.toast, toast.type === "success" ? styles.toastSuccess : styles.toastError]}>
+            <Ionicons
+              name={toast.type === "success" ? "checkmark-circle" : "close-circle"}
+              size={22}
+              color="#fff"
+            />
+            <Text style={styles.toastText}>{toast.message}</Text>
+          </View>
+        </View>
+      )}
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -234,48 +241,10 @@ export default function ChangePasswordScreen() {
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
-
-      {/* Success Bottom Sheet */}
-      <Modal transparent visible={showSuccessSheet} onRequestClose={closeSheet}>
-        <TouchableWithoutFeedback onPress={closeSheet}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <Animated.View
-                style={[
-                  styles.sheet,
-                  { transform: [{ translateY: sheetAnim }] },
-                ]}
-              >
-                <View style={styles.dragHandle} />
-                <Ionicons
-                  name="checkmark-circle"
-                  size={60}
-                  color={GOLD}
-                  style={styles.successIcon}
-                />
-                <Text style={styles.successTitle}>Password Changed!</Text>
-                <Text style={styles.successMessage}>
-                  Your password has been updated successfully.
-                </Text>
-                <TouchableOpacity
-                  style={styles.doneButton}
-                  onPress={() => {
-                    closeSheet();
-                    router.back();
-                  }}
-                >
-                  <Text style={styles.doneText}>Done</Text>
-                </TouchableOpacity>
-              </Animated.View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
     </SafeAreaView>
   );
 }
 
-// Styles – Gotham fonts + consistent design
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#fff" },
   container: { flex: 1, padding: 20, backgroundColor: "#fff" },
@@ -283,7 +252,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 24,
+    marginBottom: 28,
   },
   backButton: { padding: 6 },
   title: {
@@ -292,7 +261,7 @@ const styles = StyleSheet.create({
     color: "#000",
   },
   form: { flex: 1 },
-  inputGroup: { marginBottom: 16 },
+  inputGroup: { marginBottom: 20 },
   label: {
     fontSize: 14,
     color: "#222",
@@ -315,66 +284,56 @@ const styles = StyleSheet.create({
     fontFamily: "GothamRegular",
   },
   eyeIcon: { padding: 12 },
+
   button: {
     backgroundColor: GOLD,
     paddingVertical: 16,
     borderRadius: 30,
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 28,
     elevation: 2,
   },
-  buttonDisabled: { opacity: 0.7 },
+  buttonDisabled: { opacity: 0.6 },
   buttonText: {
     color: "#fff",
     fontSize: 16,
     fontFamily: "GothamBold",
   },
 
-  // Bottom Sheet
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    maxHeight: height * 0.5,
-  },
-  dragHandle: {
-    width: 40,
-    height: 5,
-    backgroundColor: "#ddd",
-    borderRadius: 3,
-    alignSelf: "center",
-    marginBottom: 16,
-  },
-  successIcon: { alignSelf: "center", marginVertical: 16 },
-  successTitle: {
-    fontSize: 19,
-    fontFamily: "GothamBold",
-    color: "#222",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  successMessage: {
-    fontSize: 15,
-    color: "#555",
-    textAlign: "center",
-    fontFamily: "GothamRegular",
-    marginBottom: 24,
-  },
-  doneButton: {
-    backgroundColor: GOLD,
-    paddingVertical: 16,
-    borderRadius: 30,
+  // ────────────────────────────────────────────────
+  // Toast — copied from your LoginScreen (colors adjusted)
+  // ────────────────────────────────────────────────
+  toastContainer: {
+    position: "absolute",
+    top: 60,
+    left: 20,
+    right: 20,
+    zIndex: 9999,
     alignItems: "center",
   },
-  doneText: {
+  toast: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  toastSuccess: {
+    backgroundColor: "#4CAF50", // green
+  },
+  toastError: {
+    backgroundColor: "#FF3B30", // red (same as login)
+  },
+  toastText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: "600",
     fontFamily: "GothamBold",
   },
 });

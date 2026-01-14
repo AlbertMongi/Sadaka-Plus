@@ -143,7 +143,7 @@ export default function TransactionHistory() {
         <View style={styles.headerContainer}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.push('/main/more')}
+          onPress={() => router.push('/main/contribution')}
           accessibilityLabel="Go back"
         >
           <Ionicons name="chevron-back" size={24} color="#000" />

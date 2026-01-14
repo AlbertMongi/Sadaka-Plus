@@ -438,7 +438,7 @@ export default function CampaignsScreen() {
             </View>
 
             <View style={styles.actionButtons}>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={[
                   styles.socialButton,
                   likedStatus[item.id] && styles.likedButton,
@@ -459,7 +459,7 @@ export default function CampaignsScreen() {
               >
                 <Ionicons name="share-outline" size={20} color="#fff" />
                 <Text style={styles.countText}>{shares[item.id] || 0}</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           </View>
         </View>
