@@ -33,7 +33,7 @@ const EmptyState = ({ icon, title, subtitle }) => (
   </View>
 );
 
-// Skeleton Components
+// Skeleton Components (unchanged)
 const ScriptureSkeleton = () => (
   <View style={styles.scriptureContainer}>
     <View style={styles.smallImageContainer}>
@@ -92,7 +92,6 @@ const HomeScreen = () => {
 
   const thumbnailFlatListRef = useRef(null);
 
-  // Loading states for skeleton
   const [dataLoading, setDataLoading] = useState(true);
   const contentAnim = useRef(new Animated.Value(0)).current;
   const skeletonAnim = useRef(new Animated.Value(1)).current;
@@ -139,7 +138,6 @@ const HomeScreen = () => {
           await AsyncStorage.setItem('ProfileImage', finalUri);
         } else {
           setProfileImage(FALLBACK_IMAGE);
-          await AsyncStorage.removeItem('ProfileImage');
         }
       }
     } catch (err) {
@@ -164,11 +162,7 @@ const HomeScreen = () => {
       if (!token) return;
 
       const res = await fetch(`${BASE_URL}/contributions/user`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
 
@@ -211,6 +205,7 @@ const HomeScreen = () => {
           image: c.logo || FALLBACK_IMAGE,
         }));
         setJoinedCommunities(communities);
+
         const stored = await AsyncStorage.getItem('selectedCommunityId');
         const id = stored && communities.some(c => c.id === stored) ? stored : communities[0].id;
         setSelectedCommunityId(id);
@@ -227,8 +222,11 @@ const HomeScreen = () => {
     }
   };
 
-  const fetchData = async () => {
-    if (!selectedCommunityId) {
+  // ────────────────────────────────────────────────
+  //  MOST IMPORTANT CHANGE: only fetch data if we have community
+  // ────────────────────────────────────────────────
+  const fetchCommunityContent = async (communityId) => {
+    if (!communityId) {
       setScriptures([]);
       setSermons([]);
       setDataLoading(false);
@@ -242,8 +240,8 @@ const HomeScreen = () => {
       const headers = { Authorization: `Bearer ${token}` };
 
       const [scriptRes, sermonRes] = await Promise.all([
-        fetch(`${BASE_URL}/scriptures/user/${selectedCommunityId}`, { headers }),
-        fetch(`${BASE_URL}/sermons/user/${selectedCommunityId}`, { headers }),
+        fetch(`${BASE_URL}/scriptures/user/${communityId}`, { headers }),
+        fetch(`${BASE_URL}/sermons/user/${communityId}`, { headers }),
       ]);
 
       const scriptJson = await scriptRes.json();
@@ -276,9 +274,6 @@ const HomeScreen = () => {
         setShares(sharesObj);
 
         scriptureAnims.current = data.map(() => ({ fade: new Animated.Value(0), scale: new Animated.Value(0.9) }));
-      } else {
-        setScriptures([]);
-        scriptureAnims.current = [];
       }
 
       if (sermonJson.success && Array.isArray(sermonJson.data)) {
@@ -292,11 +287,9 @@ const HomeScreen = () => {
           };
         }));
         setSermons(data);
-      } else {
-        setSermons([]);
       }
     } catch (err) {
-      console.log('Fetch error:', err);
+      console.log('Fetch community content error:', err);
       setScriptures([]);
       setSermons([]);
       scriptureAnims.current = [];
@@ -308,33 +301,51 @@ const HomeScreen = () => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     setDataLoading(true);
-    await Promise.all([
-      fetchJoinedCommunities(),
-      fetchUserProfile(),
-      fetchTransactions(),
-    ]);
-    if (selectedCommunityId) await fetchData();
-    setDataLoading(false);
-    setRefreshing(false);
-  }, [selectedCommunityId]);
 
-  useEffect(() => {
-    if (isFocused) {
-      setDataLoading(true);
-      onRefresh();
-    }
-  }, [isFocused, onRefresh]);
+    await fetchJoinedCommunities();
 
-  useEffect(() => {
-    fetchJoinedCommunities();
+    // Profile & transactions can load in background
     fetchUserProfile();
     fetchTransactions();
-  }, []);
 
+    // Only fetch scripture/sermon if we have a community
+    if (selectedCommunityId) {
+      await fetchCommunityContent(selectedCommunityId);
+    } else {
+      setDataLoading(false);
+    }
+
+    setRefreshing(false);
+  }, [selectedCommunityId]);
+// Initial data load – runs only once when component mounts
+useEffect(() => {
+  const loadInitialData = async () => {
+    setDataLoading(true);
+
+    await fetchJoinedCommunities();
+    await fetchUserProfile();
+    await fetchTransactions();
+
+    // scripture + sermon content will be loaded by the next useEffect
+  };
+
+  loadInitialData();
+}, []); // ← empty array = only on first mount
+  // Initial load
+  // useEffect(() => {
+  //   if (isFocused) {
+  //     onRefresh();
+  //   }
+  // }, [isFocused, onRefresh]);
+
+  // When selected community changes → load its content
   useEffect(() => {
-    if (!loadingCommunities) fetchData();
+    if (!loadingCommunities) {
+      fetchCommunityContent(selectedCommunityId);
+    }
   }, [selectedCommunityId, loadingCommunities]);
 
+  // Greeting & animations (unchanged logic)
   useEffect(() => {
     if (!loadingCommunities && !dataLoading && scriptures.length > 0) {
       Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }).start();
@@ -345,7 +356,7 @@ const HomeScreen = () => {
         ]).start();
       });
     }
-  }, [dataLoading, scriptures]);
+  }, [dataLoading, scriptures, loadingCommunities]);
 
   useEffect(() => {
     const visibleTxs = transactions.slice(0, 5);
@@ -396,6 +407,7 @@ const HomeScreen = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch {
+      // rollback
       setLikes(prev => ({ ...prev, [current.id]: prevLikes }));
       setLikedStatus(prev => ({ ...prev, [current.id]: wasLiked }));
     }
@@ -422,9 +434,10 @@ const HomeScreen = () => {
     }
   };
 
+  const hasNoCommunity = !loadingCommunities && joinedCommunities.length === 0;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* Real Content - fades in */}
       <Animated.View style={{ opacity: contentAnim, flex: 1 }}>
         <View style={styles.fixedHeader}>
           <View style={styles.navBar}>
@@ -456,7 +469,7 @@ const HomeScreen = () => {
           contentContainerStyle={styles.scrollContentContainer}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[GOLD]} />}
         >
-          {(!loadingCommunities && joinedCommunities.length === 0 && !dataLoading) ? (
+          {hasNoCommunity ? (
             <View>
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>{labels[language].scripture}</Text>
@@ -596,7 +609,7 @@ const HomeScreen = () => {
                 )}
               </View>
 
-              {/* SERMONS */}
+              {/* SERMONS - unchanged */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>{labels[language].sermons}</Text>
                 {dataLoading ? (
@@ -631,7 +644,7 @@ const HomeScreen = () => {
                 )}
               </View>
 
-              {/* BIBLE QUIZ */}
+              {/* Bible Quiz & Transactions - unchanged */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Bible Quiz</Text>
                 <View style={styles.quizCard}>
@@ -648,7 +661,6 @@ const HomeScreen = () => {
                 </View>
               </View>
 
-              {/* RECENT TRANSACTIONS */}
               <View style={[styles.section, { paddingBottom: 20 }]}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14 }}>
                   <Text style={styles.sectionTitle}>Recent Transactions</Text>
@@ -694,7 +706,7 @@ const HomeScreen = () => {
         </ScrollView>
       </Animated.View>
 
-      {/* Skeleton Overlay - perfectly aligned, no gap */}
+      {/* Skeleton overlay - unchanged */}
       <Animated.View
         pointerEvents={showSkeleton ? 'auto' : 'none'}
         style={{
@@ -704,7 +716,6 @@ const HomeScreen = () => {
           opacity: skeletonAnim,
         }}
       >
-        {/* Skeleton Header - identical to real header */}
         <View style={styles.fixedHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -721,7 +732,6 @@ const HomeScreen = () => {
           </View>
         </View>
 
-        {/* Skeleton Body */}
         <ScrollView
           scrollEnabled={false}
           showsVerticalScrollIndicator={false}
@@ -762,7 +772,6 @@ const HomeScreen = () => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   section: { marginBottom: 12, backgroundColor: '#fff' },
   sectionTitle: { fontSize: 15, color: '#222', paddingHorizontal: 10, paddingVertical: 6, fontFamily: 'GothamBold' },

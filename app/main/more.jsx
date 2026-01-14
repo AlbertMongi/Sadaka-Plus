@@ -1,21 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import {
-  View,
+  Animated,
+  Dimensions,
+  Modal,
+  PanResponder,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
-  Modal,
-  StyleSheet,
-  Dimensions,
-  Animated,
-  Platform,
-  PanResponder,
   TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 import { BASE_URL } from '../apiConfig';
 
@@ -69,11 +69,11 @@ const MorePage = () => {
   const menuItems = [
     { title: 'All Communities', icon: 'people-outline', screen: '../CommunityScreen' },
      { title: 'Campaigns', icon: 'megaphone-outline', screen: '../campaigns' },
-    { title: 'Contribution History', icon: 'document-text-outline', screen: '../history' },
+    { title: 'Contribution History', icon: 'document-text-outline', screen: '../history2' },
     // { title: 'Nearby Communities', icon: 'location-outline', screen: '../NearbyCommunity' },
     
    
-    { title: 'Help Centre', icon: 'help-circle-outline', screen: '../HelpCentre' },
+    { title: 'Feebback', icon: 'help-circle-outline', screen: '../HelpCentre' },
     {
       title: 'Privacy & Policy',
       icon: 'shield-checkmark-outline',
