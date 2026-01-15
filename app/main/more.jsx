@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
 
   header: {
     paddingHorizontal: 20,
-    paddingVertical: Platform.OS === 'android' ? 20 : 16,
+    paddingVertical: Platform.OS === 'android' ? 30 : 16,
     backgroundColor: '#FFFFFF',
   },
 
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    padding: 16,
+    padding: 10,
   },
 
   card: {
