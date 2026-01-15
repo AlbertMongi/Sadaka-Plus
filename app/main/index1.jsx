@@ -478,7 +478,7 @@ useEffect(() => {
 
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>{labels[language].sermons}</Text>
-                <EmptyState icon="mic-off-outline" title="No sermons" subtitle="Join your church to access sermons" />
+                <EmptyState icon="mic-off-outline" title="No sermons" subtitle="Join your community to access sermons" />
               </View>
 
               <View style={styles.section}>
