@@ -399,6 +399,7 @@
 					"FB_SONARKIT_ENABLED=1",
 				);
 				INFOPLIST_FILE = SadakaPlus/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Sadaka Plus";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -432,6 +433,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = UDZK2LQ8MN;
 				INFOPLIST_FILE = SadakaPlus/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Sadaka Plus";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
