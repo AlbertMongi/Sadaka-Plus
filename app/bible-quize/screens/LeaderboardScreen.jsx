@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  View,
-  Text,
+  ActivityIndicator,
   FlatList,
   RefreshControl,
+  Text,
   TouchableOpacity,
-  ActivityIndicator,
+  View,
 } from "react-native";
-import { styles } from "../styles/LeaderboardScreen.styles";
-import NavigationBar from "../components/NavigationBar";
 import { SafeAreaView } from "react-native-safe-area-context";
+import NavigationBar from "../components/NavigationBar";
+import { styles } from "../styles/LeaderboardScreen.styles";
 
 // Import the service
 import { fetchLeaderboard } from "../services/leaderboardService";
@@ -35,7 +35,7 @@ const LeaderboardScreen = ({ navigation }) => {
       const formatted = data.map((user, index) => ({
         userId: user.userId,
         name: user.username,
-        level: user.level || 1, // fallback if not returned
+      // fallback if not returned
         totalQuizzes: user.quizes,
         totalScore: user.score,
       }));
@@ -152,7 +152,7 @@ const LeaderboardScreen = ({ navigation }) => {
       <NavigationBar navigation={navigation} points={20} />
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>🏆 Leaderboard</Text>
+        <Text style={styles.title}>Leaderboard</Text>
         <Text style={styles.subtitle}>Top Bible Quiz Champions</Text>
       </View>
 
@@ -181,10 +181,10 @@ const LeaderboardScreen = ({ navigation }) => {
               <Text style={styles.currentUserStatLabel}>Points</Text>
             </View>
             <View style={styles.currentUserStat}>
-              <Text style={styles.currentUserStatValue}>
+              {/* <Text style={styles.currentUserStatValue}>
                 {currentUser.level || 1}
-              </Text>
-              <Text style={styles.currentUserStatLabel}>Level</Text>
+              </Text> */}
+              {/* <Text style={styles.currentUserStatLabel}>Level</Text> */}
             </View>
           </View>
         </View>

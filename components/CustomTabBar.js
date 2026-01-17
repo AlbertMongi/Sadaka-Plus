@@ -139,7 +139,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const iconMap = {
   index1: { lib: MaterialCommunityIcons, name: 'home' },
-bible: { lib: MaterialCommunityIcons, name: 'book-cross' },
+bible: { lib: MaterialCommunityIcons, name: 'calendar' },
   contribution: { lib: MaterialCommunityIcons, name: 'hand-heart-outline' },
   community: { lib: MaterialCommunityIcons, name: 'radio-tower' },
   //  community: { lib: MaterialCommunityIcons, name: 'radio-tower' },

@@ -1,568 +1,644 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
-  Animated,
-  Dimensions,
+  View,
+  Text,
+  TextInput,
   FlatList,
   Image,
-  Platform,
-  RefreshControl,
-  SafeAreaView,
-  ScrollView,
-  Share,
   StyleSheet,
-  Text,
   TouchableOpacity,
-  View,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Animated,
+  Alert,
+  RefreshControl,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../apiConfig';
+import { fetchBase64Image } from '../fetchBase64Image';
 
-const { width, height } = Dimensions.get('window');
 const GOLD = '#E18731';
 const FALLBACK_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
 
-// ──────────────────────────────────────────────────────────────
-// Skeleton Components (unchanged + new ones added below)
-// ──────────────────────────────────────────────────────────────
-const SkeletonPulse = ({ style }) => {
-  const opacity = useRef(new Animated.Value(0.3)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 600, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 600, useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
-  return <Animated.View style={[{ opacity }, style, { backgroundColor: '#E1E9EE' }]} />;
-};
+function formatDate(dateString) {
+  const dateObj = new Date(dateString);
+  const day = dateObj.getDate().toString().padStart(2, '0');
+  const month = dateObj.toLocaleString('default', { month: 'short' });
+  const hours = dateObj.getHours();
+  const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+  const time = `${hour12.toString()}:${minutes} ${ampm}`;
+  return { day, month, time };
+}
 
-const ScriptureSkeleton = () => (
-  <View style={styles.scriptureContainer}>
-    <SkeletonPulse style={{ width: 60, height: 260, borderRadius: 10, marginRight: 12 }} />
-    <View style={styles.wordCard}>
-      <SkeletonPulse style={{ width: '100%', height: '100%', borderRadius: 10 }} />
-    </View>
-  </View>
-);
-
-// New: Sermon item skeleton
-const SermonItemSkeleton = () => (
-  <View style={styles.eventCardVertical}>
-    <SkeletonPulse style={{ width: 110, height: 90, borderRadius: 12 }} />
-    <View style={{ flex: 1, paddingLeft: 16, justifyContent: 'center' }}>
-      <SkeletonPulse style={{ width: '80%', height: 16, borderRadius: 8, marginBottom: 8 }} />
-      <SkeletonPulse style={{ width: '60%', height: 14, borderRadius: 8, marginBottom: 8 }} />
-      <SkeletonPulse style={{ width: '90%', height: 32, borderRadius: 8 }} />
-    </View>
-  </View>
-);
-
-// New: Sermons list skeleton (2 items)
-const SermonsSkeleton = () => (
-  <View style={{ paddingHorizontal: 16 }}>
-    <SermonItemSkeleton />
-    <SermonItemSkeleton />
-  </View>
-);
-
-// New: Bible Quiz skeleton
-const QuizSkeleton = () => (
-  <View style={styles.quizCard}>
-    <SkeletonPulse style={{ width: 76, height: 76, borderRadius: 38 }} />
-    <View style={{ flex: 1, marginLeft: 16 }}>
-      <SkeletonPulse style={{ width: '70%', height: 20, borderRadius: 8 }} />
-    </View>
-    <SkeletonPulse style={{ width: 100, height: 48, borderRadius: 30 }} />
-  </View>
-);
-
-const FullPageSkeleton = () => (
-  <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-    <ScrollView contentContainerStyle={{ paddingTop: 50, paddingHorizontal: 16 }}>
-      <SkeletonPulse style={{ width: 180, height: 24, borderRadius: 8, marginBottom: 16 }} />
-      <ScriptureSkeleton />
-      <View style={{ marginTop: 32 }}>
-        <SkeletonPulse style={{ width: 120, height: 20, borderRadius: 8, marginBottom: 16 }} />
-        <SermonsSkeleton />
-      </View>
-      <View style={{ marginTop: 32 }}>
-        <SkeletonPulse style={{ width: 100, height: 20, borderRadius: 8, marginBottom: 16 }} />
-        <QuizSkeleton />
-      </View>
-    </ScrollView>
-  </SafeAreaView>
-);
-
-const EmptyState = ({ icon, title, subtitle }) => (
-  <View style={styles.emptyContainer}>
-    <Ionicons name={icon} size={48} color={GOLD} />
-    <Text style={styles.emptyTitle}>{title}</Text>
-    <Text style={styles.emptySubtitle}>{subtitle}</Text>
-  </View>
-);
-
-const HomeScreen = () => {
-  const router = useRouter();
-  const scrollRef = useRef(null);
-
-  const [language] = useState('en');
-  const [loadingCommunities, setLoadingCommunities] = useState(true);
-  const [joinedCommunities, setJoinedCommunities] = useState([]);
-  const [selectedCommunityId, setSelectedCommunityId] = useState(null);
+export default function EventsScreen() {
+  const navigation = useNavigation();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('my');
+  const [allEvents, setAllEvents] = useState([]);
+  const [myEvents, setMyEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  const [scriptures, setScriptures] = useState([]);
-  const [currentScriptureIndex, setCurrentScriptureIndex] = useState(0);
-  const [sermons, setSermons] = useState([]);
-  const [loadingScripture, setLoadingScripture] = useState(false);
-  const [loadingSermons, setLoadingSermons] = useState(false);
-
-  // LIKE & SHARE STATE
-  const [likes, setLikes] = useState({});
-  const [likedStatus, setLikedStatus] = useState({});
-  const [shares, setShares] = useState({});
-
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scriptureAnims = useRef([]);
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const eventAnims = useRef([]);
+  const [error, setError] = useState(null);
+  const [token, setToken] = useState(null);
 
-  const labels = {
-    en: {
-      scripture: 'Verse of the Day',
-      sermons: 'Sermons',
-      noScripture: 'No verse available',
-      noSermons: 'No sermons available',
-      noSermonsSub: 'Connect with your church community to access reflections.',
-    },
-  };
+  // Add this new component
+  const EmptyState = ({ icon = "calendar-outline", title, subtitle }) => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name={icon} size={64} color={GOLD} />
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptySubtitle}>{subtitle}</Text>
+    </View>
+  );
 
-  // ... (all your existing fetch functions remain unchanged)
-
-  const fetchJoinedCommunities = async () => {
-    setLoadingCommunities(true);
+  const fetchAllEvents = async (savedToken) => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) throw new Error();
-
-      const res = await fetch(`${BASE_URL}/communities/joined`, {
-        headers: { Authorization: `Bearer ${token}` },
+      if (!savedToken) {
+        throw new Error('No token found');
+      }
+      const storedCommunityId = await AsyncStorage.getItem('selectedCommunityId');
+      const url = storedCommunityId
+        ? `${BASE_URL}/events/user/${storedCommunityId}`
+        : `${BASE_URL}/events/user/`;
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${savedToken}`,
+        },
       });
-      const json = await res.json();
+      const json = await response.json();
 
-      if (json.success && json.data?.length > 0) {
-        const communities = json.data.map(c => ({
-          id: c.id.toString(),
-          name: c.name || 'Unnamed',
-          image: c.logo || FALLBACK_IMAGE,
-        }));
-        setJoinedCommunities(communities);
-        const stored = await AsyncStorage.getItem('selectedCommunityId');
-        const id = stored && communities.some(c => c.id === stored) ? stored : communities[0].id;
-        setSelectedCommunityId(id);
-        await AsyncStorage.setItem('selectedCommunityId', id);
+      if (json.success && Array.isArray(json.data)) {
+        const enriched = await Promise.all(
+          json.data.map(async (evt) => {
+            let image = FALLBACK_IMAGE;
+            if (evt.imageUrl) {
+              try {
+                const processedImage = await fetchBase64Image(evt.imageUrl);
+                if (processedImage) {
+                  image = processedImage;
+                }
+              } catch (imgErr) {
+                console.log('Image fetch failed:', imgErr);
+              }
+            }
+
+            const { day, month, time } = formatDate(evt.eventDate);
+            const locationText = `${evt.street}, ${evt.district}, ${evt.region}`;
+            return {
+              id: evt.id,
+              title: evt.name,
+              description: evt.description,
+              location: locationText,
+              day,
+              month,
+              time,
+              image,
+            };
+          })
+        );
+        setAllEvents(enriched);
+        return enriched;
       } else {
-        setJoinedCommunities([]);
-        setSelectedCommunityId(null);
-      }
-    } catch {
-      setJoinedCommunities([]);
-      setSelectedCommunityId(null);
-    } finally {
-      setLoadingCommunities(false);
-    }
-  };
-
-  const fetchData = async () => {
-    if (!selectedCommunityId) {
-      setScriptures([]);
-      setSermons([]);
-      setLoadingScripture(false);
-      setLoadingSermons(false);
-      return;
-    }
-
-    setLoadingScripture(true);
-    setLoadingSermons(true);
-
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      const headers = { Authorization: `Bearer ${token}` };
-
-      const [scriptRes, sermonRes] = await Promise.all([
-        fetch(`${BASE_URL}/scriptures/user/${selectedCommunityId}`, { headers }),
-        fetch(`${BASE_URL}/sermons/user/${selectedCommunityId}`, { headers }),
-      ]);
-
-      const scriptJson = await scriptRes.json();
-      const sermonJson = await sermonRes.json();
-
-      // SCRIPTURES WITH LIKES & SHARES
-      if (scriptJson.success && Array.isArray(scriptJson.data)) {
-        const data = scriptJson.data.map(s => ({
-          id: s.id.toString(),
-          verse_reference: s.name || '',
-          verse_text: s.description || '',
-          imageUrl: s.photo?.startsWith('http') ? s.photo : FALLBACK_IMAGE,
-          likes: s.likes || 0,
-          liked: s.liked || false,
-          shares: s.shares || 0,
-        }));
-        setScriptures(data);
-
-        const likesObj = {}, likedObj = {}, sharesObj = {};
-        data.forEach(s => {
-          likesObj[s.id] = s.likes;
-          likedObj[s.id] = s.liked;
-          sharesObj[s.id] = s.shares;
-        });
-        setLikes(likesObj);
-        setLikedStatus(likedObj);
-        setShares(sharesObj);
-
-        scriptureAnims.current = data.map(() => ({ fade: new Animated.Value(0), scale: new Animated.Value(0.8) }));
-      } else {
-        setScriptures([]);
-      }
-
-      // SERMONS
-      if (sermonJson.success && Array.isArray(sermonJson.data)) {
-        const data = sermonJson.data.map(s => ({
-          id: s.id.toString(),
-          title: s.name || '',
-          description: s.description || '',
-          imageUrl: s.photo?.startsWith('http') ? s.photo : FALLBACK_IMAGE,
-        }));
-        setSermons(data);
-      } else {
-        setSermons([]);
+        console.error('Invalid API response for all events:', json);
+        setError('No events yet. Join a community to discover fellowships, worship nights, and special services near you.');
+        return [];
       }
     } catch (err) {
-      console.log('Fetch error:', err);
-      setScriptures([]);
-      setSermons([]);
-    } finally {
-      setLoadingScripture(false);
-      setLoadingSermons(false);
+      console.error('Fetch all events error:', err);
+      setError('Failed to fetch all events');
+      return [];
     }
   };
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchJoinedCommunities();
-    if (selectedCommunityId) await fetchData();
-    setRefreshing(false);
-  }, [selectedCommunityId]);
+  const fetchMyEvents = async (savedToken) => {
+    try {
+      if (!savedToken) {
+        throw new Error('No token found');
+      }
+      const storedCommunityId = await AsyncStorage.getItem('selectedCommunityId');
+      const url = storedCommunityId
+        ? `${BASE_URL}/events/confirmed/${storedCommunityId}`
+        : `${BASE_URL}/events/confirmed/`;
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${savedToken}`,
+        },
+      });
+      const json = await response.json();
+
+      if (json.success && Array.isArray(json.data)) {
+        const enriched = await Promise.all(
+          json.data.map(async (evt) => {
+            let image = FALLBACK_IMAGE;
+            if (evt.imageUrl) {
+              try {
+                const processedImage = await fetchBase64Image(evt.imageUrl);
+                if (processedImage) {
+                  image = processedImage;
+                }
+              } catch (imgErr) {
+                console.log('Image fetch failed:', imgErr);
+              }
+            }
+
+            const { day, month, time } = formatDate(evt.eventDate);
+            const locationText = `${evt.street}, ${evt.district}, ${evt.region}`;
+            return {
+              id: evt.id,
+              title: evt.name,
+              description: evt.description,
+              location: locationText,
+              day,
+              month,
+              time,
+              image,
+            };
+          })
+        );
+        setMyEvents(enriched);
+        return enriched;
+      } else {
+        console.error('Invalid API response for my events:', json);
+        setError('Invalid response from server');
+        return [];
+      }
+    } catch (err) {
+      console.error('Fetch my events error:', err);
+      setError('Failed to fetch my events');
+      return [];
+    }
+  };
+
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      const savedToken = await AsyncStorage.getItem('userToken');
+      setToken(savedToken);
+      if (!savedToken) {
+        throw new Error('No token found');
+      }
+
+      const [allEventsData, myEventsData] = await Promise.all([
+        fetchAllEvents(savedToken),
+        fetchMyEvents(savedToken),
+      ]);
+      eventAnims.current = [...allEventsData, ...myEventsData].map(() => ({
+        fade: new Animated.Value(0),
+        slide: new Animated.Value(30),
+        vowButton: new Animated.Value(1),
+      }));
+      animateEvents();
+    } catch (err) {
+      console.error('Fetch events error:', err);
+      setError('Failed to fetch events');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    fetchJoinedCommunities();
+    fetchEvents();
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
-  useEffect(() => {
-    if (!loadingCommunities) fetchData();
-  }, [selectedCommunityId, loadingCommunities]);
-
-  useEffect(() => {
-    if (!loadingCommunities && !loadingScripture && !loadingSermons) {
-      Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }).start();
-      scriptureAnims.current.forEach(anim => {
+  const animateEvents = () => {
+    const animations = eventAnims.current.map((anim, index) =>
+      Animated.sequence([
+        Animated.delay(index * 300),
         Animated.parallel([
-          Animated.timing(anim.fade, { toValue: 1, duration: 600, useNativeDriver: true }),
-          Animated.timing(anim.scale, { toValue: 1, duration: 600, useNativeDriver: true }),
-        ]).start();
-      });
-    }
-  }, [loadingCommunities, loadingScripture, loadingSermons]);
+          Animated.timing(anim.fade, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(anim.slide, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    );
+    Animated.parallel(animations).start();
+  };
 
-  // LIKE / UNLIKE & SHARE (unchanged)
-  const handleLike = async () => {
-    const current = scriptures[currentScriptureIndex];
-    if (!current?.id) return;
+  const filteredMyEvents = myEvents.filter((evt) =>
+    `${evt.title} ${evt.description} ${evt.location}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+  const filteredAllEvents = allEvents.filter((evt) =>
+    `${evt.title} ${evt.description} ${evt.location}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
 
-    const wasLiked = likedStatus[current.id] || false;
-    const prevLikes = likes[current.id] || 0;
+  const handleTabPress = (tab) => {
+    setActiveTab(tab);
+    eventAnims.current.forEach((anim) => {
+      anim.fade.setValue(0);
+      anim.slide.setValue(30);
+    });
+    animateEvents();
+  };
 
-    setLikes(prev => ({ ...prev, [current.id]: wasLiked ? prevLikes - 1 : prevLikes + 1 }));
-    setLikedStatus(prev => ({ ...prev, [current.id]: !wasLiked }));
+  const handleMakeVow = async (event, index) => {
+    Animated.sequence([
+      Animated.timing(eventAnims.current[index].vowButton, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(eventAnims.current[index].vowButton, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    const vow = {
+      event_title: event.title,
+      event_date: `${event.day} ${event.month} ${event.time}`,
+      timestamp: new Date().toISOString(),
+    };
 
     try {
-      const token = await AsyncStorage.getItem('userToken');
-      await fetch(`${BASE_URL}/likes/scripture/${current.id}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch {
-      setLikes(prev => ({ ...prev, [current.id]: prevLikes }));
-      setLikedStatus(prev => ({ ...prev, [current.id]: wasLiked }));
+      const existingVows = await AsyncStorage.getItem('userEventVows');
+      const vows = existingVows ? JSON.parse(existingVows) : [];
+      vows.push(vow);
+      await AsyncStorage.setItem('userEventVows', JSON.stringify(vows));
+      Alert.alert(
+        'Vow Saved',
+        `Your vow for "${event.title}" has been saved.`
+      );
+    } catch (error) {
+      console.error('Error saving vow:', error);
+      Alert.alert('Error', 'Failed to save vow.');
     }
   };
 
-  const handleShare = async () => {
-    const current = scriptures[currentScriptureIndex];
-    if (!current) return;
-
-    try {
-      await Share.share({
-        message: `${current.verse_text}\n\n${current.verse_reference}\nShared via Sadaka App`,
-      });
-
-      setShares(prev => ({ ...prev, [current.id]: (prev[current.id] || 0) + 1 }));
-
-      const token = await AsyncStorage.getItem('userToken');
-      await fetch(`${BASE_URL}/shares/scripture/${current.id}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch (err) {
-      console.log('Share failed', err);
-    }
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchEvents();
   };
 
-  // ──────────────────────────────
-  // Full-page skeleton while loading communities
-  // ──────────────────────────────
-  if (loadingCommunities || refreshing) return <FullPageSkeleton />;
+  const renderEventCard = ({ item, index }) => (
+    <Animated.View
+      style={{
+        opacity: eventAnims.current[index]?.fade || 0,
+        transform: [{ translateY: eventAnims.current[index]?.slide || 30 }],
+      }}
+    >
+      <TouchableOpacity
+        style={styles.card}
+        activeOpacity={0.9}
+        onPress={() => navigation.navigate('EventDetailScreen', { id: item.id })}
+      >
+        <View style={styles.imageWrapper}>
+          <Image source={{ uri: item.image }} style={styles.image} />
+          <View style={styles.dateBadge}>
+            <Text style={styles.dateDay}>{item.day}</Text>
+            <Text style={styles.dateMonth}>{item.month}</Text>
+          </View>
+        </View>
+        <View style={styles.info}>
+          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.dateInline}>{item.time}</Text>
+          <Text style={styles.location} numberOfLines={2}>
+            {item.location}
+          </Text>
+          {/* <Animated.View style={{ transform: [{ scale: eventAnims.current[index]?.vowButton || 1 }] }}>
+            <TouchableOpacity
+              style={styles.vowButton}
+              onPress={() => handleMakeVow(item, index)}
+            >
+              <Text style={styles.vowButtonText}>Make a Vow</Text>
+            </TouchableOpacity>
+          </Animated.View> */}
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
 
-  // ──────────────────────────────
-  // No community joined
-  // ──────────────────────────────
-  if (joinedCommunities.length === 0) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-        <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
-          <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[GOLD]} />}>
-            {/* Same empty UI you already had */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{labels[language].scripture}</Text>
-              <EmptyState icon="book-outline" title="No verse available" subtitle="Join a community to see daily verses" />
-            </View>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{labels[language].sermons}</Text>
-              <EmptyState icon="mic-off-outline" title="No sermons" subtitle="Join your church to access sermons" />
-            </View>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Bible Quiz</Text>
-              <View style={styles.quizCard}>
-                <View style={styles.quizIconCircle}>
-                  <MaterialCommunityIcons name="brain" size={42} color={GOLD} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 16 }}>
-                  <Text style={styles.quizTitle}>Bible Quiz of the Day</Text>
-                </View>
-                <TouchableOpacity style={styles.startBtn} onPress={() => router.push('bible-quize/screens/WelcomeScreen')}>
-                  <Text style={styles.startText}>Start</Text>
-                  <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
-                </TouchableOpacity>
-              </View>
-            </View>
-            <View style={{ alignItems: 'center', padding: 40 }}>
-              <Ionicons name="people-outline" size={70} color={GOLD} />
-              <Text style={{ fontSize: 20, fontFamily: 'GothamBold', marginTop: 20, textAlign: 'center' }}>
-                You Haven't Joined a Community
-              </Text>
-              <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginVertical: 16 }}>
-                Join your church to see daily verses and sermons.
-              </Text>
-              <TouchableOpacity style={styles.joinBtn} onPress={() => router.push('/CommunityScreen')}>
-                <Text style={styles.joinBtnText}>Find Community</Text>
+  const renderSkeletonCard = () => (
+    <View style={styles.card}>
+      <View style={styles.imageWrapper}>
+        <View style={[styles.image, { backgroundColor: '#e5e7eb' }]} />
+        <View style={styles.dateBadge}>
+          <View style={{ width: 20, height: 14, backgroundColor: '#e5e7eb', borderRadius: 2 }} />
+          <View style={{ width: 30, height: 10, backgroundColor: '#e5e7eb', borderRadius: 2, marginTop: 2 }} />
+        </View>
+      </View>
+      <View style={styles.info}>
+        <View style={{ width: '60%', height: 14, backgroundColor: '#e5e7eb', borderRadius: 4, marginBottom: 4 }} />
+        <View style={{ width: '40%', height: 12, backgroundColor: '#e5e7eb', borderRadius: 4, marginBottom: 2 }} />
+        <View style={{ width: '80%', height: 11, backgroundColor: '#e5e7eb', borderRadius: 4 }} />
+      </View>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.safeContainer}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+          {/* Header */}
+          <Animated.View style={{ opacity: fadeAnim }}>
+            <View style={styles.header}>
+              <TouchableOpacity>
+              </TouchableOpacity>
+              <Text style={styles.headerText}>Events</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('notification')}
+                style={styles.iconButton}
+              >
               </TouchableOpacity>
             </View>
-          </ScrollView>
-        </Animated.View>
-      </SafeAreaView>
-    );
-  }
+          </Animated.View>
 
-  // ──────────────────────────────
-  // Main screen with data
-  // ──────────────────────────────
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <Animated.View style={{ opacity: fadeAnim }}>
-        <ScrollView
-          ref={scrollRef}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[GOLD]} />}
-        >
-          {/* VERSE OF THE DAY */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle1}>{labels[language].scripture}</Text>
-            {loadingScripture ? (
-              <ScriptureSkeleton />
-            ) : scriptures.length > 0 ? (
-              /* existing verse UI unchanged */
-              <View style={styles.scriptureContainer}>
-                <View style={styles.smallImageContainer}>
-                  <FlatList
-                    data={scriptures}
-                    horizontal
-                    pagingEnabled
-                    showsHorizontalScrollIndicator={false}
-                    onMomentumScrollEnd={(e) => {
-                      const index = Math.round(e.nativeEvent.contentOffset.x / 60);
-                      setCurrentScriptureIndex(index);
-                    }}
-                    renderItem={({ item, index }) => (
-                      <Animated.View style={{
-                        opacity: scriptureAnims.current[index]?.fade || 0,
-                        transform: [{ scale: scriptureAnims.current[index]?.scale || 0.8 }]
-                      }}>
-                        <View style={styles.smallImageItem}>
-                          <Image source={{ uri: item.imageUrl }} style={styles.smallImage} resizeMode="cover" />
-                          <View style={styles.smallImageOverlay}>
-                            <Text style={styles.smallVerseText}>{item.verse_reference.toUpperCase()}</Text>
-                          </View>
-                        </View>
-                      </Animated.View>
-                    )}
-                  />
-                </View>
+          {/* Search */}
+          <Animated.View style={{ opacity: fadeAnim }}>
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={18} color="#999" style={styles.searchIcon} />
+              <TextInput
+                placeholder="Search for an event"
+                placeholderTextColor="#999"
+                value={searchTerm}
+                onChangeText={setSearchTerm}
+                style={styles.searchInput}
+                clearButtonMode="while-editing"
+              />
+            </View>
+          </Animated.View>
 
-                <View style={styles.wordCard}>
-                  <Image source={{ uri: scriptures[currentScriptureIndex]?.imageUrl || FALLBACK_IMAGE }} style={styles.wordImage} resizeMode="cover" />
-                  <View style={styles.wordOverlay} />
-                  <View style={styles.wordContent}>
-                    <Text style={styles.verseText}>{scriptures[currentScriptureIndex]?.verse_text}</Text>
-                    <Text style={styles.verseReference}>{scriptures[currentScriptureIndex]?.verse_reference}</Text>
-                  </View>
+          {/* Tabs */}
+          <Animated.View style={{ opacity: fadeAnim }}>
+            <View style={styles.tabs}>
+              <TouchableOpacity onPress={() => handleTabPress('my')}>
+                <Text
+                  style={[styles.tabText, activeTab === 'my' ? styles.activeTab : styles.inactiveTab]}
+                >
+                  My Events
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleTabPress('all')}>
+                <Text
+                  style={[styles.tabText, activeTab === 'all' ? styles.activeTab : styles.inactiveTab]}
+                >
+                  All Events
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
 
-                  <View style={styles.actionButtons}>
-                    {scriptures.length > 1 && (
-                      <>
-                        <TouchableOpacity onPress={() => setCurrentScriptureIndex(i => i > 0 ? i - 1 : scriptures.length - 1)} style={styles.navButton}>
-                          <Ionicons name="chevron-back-outline" size={24} color="#fff" />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setCurrentScriptureIndex(i => i < scriptures.length - 1 ? i + 1 : 0)} style={styles.navButton}>
-                          <Ionicons name="chevron-forward-outline" size={24} color="#fff" />
-                        </TouchableOpacity>
-                      </>
-                    )}
-                    <View style={styles.socialButtons}>
-                      <TouchableOpacity onPress={handleLike} style={styles.socialButton}>
-                        <Ionicons
-                          name={likedStatus[scriptures[currentScriptureIndex]?.id] ? 'heart' : 'heart-outline'}
-                          size={26}
-                          color={likedStatus[scriptures[currentScriptureIndex]?.id] ? GOLD : '#fff'}
-                        />
-                        <Text style={styles.likeCount}>{likes[scriptures[currentScriptureIndex]?.id] || 0}</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={handleShare} style={styles.socialButton}>
-                        <Ionicons name="share-outline" size={26} color={GOLD} />
-                        <Text style={styles.likeCount}>{shares[scriptures[currentScriptureIndex]?.id] || 0}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            ) : (
-              <EmptyState icon="book-outline" title={labels[language].noScripture} subtitle={labels[language].noScriptureSub || ''} />
-            )}
-          </View>
-
-          {/* SERMONS */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{labels[language].sermons}</Text>
-            {loadingSermons ? (
-              <SermonsSkeleton />
-            ) : sermons.length > 0 ? (
-              <View style={{ paddingHorizontal: 2 }}>
-                {sermons.map((sermon) => (
-                  <TouchableOpacity
-                    key={sermon.id}
-                    style={styles.eventCardVertical}
-                    onPress={() => router.push({ pathname: '/sermon', params: { id: sermon.id } })}
-                  >
-                    <Image source={{ uri: sermon.imageUrl || FALLBACK_IMAGE }} style={styles.eventImageVertical} resizeMode="cover" />
-                    <View style={styles.eventInfoVertical}>
-                      <Text style={styles.eventName} numberOfLines={2}>{sermon.title}</Text>
-                      <Text style={styles.eventTime}>
-                        {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </Text>
-                      <Text style={styles.eventLocation} numberOfLines={2}>
-                        {sermon.description || "Tap to listen to this powerful message of faith and hope."}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : (
-              <EmptyState icon="mic-off-outline" title={labels[language].noSermons} subtitle={labels[language].noSermonsSub} />
-            )}
-          </View>
-
-          {/* BIBLE QUIZ */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Bible Quiz</Text>
-            {loadingSermons || loadingScripture ? (  // You can tie it to any loading state you prefer
-              <QuizSkeleton />
-            ) : (
-              <View style={styles.quizCard}>
-                <View style={styles.quizIconCircle}>
-                  <MaterialCommunityIcons name="brain" size={42} color={GOLD} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 16 }}>
-                  <Text style={styles.quizTitle}>Bible Quiz of the Day</Text>
-                </View>
-                <TouchableOpacity style={styles.startBtn} onPress={() => router.push('bible-quize/screens/WelcomeScreen')}>
-                  <Text style={styles.startText}>Start</Text>
-                  <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
+          {/* Event List */}
+          <View style={{ flex: 1 }}>
+            {loading ? (
+              <FlatList
+                data={[1, 2, 3]} // Render 3 skeleton cards
+                keyExtractor={(item) => `skeleton-${item}`}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
+                renderItem={renderSkeletonCard}
+              />
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity onPress={onRefresh} style={styles.retryButton}>
+                  <Text style={styles.retryButtonText}>Retry</Text>
                 </TouchableOpacity>
               </View>
+            ) : (
+              <View style={{ flex: 1 }}>
+                <FlatList
+                  data={activeTab === 'my' ? filteredMyEvents : filteredAllEvents}
+                  keyExtractor={(item) => item.id.toString()}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
+                  ListEmptyComponent={
+                    <EmptyState
+                      icon="calendar-outline"
+                      title={activeTab === 'my' ? "No Events Yet" : "No Events Found"}
+                      subtitle={
+                        activeTab === 'my'
+                          ? "You haven't joined to any events yet. Explore and be part of upcoming gatherings!"
+                          : "No events available at the moment.\nJoin a community to discover more!"
+                      }
+                    />
+                  }
+                  renderItem={renderEventCard}
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={refreshing}
+                      onRefresh={onRefresh}
+                      tintColor={GOLD}
+                      colors={[GOLD]}
+                    />
+                  }
+                />
+              </View>
             )}
           </View>
-        </ScrollView>
-      </Animated.View>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
-};
+}
 
-// ──────────────────────────────
-// Styles (unchanged)
-// ──────────────────────────────
 const styles = StyleSheet.create({
-  section: { marginBottom: 12, backgroundColor: '#fff' },
-  sectionTitle: { fontSize: 15, color: '#222', paddingHorizontal: 10, paddingVertical: 6, fontFamily: 'GothamBold' },
-   sectionTitle1: { fontSize: 15, color: '#222', paddingHorizontal: 10, paddingVertical: Platform.OS === 'android' ? 20 : 6, fontFamily: 'GothamBold' },
-
-  scriptureContainer: { flexDirection: 'row', marginHorizontal: 10, alignItems: 'center', paddingVertical: 6 },
-  smallImageContainer: { width: 60, height: 260, borderRadius: 10, overflow: 'hidden', marginRight: 8 },
-  smallImageItem: { width: 60, height: 260, position: 'relative' },
-  smallImage: { width: '100%', height: '100%', position: 'absolute' },
-  smallImageOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  smallVerseText: { position: 'absolute', top: '50%', left: '50%', transform: [{ translateX: -100 }, { translateY: -25 }, { rotate: '-90deg' }], color: '#fff', fontSize: 18, fontWeight: '900', width: 230, fontFamily: 'GothamBold', textTransform: 'uppercase' },
-  wordCard: { flex: 1, height: 260, borderRadius: 12, overflow: 'hidden', position: 'relative' },
-  wordImage: { width: '100%', height: '100%', borderRadius: 12, position: 'absolute' },
-  wordOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 12 },
-  wordContent: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  verseText: { color: '#fff', fontSize: 14, lineHeight: 20, textAlign: 'center', fontFamily: 'GothamMedium' },
-  verseReference: { color: '#fff', fontSize: 12, marginTop: 6, textAlign: 'center', fontFamily: 'GothamBold' },
-
-  actionButtons: { position: 'absolute', bottom: 12, left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  navButton: { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 20, padding: 6 },
-  socialButtons: { flexDirection: 'row', gap: 16 },
-  socialButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  likeCount: { color: '#fff', marginLeft: 6, fontSize: 13, fontFamily: 'GothamBold' },
-
-  eventCardVertical: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 12, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 6 },
-  eventImageVertical: { width: 110, height: 90, borderRadius: 12, backgroundColor: '#eee' },
-  eventInfoVertical: { flex: 1, paddingLeft: 16, justifyContent: 'center' },
-  eventName: { fontSize: 12.5, color: '#222', fontFamily: 'GothamBold', lineHeight: 21 },
-  eventTime: { fontSize: 13, color: GOLD, marginTop: 4, fontFamily: 'GothamMedium' },
-  eventLocation: { fontSize: 13, color: '#666', marginTop: 6, fontFamily: 'GothamRegular', lineHeight: 18 },
-
-  quizCard: { backgroundColor: '#fff', borderRadius: 22, padding: 20, marginHorizontal: 16, marginTop: 12, flexDirection: 'row', alignItems: 'center', elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.09, shadowRadius: 14, borderWidth: 1, borderColor: '#f0f0f0', height: 115 },
-  quizIconCircle: { width: 76, height: 76, borderRadius: 38, backgroundColor: '#FFF8F0', justifyContent: 'center', alignItems: 'center', borderWidth: 2.5, borderColor: GOLD, borderStyle: 'dashed' },
-  quizTitle: { fontFamily: 'GothamBold', fontSize: 18, color: '#222' },
-  startBtn: { backgroundColor: GOLD, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 30 },
-  startText: { color: '#fff', fontFamily: 'GothamBold', fontSize: 16 },
-
-  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 30 },
-  emptyTitle: { marginTop: 12, fontSize: 15, fontWeight: '600', color: GOLD, fontFamily: 'GothamBold' },
-  emptySubtitle: { marginTop: 6, fontSize: 12, color: '#555', textAlign: 'center', fontFamily: 'GothamRegular' },
-  joinBtn: { backgroundColor: GOLD, paddingHorizontal: 32, paddingVertical: 16, borderRadius: 30 },
-  joinBtnText: { color: '#fff', fontSize: 16, fontFamily: 'GothamBold' },
+  safeContainer: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? -100 : 30 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',     // align items to the left
+    justifyContent: 'flex-start', // move content to the left
+    marginBottom: 16,
+  },
+  headerText: { 
+    fontSize: 22, 
+    color: '#222',
+    textAlign: 'left',            // text alignment
+    fontFamily: 'GothamBold',
+  },
+  iconButton: { padding: 6 },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: GOLD,
+    marginBottom: 12,
+  },
+  searchIcon: { marginRight: 8 },
+  searchInput: { 
+    flex: 1, 
+    fontSize: 14, 
+    color: '#222', 
+    paddingVertical: 0, 
+    fontFamily: 'GothamRegular',
+  },
+  tabs: { flexDirection: 'row', justifyContent: 'center', marginBottom: 10 },
+  tabText: { 
+    fontSize: 14, 
+    marginHorizontal: 16, 
+    fontFamily: 'GothamMedium',
+  },
+  activeTab: { color: GOLD, borderBottomWidth: 2, borderColor: GOLD, paddingBottom: 4 },
+  inactiveTab: { color: '#888', paddingBottom: 4 },
+  noResults: { 
+    textAlign: 'center', 
+    marginTop: 28, 
+    color: '#999', 
+    fontSize: 13, 
+    fontFamily: 'GothamRegular',
+  },
+  card: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+    alignItems: 'center',
+  },
+  imageWrapper: {
+    width: 110,
+    height: 80,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginRight: 16,
+    position: 'relative',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  dateBadge: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    backgroundColor: '#000000cc',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+    alignItems: 'center',
+  },
+  dateDay: {
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
+    fontFamily: 'GothamBold',
+  },
+  dateMonth: {
+    color: '#fff',
+    fontSize: 10,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    marginTop: 0,
+    fontFamily: 'GothamBold',
+  },
+  info: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 14,
+    color: '#1c1414',
+    marginBottom: 4,
+    fontFamily: 'GothamMedium',
+  },
+  dateInline: {
+    color: GOLD,
+    fontSize: 12,
+    marginBottom: 2,
+    fontFamily: 'GothamBold',
+  },
+  location: {
+    fontSize: 11,
+    color: '#777',
+    fontFamily: 'GothamRegular',
+  },
+  vowButton: {
+    marginTop: 6,
+    backgroundColor: GOLD,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  vowButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    textAlign: 'center',
+    fontFamily: 'GothamBold',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#ff3333',
+    marginBottom: 16,
+    fontFamily: 'GothamRegular',
+  },
+  retryButton: {
+    backgroundColor: GOLD,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontFamily: 'GothamBold',
+  },
+  // Add these new styles
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 80,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 20,
+    marginBottom: 8,
+    textAlign: 'center',
+    fontFamily: 'GothamBold',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#777',
+    textAlign: 'center',
+    lineHeight: 22,
+    fontFamily: 'GothamRegular',
+  },
 });
-
-export default HomeScreen;

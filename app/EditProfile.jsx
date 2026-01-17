@@ -268,7 +268,7 @@ export default function EditProfileScreen() {
                 </View>
 
                 {/* Phone */}
-                <View style={styles.inputGroup}>
+                {/* <View style={styles.inputGroup}>
                   <Text style={styles.label}>Phone Number *</Text>
                   <TextInput
                     style={styles.input}
@@ -278,7 +278,7 @@ export default function EditProfileScreen() {
                     placeholderTextColor="#999"
                     keyboardType="phone-pad"
                   />
-                </View>
+                </View> */}
 
                 {/* Save Button */}
                 <TouchableOpacity

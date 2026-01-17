@@ -323,7 +323,7 @@ const ProfileScreen = () => {
         </View>
       )}
 
-      {/* OFFLINE BOTTOM SHEET — ALWAYS WORKS */}
+      {/* OFFLINE BOTTOM SHEET */}
       <Modal transparent visible={showOfflineSheet} onRequestClose={closeOfflineSheet}>
         <TouchableWithoutFeedback onPress={closeOfflineSheet}>
           <View style={styles.modalOverlay}>
@@ -403,14 +403,6 @@ const ProfileScreen = () => {
                 <Ionicons name="chevron-forward" size={20} color="#666" />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('NearbyCommunity')}>
-                <View style={styles.iconWrapper}>
-                  <Ionicons name="location-outline" size={22} color={GOLD} />
-                </View>
-                <Text style={styles.menuText}>Nearby Communities</Text>
-                <Ionicons name="chevron-forward" size={20} color="#666" />
-              </TouchableOpacity>
-
               <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangeCommunityScreen')}>
                 <View style={styles.iconWrapper}>
                   <Ionicons name="swap-horizontal-outline" size={22} color={GOLD} />
@@ -418,18 +410,15 @@ const ProfileScreen = () => {
                 <Text style={styles.menuText}>Change Community</Text>
                 <Ionicons name="chevron-forward" size={20} color="#666" />
               </TouchableOpacity>
-
-              <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('paymentMethod')}>
-                <View style={styles.iconWrapper}>
-                  <Ionicons name="card-outline" size={22} color={GOLD} />
-                </View>
-                <Text style={styles.menuText}>Payment Settings</Text>
-                <Ionicons name="chevron-forward" size={20} color="#666" />
-              </TouchableOpacity>
             </View>
           </>
         )}
       </ScrollView>
+
+      {/* Fixed bottom footer with your requested text */}
+     <View style={styles.footer}>
+  <Text style={styles.footerText}>powered by EvMak © 2026</Text>
+</View>
 
       {/* Success Sheet */}
       <Modal transparent visible={showSuccessSheet} onRequestClose={closeSheet}>
@@ -438,7 +427,6 @@ const ProfileScreen = () => {
             <TouchableWithoutFeedback>
               <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetAnim }] }]}>
                 <View style={styles.sheetHandle} />
-                <Text style={styles.sheetTitle}>Profile Picture Updated!</Text>
                 {uploadedImageUrl && (
                   <View style={styles.updatedData}>
                     <Image source={{ uri: uploadedImageUrl }} style={styles.previewImage} resizeMode="cover" />
@@ -451,14 +439,14 @@ const ProfileScreen = () => {
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
-      </Modal>
+      </Modal>  
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#fff' },
-  scrollContent: { padding: 16 },
+  scrollContent: { padding: 16, paddingBottom: 80 }, // extra bottom padding so footer doesn't overlap content
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -576,6 +564,25 @@ const styles = StyleSheet.create({
   previewImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: GOLD, marginVertical: 16 },
   doneBtn: { backgroundColor: GOLD, paddingVertical: 16, borderRadius: 30, alignItems: 'center' },
   doneText: { color: '#fff', fontSize: 16, fontFamily: 'GothamBold' },
+
+  // New: Fixed bottom footer
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    // paddingVertical: 12,
+    // backgroundColor: '#fff',
+    // borderTopWidth: 1,
+    // borderTopColor: '#eee',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerText: {
+    fontSize: 13,
+    color: '#999',
+    fontFamily: 'GothamMedium',
+  },
 });
 
 export default ProfileScreen;

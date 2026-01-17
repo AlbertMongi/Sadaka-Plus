@@ -18,6 +18,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons, Entypo } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from './apiConfig';
+import { fetchBase64Image } from './fetchBase64Image';  // ← added
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const ORANGE = '#FF6B00';
@@ -35,7 +36,7 @@ export default function CommunityDetail() {
   const [showConfirmSheet, setShowConfirmSheet] = useState(false);
   const [sheetMessage, setSheetMessage] = useState('');
 
-  // Bottom Sheet Animations
+  // Bottom Sheet Animations (unchanged)
   const successSheetAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const confirmSheetAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
@@ -74,7 +75,26 @@ export default function CommunityDetail() {
         });
         const json = await res.json();
         if (res.ok && json.success && json.data) {
-          setCommunity({ ...json.data, isMember: json.data.joined });
+          let displayImage = FALLBACK_IMAGE;
+
+          // Process logo / image with fetchBase64Image
+          const rawImage = json.data.logo || json.data.image || json.data.photo;
+          if (rawImage) {
+            try {
+              const processed = await fetchBase64Image(rawImage);
+              if (processed) {
+                displayImage = processed;
+              }
+            } catch (imgErr) {
+              console.warn('Community logo processing failed:', imgErr);
+            }
+          }
+
+          setCommunity({
+            ...json.data,
+            isMember: json.data.joined,
+            displayImage,  // ← processed image
+          });
         }
       } catch (err) {
         console.error(err);
@@ -129,7 +149,6 @@ export default function CommunityDetail() {
         setShowSuccessSheet(true);
         openSheet(successSheetAnim);
         setTimeout(() => closeSheet(successSheetAnim, setShowSuccessSheet), 3000);
-        // User stays on the same screen
       }
     } catch (err) {
       // Silent
@@ -150,13 +169,14 @@ export default function CommunityDetail() {
 
   const handleShare = async () => {
     try {
-      const logoUri = community.logo?.startsWith('http')
-        ? community.logo
-        : `${BASE_URL}/${community.logo}`;
+      // Use processed displayImage if available
+      const shareImage = community?.displayImage !== FALLBACK_IMAGE 
+        ? community.displayImage 
+        : (community.logo?.startsWith('http') ? community.logo : `${BASE_URL}/${community.logo}`);
 
       await Share.share({
         message: `${community.name}\n\n${community.description || 'Join this amazing community!'}`,
-        url: logoUri,
+        url: shareImage,
         title: community.name,
       });
     } catch (error) {
@@ -184,10 +204,6 @@ export default function CommunityDetail() {
     );
   }
 
-  const logoUri = community.logo?.startsWith('http')
-    ? community.logo
-    : `${BASE_URL}/${community.logo}`;
-
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Top Bar */}
@@ -206,10 +222,10 @@ export default function CommunityDetail() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* 1. HERO IMAGE */}
+        {/* 1. HERO IMAGE – now using processed displayImage */}
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: logoUri }}
+            source={{ uri: community.displayImage }}
             style={styles.heroImage}
             resizeMode="cover"
             defaultSource={{ uri: FALLBACK_IMAGE }}
@@ -230,13 +246,6 @@ export default function CommunityDetail() {
               <Text style={styles.infoText}>{community.region}, {community.district}, {community.street}</Text>
             </View>
           )}
-          {/* {community.district && (
-            <View style={styles.infoRow}>
-              <MaterialIcons name="location-city" size={16} color={ORANGE} />
-              <Text style={styles.infoText}>{community.district}</Text>
-            </View>
-          )} */}
-          
           {community.phoneNo && (
             <View style={styles.infoRow}>
               <Ionicons name="call" size={16} color={ORANGE} />
@@ -311,12 +320,9 @@ export default function CommunityDetail() {
             <TouchableWithoutFeedback>
               <Animated.View style={[styles.sheet, { transform: [{ translateY: confirmSheetAnim }] }]}>
                 <View style={styles.sheetHandle} />
-                {/* ADD ICON HERE - THIS IS THE ONLY PLACE TO CHANGE */}
-  <View style={{ alignItems: 'center', marginBottom: 12 }}>
-    <Ionicons name="exit-outline" size={58} color="#d9534f" />
-    {/* You can change the icon name and color as you like:
-         "log-out-outline", "close-circle-outline", "heart-dislike-outline", etc. */}
-  </View>
+                <View style={{ alignItems: 'center', marginBottom: 12 }}>
+                  <Ionicons name="exit-outline" size={58} color="#d9534f" />
+                </View>
                 <Text style={styles.sheetTitle}>Leave Community?</Text>
                 <Text style={styles.sheetSubtitle}>
                   Are you sure you want to unfollow {community.name}?
@@ -366,7 +372,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     borderBottomColor: '#eee',
-    // borderBottomWidth: 1,
   },
   backButton: {
     flexDirection: 'row',
@@ -410,7 +415,6 @@ const styles = StyleSheet.create({
     fontFamily: 'GothamMedium',
   },
 
-  // CONTACT & LOCATION INFO - PLAIN TEXT
   infoContainer: {
     paddingHorizontal: 16,
     marginBottom: 24,
@@ -428,7 +432,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
-  // ACTION BUTTONS
   buttonContainer: {
     paddingHorizontal: 16,
     marginBottom: 24,
@@ -455,7 +458,6 @@ const styles = StyleSheet.create({
     color: ORANGE,
   },
 
-  // Bottom Sheets
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

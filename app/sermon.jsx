@@ -18,12 +18,13 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { BASE_URL } from './apiConfig';
+import { fetchBase64Image } from './fetchBase64Image';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ORANGE = '#FF6B00';
 const GOLD = '#E18731';
 const FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80';
+  'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
 const IMAGE_HORIZONTAL_PADDING = 16;
 
 export default function PlanInfoScreen() {
@@ -97,13 +98,26 @@ export default function PlanInfoScreen() {
       if (data?.success && data.data) {
         const { name, description, photo, likes, liked } = data.data;
 
+        let sermonImage = FALLBACK_IMAGE;
+
+        if (photo) {
+          try {
+            const processedImage = await fetchBase64Image(photo);
+            if (processedImage) {
+              sermonImage = processedImage;
+            }
+          } catch (imgErr) {
+            console.warn('Sermon image processing failed — using fallback:', imgErr);
+          }
+        }
+
         setPlan({
           title: name || 'Untitled Sermon',
           description: description || '',
-          image: photo && photo.startsWith("http") ? photo : FALLBACK_IMAGE,
+          image: sermonImage,
         });
 
-        setIsLiked(!!liked);           // true or false
+        setIsLiked(!!liked);
         setLikeCount(Number(likes) || 0);
       } else {
         setPlan(null);
@@ -114,7 +128,6 @@ export default function PlanInfoScreen() {
     loadSermon();
   }, [id]);
 
-  // LIKE / UNLIKE – NOW VISUALLY PERFECT
   const handleLike = async () => {
     if (!plan || !isConnected) {
       showToast("No internet connection.");
@@ -123,7 +136,6 @@ export default function PlanInfoScreen() {
 
     const wasLiked = isLiked;
 
-    // Optimistic update
     setIsLiked(!wasLiked);
     setLikeCount(wasLiked ? likeCount - 1 : likeCount + 1);
 
@@ -132,23 +144,31 @@ export default function PlanInfoScreen() {
       body: JSON.stringify({ sermon_id: id }),
     });
 
-    // If failed → rollback
     if (!res?.success) {
       setIsLiked(wasLiked);
       setLikeCount(wasLiked ? likeCount + 1 : likeCount - 1);
       showToast("Failed to like sermon.");
     }
-    // Success → already updated optimistically, no need to do anything
   };
 
   const handleShare = async () => {
     if (!plan) return;
+
     try {
+      // Clean, human-readable share content – no URLs, no garbage, no fallback image
+      const shareMessage = 
+        `${plan.title}\n\n` +
+        `${plan.description.trim() || "A powerful sermon worth listening to."}\n\n` +
+        `Sadaka Plus`;
+
       await Share.share({
-        message: `${plan.title}\n\n${plan.description}`,
+        message: shareMessage,
         title: plan.title,
       });
-    } catch {}
+    } catch (err) {
+      console.log('Share failed:', err);
+      showToast("Couldn't share sermon.");
+    }
   };
 
   if (loading) {
@@ -200,15 +220,19 @@ export default function PlanInfoScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.imageContainer}>
-          <Image source={{ uri: plan.image }} style={styles.heroImage} resizeMode="cover" />
+          <Image 
+            source={{ uri: plan.image }} 
+            style={styles.heroImage} 
+            resizeMode="cover"
+            defaultSource={{ uri: FALLBACK_IMAGE }}
+          />
         </View>
 
         <View style={styles.buttonContainer}>
           <View style={styles.actionButtons}>
-            {/* LIKE BUTTON – NOW VISUALLY FIXED */}
             <TouchableOpacity style={styles.actionBtn} onPress={handleLike}>
               <Ionicons
-                name={isLiked ? "heart" : "heart-outline"}   // THIS WAS THE BUG!
+                name={isLiked ? "heart" : "heart-outline"}
                 size={20}
                 color={isLiked ? GOLD : ORANGE}
               />
@@ -217,7 +241,6 @@ export default function PlanInfoScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* SHARE */}
             <TouchableOpacity style={styles.actionBtn} onPress={handleShare}>
               <Ionicons name="share-social-outline" size={20} color={ORANGE} />
               <Text style={styles.actionText}>Share</Text>
@@ -231,7 +254,6 @@ export default function PlanInfoScreen() {
   );
 }
 
-/* YOUR ORIGINAL STYLES – 100% UNCHANGED */
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#fff' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -242,7 +264,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    // borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#eee',
   },
   backButton: { flexDirection: 'row', alignItems: 'center' },
@@ -285,7 +307,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontFamily: 'GothamMedium',
   },
-  // Toast styles (same as all screens)
   toastContainer: { position: "absolute", top: 60, left: 20, right: 20, zIndex: 9999, alignItems: "center" },
   toast: {
     flexDirection: "row",

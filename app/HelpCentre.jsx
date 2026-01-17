@@ -108,7 +108,7 @@ export default function HelpCentreScreen() {
         >
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>Help Centre</Text>
+        <Text style={styles.title}>Feedback</Text>
         <View style={{ width: 36 }} />
       </View>
 

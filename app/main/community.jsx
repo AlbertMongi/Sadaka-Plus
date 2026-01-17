@@ -12,7 +12,8 @@ import {
   Platform,
   Dimensions,
   StatusBar,
-  RefreshControl as RNRefreshControl, // ← Fixed: Import as alias
+  RefreshControl as RNRefreshControl,
+  TextInput, // ← Added for search
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import YoutubePlayer from 'react-native-youtube-iframe';
@@ -49,6 +50,8 @@ export default function LiveTeachings() {
   const router = useRouter();
 
   const [videos, setVideos] = useState([]);
+  const [filteredVideos, setFilteredVideos] = useState([]); // ← For search results
+  const [searchQuery, setSearchQuery] = useState(''); // ← Search input
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
@@ -126,6 +129,7 @@ export default function LiveTeachings() {
       if (!communityId) {
         showToast("No community selected.", "error");
         setVideos([]);
+        setFilteredVideos([]);
         return;
       }
 
@@ -142,12 +146,15 @@ export default function LiveTeachings() {
           startedAt: item.startedAt,
         }));
         setVideos(formatted);
+        setFilteredVideos(formatted); // Initial full list
       } else {
         setVideos([]);
+        setFilteredVideos([]);
       }
     } catch (err) {
       showToast("Failed to load teachings.", "error");
       setVideos([]);
+      setFilteredVideos([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -160,8 +167,20 @@ export default function LiveTeachings() {
     }, [fetchVideos])
   );
 
+  // Search filter effect
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredVideos(videos);
+    } else {
+      const filtered = videos.filter(video =>
+        video.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredVideos(filtered);
+    }
+  }, [searchQuery, videos]);
+
   const onRefresh = () => {
-    setRefreshing(true);
+    setSearchQuery(''); // Clear search on refresh
     fetchVideos();
   };
 
@@ -187,7 +206,11 @@ export default function LiveTeachings() {
   };
 
   const renderVideo = ({ item }) => (
-    <TouchableOpacity style={styles.videoCard} onPress={() => openVideoPlayer(item)} activeOpacity={0.92}>
+    <TouchableOpacity 
+      style={styles.videoCard} 
+      onPress={() => openVideoPlayer(item)} 
+      activeOpacity={0.92}
+    >
       <View style={styles.thumbContainer}>
         <Image source={{ uri: item.thumbnail }} style={styles.thumb} resizeMode="cover" />
         <View style={styles.playOverlay}>
@@ -225,18 +248,36 @@ export default function LiveTeachings() {
 
       <Toast visible={toast.visible} message={toast.message} type={toast.type} />
 
-      {/* Header - Left Aligned */}
+      {/* Header */}
       <View style={styles.header}>
-        
         <Text style={styles.headerTitle}>Live & Teachings</Text>
       </View>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search teachings..."
+          placeholderTextColor="#aaa"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCorrect={false}
+          clearButtonMode="while-editing"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+            <Ionicons name="close-circle" size={20} color="#888" />
+          </TouchableOpacity>
+        )}
+      </View>
+
       <FlatList
-        data={videos}
+        data={filteredVideos}
         keyExtractor={item => item.id}
         renderItem={renderVideo}
         refreshControl={
-          <RNRefreshControl // ← This fixes the error
+          <RNRefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
             colors={[ORANGE]}
@@ -253,9 +294,14 @@ export default function LiveTeachings() {
           ) : (
             <View style={styles.emptyContainer}>
               <Ionicons name="tv-outline" size={80} color="#ccc" />
-              <Text style={styles.emptyTitle}>No Teachings Yet</Text>
+              <Text style={styles.emptyTitle}>
+                {searchQuery ? "No results found" : "No Teachings Yet"}
+              </Text>
               <Text style={styles.emptySubtitle}>
-                Live sessions and recorded teachings will appear here.
+                {searchQuery 
+                  ? `Try searching for something else.`
+                  : "Live sessions and recorded teachings will appear here."
+                }
               </Text>
             </View>
           )
@@ -306,34 +352,61 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? 30 : 10,
     paddingBottom: 16,
-    borderBottomColor: "#eee",
-    // borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  backButton: { padding: 8 },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: "GothamBold",
     color: "#222",
-    marginLeft: 8,
+  },
+
+  // Search Bar Styles
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    height: 48,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'GothamMedium',
+    color: '#333',
+  },
+  clearButton: {
+    padding: 4,
   },
 
   listContent: { paddingHorizontal: 12, paddingBottom: 32 },
 
-  // videoCard: {
-  //   backgroundColor: "#fff",
-  //   borderRadius: 14,
-  //   overflow: "hidden",
-  //   marginBottom: 16,
-  //   elevation: 4,
-  //   shadowColor: "#000",
-  //   shadowOffset: { width: 0, height: 2 },
-  //   shadowOpacity: 0.12,
-  //   shadowRadius: 6,
-  // },
-  thumbContainer: { height: 200, position: "relative" },
+  // Updated video card with oval/rounded corners
+  videoCard: {
+    backgroundColor: "#fff",
+    borderRadius: 20, // ← Oval corners
+    overflow: "hidden",
+    marginBottom: 18,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+  },
+  thumbContainer: { 
+    height: 220, 
+    position: "relative",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    overflow: 'hidden',
+  },
   thumb: { width: "100%", height: "100%" },
   playOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -352,11 +425,35 @@ const styles = StyleSheet.create({
   },
   liveText: { color: "#fff", fontSize: 12, fontFamily: "GothamBold" },
 
-  videoInfo: { padding: 14 },
-  videoTitle: { fontSize: 16, fontWeight: "600", color: "#000", fontFamily: "GothamBold", lineHeight: 22 },
-  dateText: { fontSize: 13, color: ORANGE, marginTop: 4, fontFamily: "GothamMedium" },
-  liveViewers: { fontSize: 14, color: GOLD, marginTop: 6, fontFamily: "GothamBold" },
-  viewCount: { fontSize: 13, color: "#666", marginTop: 6, fontFamily: "GothamMedium" },
+  videoInfo: { 
+    padding: 16,
+    paddingTop: 14,
+  },
+  videoTitle: { 
+    fontSize: 16, 
+    fontWeight: "600", 
+    color: "#000", 
+    fontFamily: "GothamBold", 
+    lineHeight: 22 
+  },
+  dateText: { 
+    fontSize: 13, 
+    color: ORANGE, 
+    marginTop: 4, 
+    fontFamily: "GothamMedium" 
+  },
+  liveViewers: { 
+    fontSize: 14, 
+    color: GOLD, 
+    marginTop: 6, 
+    fontFamily: "GothamBold" 
+  },
+  viewCount: { 
+    fontSize: 13, 
+    color: "#666", 
+    marginTop: 6, 
+    fontFamily: "GothamMedium" 
+  },
 
   loadingContainer: { alignItems: "center", paddingVertical: 100 },
   loadingText: { marginTop: 16, color: "#666", fontSize: 15, fontFamily: "GothamMedium" },
@@ -384,7 +481,7 @@ const styles = StyleSheet.create({
   },
   liveDot: {
     width: 10,
-    height  : 10,
+    height: 10,
     borderRadius: 5,
     backgroundColor: "#FF3B30",
     marginRight: 8,
