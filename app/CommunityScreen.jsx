@@ -18,12 +18,62 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import * as FileSystem from 'expo-file-system';
 import { BASE_URL } from './apiConfig';
-import { fetchBase64Image } from './fetchBase64Image';  // ← added
+import { fetchBase64Image } from './fetchBase64Image';
 
 const ORANGE = "#FF8C00";
 const GOLD = "#E18731";
-const FALLBACK_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';  // same as other screens
+const FALLBACK_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
+
+// ────────────────────────────────────────────────
+//  IMAGE CACHING HELPER (same as HomeScreen)
+// ────────────────────────────────────────────────
+const imageCache = new Map(); // in-memory fast access
+const CACHE_PREFIX = 'sadaka_comm_';
+
+async function getCachedImage(remoteUri) {
+  if (!remoteUri || remoteUri === FALLBACK_IMAGE) return FALLBACK_IMAGE;
+
+  // 1. Memory cache hit
+  if (imageCache.has(remoteUri)) {
+    return imageCache.get(remoteUri);
+  }
+
+  // 2. Persistent file cache
+  const filename = CACHE_PREFIX + btoa(remoteUri).replace(/[^a-zA-Z0-9]/g, '').slice(0, 40);
+  const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+  try {
+    const { exists } = await FileSystem.getInfoAsync(fileUri);
+    if (exists) {
+      const localUri = `file://${fileUri}`;
+      imageCache.set(remoteUri, localUri);
+      return localUri;
+    }
+  } catch (e) {
+    console.warn('Community file cache check failed', e);
+  }
+
+  // 3. Fetch + save to cache
+  try {
+    const base64Data = await fetchBase64Image(remoteUri);
+    if (!base64Data) throw new Error('No base64 data returned');
+
+    const pureBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
+
+    await FileSystem.writeAsStringAsync(fileUri, pureBase64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    const localUri = `file://${fileUri}`;
+    imageCache.set(remoteUri, localUri);
+    return localUri;
+  } catch (err) {
+    console.warn('Community image fetch/cache failed:', err);
+    return FALLBACK_IMAGE;
+  }
+}
 
 export default function Community() {
   const router = useRouter();
@@ -39,7 +89,7 @@ export default function Community() {
   const [activeTab, setActiveTab] = useState('my');
   const [isConnected, setIsConnected] = useState(true);
 
-  // Toast State (unchanged)
+  // Toast State
   const [toast, setToast] = useState({ visible: false, message: "", type: "error" });
 
   const showToast = (message, type = "error") => {
@@ -47,7 +97,7 @@ export default function Community() {
     setTimeout(() => setToast({ ...toast, visible: false }), 3500);
   };
 
-  // Network Detection (unchanged)
+  // Network Detection
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       const connected = state.isConnected ?? true;
@@ -59,7 +109,7 @@ export default function Community() {
     return () => unsubscribe();
   }, []);
 
-  // Fetch with token + retry (unchanged)
+  // Fetch with token + retry
   const fetchWithToken = async (url, retries = 2) => {
     for (let i = 0; i <= retries; i++) {
       try {
@@ -70,11 +120,9 @@ export default function Community() {
 
         const res = await fetch(url, { headers });
 
-        if (res.status === 401) {
-          return null;
-        }
-
+        if (res.status === 401) return null;
         if (!res.ok) throw new Error("Network error");
+
         return await res.json();
       } catch (err) {
         if (i === retries) throw err;
@@ -94,23 +142,14 @@ export default function Community() {
     setRefreshing(true);
 
     try {
-      // Fetch All Communities
+      // ── All Communities ──
       setLoadingAll(true);
       setLoadingPopular(true);
       const allRes = await fetchWithToken(`${BASE_URL}/communities/active`);
       if (allRes?.success && Array.isArray(allRes.data)) {
         const formatted = await Promise.all(
           allRes.data.map(async (c) => {
-            let imageUri = FALLBACK_IMAGE;
-            if (c.logo) {
-              try {
-                const processed = await fetchBase64Image(c.logo);
-                if (processed) imageUri = processed;
-              } catch (imgErr) {
-                console.log('Community image fetch failed:', imgErr);
-              }
-            }
-
+            const imageUri = c.logo ? await getCachedImage(c.logo) : FALLBACK_IMAGE;
             return {
               id: c.id.toString(),
               name: c.name || "Unnamed Community",
@@ -122,7 +161,7 @@ export default function Community() {
         );
 
         setAllCommunities(formatted);
-        setPopularCommunities(formatted.slice(0, 10)); // Top 10 popular
+        setPopularCommunities(formatted.slice(0, 10)); // Top 10
       } else {
         setAllCommunities([]);
         setPopularCommunities([]);
@@ -136,23 +175,14 @@ export default function Community() {
       setLoadingPopular(false);
     }
 
-    // Fetch My Communities
+    // ── My Communities ──
     try {
       setLoadingMy(true);
       const myRes = await fetchWithToken(`${BASE_URL}/communities/joined`);
       if (myRes?.success && Array.isArray(myRes.data)) {
         const formatted = await Promise.all(
           myRes.data.map(async (c) => {
-            let imageUri = FALLBACK_IMAGE;
-            if (c.logo) {
-              try {
-                const processed = await fetchBase64Image(c.logo);
-                if (processed) imageUri = processed;
-              } catch (imgErr) {
-                console.log('My community image fetch failed:', imgErr);
-              }
-            }
-
+            const imageUri = c.logo ? await getCachedImage(c.logo) : FALLBACK_IMAGE;
             return {
               id: c.id.toString(),
               name: c.name || "Unnamed Community",
@@ -196,7 +226,12 @@ export default function Community() {
       style={styles.communityCard}
       onPress={() => router.push({ pathname: "/CommunityDetail", params: { communityId: item.id } })}
     >
-      <Image source={{ uri: item.image }} style={styles.communityImage} resizeMode="cover" />
+      <Image
+        source={{ uri: item.image || FALLBACK_IMAGE }}
+        style={styles.communityImage}
+        resizeMode="cover"
+        defaultSource={{ uri: FALLBACK_IMAGE }}
+      />
       <View style={styles.communityInfo}>
         <Text style={styles.communityName}>{item.name}</Text>
         <Text style={styles.communityDesc} numberOfLines={2}>{item.description}</Text>
@@ -210,7 +245,12 @@ export default function Community() {
       style={styles.popularItem}
       onPress={() => router.push({ pathname: "/CommunityDetail", params: { communityId: item.id } })}
     >
-      <Image source={{ uri: item.image }} style={styles.popularImage} resizeMode="cover" />
+      <Image
+        source={{ uri: item.image || FALLBACK_IMAGE }}
+        style={styles.popularImage}
+        resizeMode="cover"
+        defaultSource={{ uri: FALLBACK_IMAGE }}
+      />
       <Text style={styles.popularName} numberOfLines={1}>{item.name}</Text>
     </TouchableOpacity>
   );
@@ -331,8 +371,7 @@ export default function Community() {
   );
 }
 
-// CONSISTENT STYLES - Matches Login & ChangeCommunityScreen
-// (unchanged - no modifications here)
+// Styles remain unchanged
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#fff" },
 

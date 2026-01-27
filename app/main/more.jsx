@@ -68,6 +68,7 @@ const MorePage = () => {
 
   const menuItems = [
     { title: 'All Communities', icon: 'people-outline', screen: '../CommunityScreen' },
+    { title: 'Change community', icon: 'people-outline', screen: '../ChangeCommunityScreen' },
      { title: 'Campaigns', icon: 'megaphone-outline', screen: '../campaigns' },
     { title: 'Contribution History', icon: 'document-text-outline', screen: '../history2' },
     // { title: 'Nearby Communities', icon: 'location-outline', screen: '../NearbyCommunity' },

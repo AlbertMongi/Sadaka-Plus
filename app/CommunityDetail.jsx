@@ -17,14 +17,64 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons, Entypo } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
 import { BASE_URL } from './apiConfig';
-import { fetchBase64Image } from './fetchBase64Image';  // ← added
+import { fetchBase64Image } from './fetchBase64Image';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const ORANGE = '#FF6B00';
 const FALLBACK_IMAGE =
   'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
 const IMAGE_HORIZONTAL_PADDING = 16;
+
+// ────────────────────────────────────────────────
+//  IMAGE CACHING HELPER (consistent with other screens)
+// ────────────────────────────────────────────────
+const imageCache = new Map();
+const CACHE_PREFIX = 'sadaka_detail_';
+
+async function getCachedImage(remoteUri) {
+  if (!remoteUri || remoteUri === FALLBACK_IMAGE) return FALLBACK_IMAGE;
+
+  // 1. Memory cache
+  if (imageCache.has(remoteUri)) {
+    return imageCache.get(remoteUri);
+  }
+
+  // 2. Persistent file cache
+  const filename = CACHE_PREFIX + btoa(remoteUri).replace(/[^a-zA-Z0-9]/g, '').slice(0, 40);
+  const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+  try {
+    const { exists } = await FileSystem.getInfoAsync(fileUri);
+    if (exists) {
+      const localUri = `file://${fileUri}`;
+      imageCache.set(remoteUri, localUri);
+      return localUri;
+    }
+  } catch (e) {
+    console.warn('Detail file cache check failed', e);
+  }
+
+  // 3. Fetch + cache
+  try {
+    const base64Data = await fetchBase64Image(remoteUri);
+    if (!base64Data) throw new Error('No base64 data');
+
+    const pureBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
+
+    await FileSystem.writeAsStringAsync(fileUri, pureBase64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    const localUri = `file://${fileUri}`;
+    imageCache.set(remoteUri, localUri);
+    return localUri;
+  } catch (err) {
+    console.warn('Community detail image fetch/cache failed:', err);
+    return FALLBACK_IMAGE;
+  }
+}
 
 export default function CommunityDetail() {
   const { communityId } = useLocalSearchParams();
@@ -36,7 +86,6 @@ export default function CommunityDetail() {
   const [showConfirmSheet, setShowConfirmSheet] = useState(false);
   const [sheetMessage, setSheetMessage] = useState('');
 
-  // Bottom Sheet Animations (unchanged)
   const successSheetAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const confirmSheetAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
@@ -75,25 +124,13 @@ export default function CommunityDetail() {
         });
         const json = await res.json();
         if (res.ok && json.success && json.data) {
-          let displayImage = FALLBACK_IMAGE;
-
-          // Process logo / image with fetchBase64Image
           const rawImage = json.data.logo || json.data.image || json.data.photo;
-          if (rawImage) {
-            try {
-              const processed = await fetchBase64Image(rawImage);
-              if (processed) {
-                displayImage = processed;
-              }
-            } catch (imgErr) {
-              console.warn('Community logo processing failed:', imgErr);
-            }
-          }
+          const displayImage = rawImage ? await getCachedImage(rawImage) : FALLBACK_IMAGE;
 
           setCommunity({
             ...json.data,
             isMember: json.data.joined,
-            displayImage,  // ← processed image
+            displayImage,
           });
         }
       } catch (err) {
@@ -169,10 +206,10 @@ export default function CommunityDetail() {
 
   const handleShare = async () => {
     try {
-      // Use processed displayImage if available
-      const shareImage = community?.displayImage !== FALLBACK_IMAGE 
-        ? community.displayImage 
-        : (community.logo?.startsWith('http') ? community.logo : `${BASE_URL}/${community.logo}`);
+      const shareImage =
+        community?.displayImage !== FALLBACK_IMAGE
+          ? community.displayImage
+          : FALLBACK_IMAGE;
 
       await Share.share({
         message: `${community.name}\n\n${community.description || 'Join this amazing community!'}`,
@@ -222,10 +259,10 @@ export default function CommunityDetail() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* 1. HERO IMAGE – now using processed displayImage */}
+        {/* Hero Image */}
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: community.displayImage }}
+            source={{ uri: community.displayImage || FALLBACK_IMAGE }}
             style={styles.heroImage}
             resizeMode="cover"
             defaultSource={{ uri: FALLBACK_IMAGE }}
@@ -233,17 +270,19 @@ export default function CommunityDetail() {
           <View style={styles.imageOverlay} />
         </View>
 
-        {/* 2. DESCRIPTION */}
+        {/* Description */}
         <Text style={styles.description}>
           {community.description || 'No description provided.'}
         </Text>
 
-        {/* 3. LOCATION & CONTACT INFO - PLAIN TEXT */}
+        {/* Location & Contact */}
         <View style={styles.infoContainer}>
           {community.region && (
             <View style={styles.infoRow}>
               <Entypo name="location" size={16} color={ORANGE} />
-              <Text style={styles.infoText}>{community.region}, {community.district}, {community.street}</Text>
+              <Text style={styles.infoText}>
+                {community.region}, {community.district}, {community.street}
+              </Text>
             </View>
           )}
           {community.phoneNo && (
@@ -260,7 +299,7 @@ export default function CommunityDetail() {
           )}
         </View>
 
-        {/* 4. ACTION BUTTONS */}
+        {/* Action Buttons */}
         <View style={styles.buttonContainer}>
           <View style={styles.actionButtons}>
             <TouchableOpacity
@@ -292,8 +331,12 @@ export default function CommunityDetail() {
         </View>
       </ScrollView>
 
-      {/* SUCCESS BOTTOM SHEET */}
-      <Modal transparent visible={showSuccessSheet} onRequestClose={() => closeSheet(successSheetAnim, setShowSuccessSheet)}>
+      {/* Success Bottom Sheet */}
+      <Modal
+        transparent
+        visible={showSuccessSheet}
+        onRequestClose={() => closeSheet(successSheetAnim, setShowSuccessSheet)}
+      >
         <TouchableWithoutFeedback onPress={() => closeSheet(successSheetAnim, setShowSuccessSheet)}>
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
@@ -313,8 +356,12 @@ export default function CommunityDetail() {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* CONFIRM UNFOLLOW BOTTOM SHEET */}
-      <Modal transparent visible={showConfirmSheet} onRequestClose={() => closeSheet(confirmSheetAnim, setShowConfirmSheet)}>
+      {/* Confirm Unfollow Bottom Sheet */}
+      <Modal
+        transparent
+        visible={showConfirmSheet}
+        onRequestClose={() => closeSheet(confirmSheetAnim, setShowConfirmSheet)}
+      >
         <TouchableWithoutFeedback onPress={() => closeSheet(confirmSheetAnim, setShowConfirmSheet)}>
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
@@ -350,6 +397,9 @@ export default function CommunityDetail() {
   );
 }
 
+// ────────────────────────────────────────────────
+//  Styles remain 100% unchanged
+// ────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

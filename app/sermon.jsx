@@ -1,22 +1,22 @@
-// app/sermon.jsx
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
-  Dimensions,
-  ActivityIndicator,
-  Share,
-  Platform,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import * as FileSystem from 'expo-file-system';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { BASE_URL } from './apiConfig';
 import { fetchBase64Image } from './fetchBase64Image';
 
@@ -26,6 +26,49 @@ const GOLD = '#E18731';
 const FALLBACK_IMAGE =
   'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
 const IMAGE_HORIZONTAL_PADDING = 16;
+
+// ────────────────────────────────────────────────
+// Image caching (like Community.jsx)
+// ────────────────────────────────────────────────
+const imageCache = new Map();
+const CACHE_PREFIX = 'sermon_';
+
+async function getCachedImage(remoteUri) {
+  if (!remoteUri || remoteUri === FALLBACK_IMAGE) return FALLBACK_IMAGE;
+
+  if (imageCache.has(remoteUri)) {
+    return imageCache.get(remoteUri);
+  }
+
+  const filename = CACHE_PREFIX + btoa(remoteUri).replace(/[^a-zA-Z0-9]/g, '').slice(0, 40);
+  const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+  try {
+    const { exists } = await FileSystem.getInfoAsync(fileUri);
+    if (exists) {
+      const localUri = `file://${fileUri}`;
+      imageCache.set(remoteUri, localUri);
+      return localUri;
+    }
+  } catch (e) {
+    console.warn('Sermon file cache check failed', e);
+  }
+
+  try {
+    const base64Data = await fetchBase64Image(remoteUri);
+    if (!base64Data) throw new Error('No base64 data returned');
+
+    const pureBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
+    await FileSystem.writeAsStringAsync(fileUri, pureBase64, { encoding: FileSystem.EncodingType.Base64 });
+
+    const localUri = `file://${fileUri}`;
+    imageCache.set(remoteUri, localUri);
+    return localUri;
+  } catch (err) {
+    console.warn('Sermon image fetch/cache failed:', err);
+    return FALLBACK_IMAGE;
+  }
+}
 
 export default function PlanInfoScreen() {
   const router = useRouter();
@@ -85,48 +128,37 @@ export default function PlanInfoScreen() {
     }
   };
 
-  useEffect(() => {
+  const loadSermon = useCallback(async () => {
     if (!id) {
       setLoading(false);
       return;
     }
 
-    const loadSermon = async () => {
-      setLoading(true);
-      const data = await fetchWithToken(`${BASE_URL}/sermons/${id}`);
+    setLoading(true);
+    const data = await fetchWithToken(`${BASE_URL}/sermons/${id}`);
 
-      if (data?.success && data.data) {
-        const { name, description, photo, likes, liked } = data.data;
+    if (data?.success && data.data) {
+      const { name, description, photo, likes, liked } = data.data;
 
-        let sermonImage = FALLBACK_IMAGE;
+      const sermonImage = await getCachedImage(photo);
 
-        if (photo) {
-          try {
-            const processedImage = await fetchBase64Image(photo);
-            if (processedImage) {
-              sermonImage = processedImage;
-            }
-          } catch (imgErr) {
-            console.warn('Sermon image processing failed — using fallback:', imgErr);
-          }
-        }
+      setPlan({
+        title: name || 'Untitled Sermon',
+        description: description || '',
+        image: sermonImage,
+      });
 
-        setPlan({
-          title: name || 'Untitled Sermon',
-          description: description || '',
-          image: sermonImage,
-        });
-
-        setIsLiked(!!liked);
-        setLikeCount(Number(likes) || 0);
-      } else {
-        setPlan(null);
-      }
-      setLoading(false);
-    };
-
-    loadSermon();
+      setIsLiked(!!liked);
+      setLikeCount(Number(likes) || 0);
+    } else {
+      setPlan(null);
+    }
+    setLoading(false);
   }, [id]);
+
+  useEffect(() => {
+    loadSermon();
+  }, [loadSermon]);
 
   const handleLike = async () => {
     if (!plan || !isConnected) {
@@ -155,16 +187,12 @@ export default function PlanInfoScreen() {
     if (!plan) return;
 
     try {
-      // Clean, human-readable share content – no URLs, no garbage, no fallback image
-      const shareMessage = 
+      const shareMessage =
         `${plan.title}\n\n` +
         `${plan.description.trim() || "A powerful sermon worth listening to."}\n\n` +
         `Sadaka Plus`;
 
-      await Share.share({
-        message: shareMessage,
-        title: plan.title,
-      });
+      await Share.share({ message: shareMessage, title: plan.title });
     } catch (err) {
       console.log('Share failed:', err);
       showToast("Couldn't share sermon.");
@@ -193,7 +221,6 @@ export default function PlanInfoScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Toast */}
       {toast.visible && (
         <View style={styles.toastContainer}>
           <View style={[styles.toast, toast.type === "success" ? styles.toastSuccess : styles.toastError]}>
@@ -203,15 +230,12 @@ export default function PlanInfoScreen() {
         </View>
       )}
 
-      {/* Top Bar */}
       <View style={[styles.topBar, { height: Platform.OS === 'android' ? 90 : 56, paddingTop: Platform.OS === 'android' ? 30 : 0 }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
 
-        <Text style={styles.mainTitle} numberOfLines={1}>
-          {plan.title}
-        </Text>
+        <Text style={styles.mainTitle} numberOfLines={1}>{plan.title}</Text>
 
         <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
           <Ionicons name="arrow-up" size={20} color="#000" />
@@ -220,9 +244,9 @@ export default function PlanInfoScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.imageContainer}>
-          <Image 
-            source={{ uri: plan.image }} 
-            style={styles.heroImage} 
+          <Image
+            source={{ uri: plan.image || FALLBACK_IMAGE }}
+            style={styles.heroImage}
             resizeMode="cover"
             defaultSource={{ uri: FALLBACK_IMAGE }}
           />
@@ -231,14 +255,8 @@ export default function PlanInfoScreen() {
         <View style={styles.buttonContainer}>
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.actionBtn} onPress={handleLike}>
-              <Ionicons
-                name={isLiked ? "heart" : "heart-outline"}
-                size={20}
-                color={isLiked ? GOLD : ORANGE}
-              />
-              <Text style={[styles.actionText, { color: isLiked ? GOLD : ORANGE }]}>
-                {likeCount}
-              </Text>
+              <Ionicons name={isLiked ? "heart" : "heart-outline"} size={20} color={isLiked ? GOLD : ORANGE} />
+              <Text style={[styles.actionText, { color: isLiked ? GOLD : ORANGE }]}>{likeCount}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionBtn} onPress={handleShare}>
@@ -264,18 +282,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     backgroundColor: '#fff',
-    // borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#eee',
   },
   backButton: { flexDirection: 'row', alignItems: 'center' },
-  mainTitle: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111',
-    fontFamily: 'GothamBold',
-  },
+  mainTitle: { flex: 1, marginLeft: 8, fontSize: 20, fontWeight: '700', color: '#111', fontFamily: 'GothamBold' },
   shareButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   scrollContent: { paddingBottom: 100 },
   imageContainer: {
@@ -300,27 +310,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   actionText: { fontSize: 14, marginLeft: 8, fontWeight: '600', fontFamily: 'GothamBold' },
-  description: {
-    fontSize: 15,
-    color: '#333',
-    lineHeight: 23,
-    paddingHorizontal: 16,
-    fontFamily: 'GothamMedium',
-  },
+  description: { fontSize: 15, color: '#333', lineHeight: 23, paddingHorizontal: 16, fontFamily: 'GothamMedium' },
   toastContainer: { position: "absolute", top: 60, left: 20, right: 20, zIndex: 9999, alignItems: "center" },
-  toast: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 10,
-    gap: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
-  },
+  toast: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, borderRadius: 10, gap: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4, elevation: 3 },
   toastSuccess: { backgroundColor: "#4CAF50" },
   toastError: { backgroundColor: "#FF3B30" },
   toastText: { color: "#fff", fontSize: 15, fontWeight: "600", fontFamily: "GothamBold" },

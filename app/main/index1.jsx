@@ -24,6 +24,7 @@ import { fetchBase64Image } from '../fetchBase64Image';
 const { width, height } = Dimensions.get('window');
 const GOLD = '#E18731';
 const FALLBACK_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
+const FALLBACK_IMAGE1 = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
 
 const EmptyState = ({ icon, title, subtitle }) => (
   <View style={styles.emptyContainer}>
@@ -137,6 +138,7 @@ const HomeScreen = () => {
           setProfileImage(finalUri);
           await AsyncStorage.setItem('ProfileImage', finalUri);
         } else {
+          await AsyncStorage.setItem('ProfileImage', FALLBACK_IMAGE);
           setProfileImage(FALLBACK_IMAGE);
         }
       }
@@ -446,7 +448,7 @@ useEffect(() => {
                 <Image
                   source={{ uri: profileImage }}
                   style={styles.avatar}
-                  defaultSource={{ uri: FALLBACK_IMAGE }}
+                  defaultSource={{ uri: FALLBACK_IMAGE1 }}
                   resizeMode="cover"
                 />
               </TouchableOpacity>

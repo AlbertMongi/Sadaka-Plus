@@ -12,7 +12,7 @@ export const fetchBase64Image = async (
   filename?: string | null
 ): Promise<string> => {
   const FALLBACK_IMAGE =
-    'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
 
   if (!filename) return FALLBACK_IMAGE;
 

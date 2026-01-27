@@ -348,7 +348,7 @@ export default function OTPVerification() {
         const storedPhoneNo = await AsyncStorage.getItem('userPhoneNo');
         console.log('Retrieved phone number:', storedPhoneNo);
         if (storedPhoneNo) setPhoneNo(storedPhoneNo);
-        else setErrorMessage('Phone number not found. Please log in again.');
+        // else setErrorMessage('Phone number not found. Please log in again.');
       } catch (error) {
         console.error('Failed to retrieve phone number:', error);
         setErrorMessage('Failed to retrieve phone number.');
