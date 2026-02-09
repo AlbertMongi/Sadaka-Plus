@@ -39,7 +39,7 @@ const translations = {
     getStarted: 'Get Started',
     skip: 'Skip',
     language: 'SW',
-    slide1: { heading: 'Join Live Church Service', subText: 'Tune into live-streamed services and special events.' },
+    slide1: { heading: 'Welcome to Sadaka Plus', subText: 'Welcome to our application to get you started.'},
     slide2: { heading: 'Easily Manage Donations', subText: 'Track your offerings, tithes and donations in one place.' },
     slide3: { heading: 'Stay Updated With Church News', subText: 'Get real-time updates, event reminders and more' },
   },
@@ -181,7 +181,7 @@ export default function GetStarted() {
       </View>
     );
   }
-
+    
   return (
     <View style={themeStyles.container}>
       <StatusBar

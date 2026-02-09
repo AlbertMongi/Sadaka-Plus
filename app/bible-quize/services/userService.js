@@ -3,7 +3,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Use your real production API (not localhost on device!)
-const API_URL = 'https://api.sadakaplus.co.tz/api/bible/quizzes/user';
+const API_URL = 'https://development.sadakaplus.co.tz/api/bible/quizzes/user';
 
 let isFetching = false; // Prevent multiple simultaneous calls
 

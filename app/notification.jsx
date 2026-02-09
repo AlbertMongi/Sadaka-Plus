@@ -249,7 +249,7 @@ export default function NotificationScreen() {
                     {processing ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
-                      <Text style={sheetStyles.deleteButtonText}>Delete</Text>
+                      <Text style={sheetStyles.deleteButtonText}>Read</Text>
                     )}
                   </TouchableOpacity>
                 </ScrollView>

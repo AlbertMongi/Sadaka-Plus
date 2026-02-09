@@ -1,7 +1,7 @@
 // services/leaderboardService.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE = "https://api.sadakaplus.co.tz/api/bible/quizzes";
+const API_BASE = "https://development.sadakaplus.co.tz/api/bible/quizzes";
 
 // Helper to safely get the auth token
 const getToken = async () => {

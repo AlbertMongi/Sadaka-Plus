@@ -214,7 +214,7 @@ export default function SignUpScreen() {
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Email (optional)"
+                  placeholder="Email"
                   keyboardType="email-address"
                   value={email}
                   onChangeText={setEmail}
