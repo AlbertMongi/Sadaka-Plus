@@ -1036,36 +1036,84 @@ const HomeScreen = () => {
     setGreeting(greetingText);
   }, [firstName]);
 
-  const fetchTransactions = useCallback(async () => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) return;
+  // const fetchTransactions = useCallback(async () => {
+  //   try {
+  //     const token = await AsyncStorage.getItem('userToken');
+  //     if (!token) return;
 
-      const res = await fetch(`${BASE_URL}/contributions/user`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = await res.json();
+  //     const res = await fetch(`${BASE_URL}/contributions/user`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     const json = await res.json();
 
-      if (json.success && Array.isArray(json.data)) {
-        const mapped = json.data.map(item => {
-          const d = new Date(item.createdAt || Date.now());
-          return {
-            id: item.id,
-            amount: item.amount,
-            purpose: item.purpose || 'Contribution',
-            dateTime: `${d.toDateString()} ${d.toLocaleTimeString()}`,
-            communityName: item.community?.name || item.community || '',
-          };
-        });
-        setTransactions(mapped);
-      } else {
-        setTransactions([]);
-      }
-    } catch (err) {
-      console.error('fetchTransactions error:', err);
+  //     if (json.success && Array.isArray(json.data)) {
+  //       const mapped = json.data.map(item => {
+  //         const d = new Date(item.createdAt || Date.now());
+  //         return {
+  //           id: item.id,
+  //           amount: item.amount,
+  //           purpose: item.purpose || 'Contribution',
+  //           dateTime: `${d.toDateString()} ${d.toLocaleTimeString()}`,
+  //           communityName: item.community?.name || item.community || '',
+  //         };
+  //       });
+  //       setTransactions(mapped);
+  //     } else {
+  //       setTransactions([]);
+  //     }
+  //   } catch (err) {
+  //     console.error('fetchTransactions error:', err);
+  //     setTransactions([]);
+  //   }
+  // }, []);
+const fetchTransactions = useCallback(async () => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) {
       setTransactions([]);
+      return;
     }
-  }, []);
+
+    const res = await fetch(`${BASE_URL}/contributions/user`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const json = await res.json();
+
+    const safeData = Array.isArray(json?.data) ? json.data : [];
+
+    const mapped = safeData
+      .filter(item => item && typeof item === 'object')
+      .map(item => {
+        const rawDate =
+          typeof item.createdAt === 'string' || typeof item.createdAt === 'number'
+            ? item.createdAt
+            : null;
+
+        const d = rawDate ? new Date(rawDate) : new Date();
+
+        return {
+          id: item.id ?? String(Math.random()), // guaranteed fallback
+          amount: Number(item.amount) || 0,
+          purpose: typeof item.purpose === 'string' ? item.purpose : 'Contribution',
+          dateTime: isNaN(d.getTime())
+            ? ''
+            : `${d.toDateString()} ${d.toLocaleTimeString()}`,
+          communityName:
+            typeof item.community?.name === 'string'
+              ? item.community.name
+              : typeof item.community === 'string'
+              ? item.community
+              : '',
+        };
+      });
+
+    setTransactions(mapped);
+  } catch (err) {
+    console.error('fetchTransactions error:', err);
+    setTransactions([]);
+  }
+}, []);
 
   const fetchJoinedCommunities = async () => {
     setLoadingCommunities(true);
