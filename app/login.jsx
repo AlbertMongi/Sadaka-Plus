@@ -292,6 +292,7 @@
 //   toastError: { backgroundColor: "#FF3B30" },
 //   toastText: { color: "#fff", fontWeight: "600" },
 // });
+
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -318,7 +319,7 @@ const ORANGE = "#FF9F00";
 export default function LoginScreen() {
   const router = useRouter();
 
-  const [identifier, setIdentifier] = useState(""); // now handles phone OR email
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -344,26 +345,11 @@ export default function LoginScreen() {
     setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 3500);
   };
 
-  const isValidIdentifier = (value) => {
-    const trimmed = value.trim();
-    if (!trimmed) return false;
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+?\d{9,15}$/; // flexible – accepts Tanzanian formats etc.
-
-    return emailRegex.test(trimmed) || phoneRegex.test(trimmed);
-  };
-
   const handleLogin = async () => {
-    const trimmed = identifier.trim();
+    const trimmedUsername = username.trim();
 
-    if (!trimmed || !password) {
-      showToast("Please enter your phone number/email and password.");
-      return;
-    }
-
-    if (!isValidIdentifier(trimmed)) {
-      showToast("Please enter a valid phone number or email.");
+    if (!trimmedUsername || !password) {
+      showToast("Please enter your username and password.");
       return;
     }
 
@@ -375,11 +361,10 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      // Decide which field to send based on input format
-      const isLikelyEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
-      const payload = isLikelyEmail
-        ? { email: trimmed, password }
-        : { phoneNo: trimmed, password };
+      const payload = {
+        username: trimmedUsername,
+        password,
+      };
 
       const res = await fetch(`${BASE_URL}/auth/user/login`, {
         method: "POST",
@@ -390,16 +375,15 @@ export default function LoginScreen() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // Save identifier (helps for OTP or recovery)
-        const storageKey = isLikelyEmail ? "userEmail" : "userPhoneNo";
-        await AsyncStorage.setItem(storageKey, trimmed);
+        // Save username for future use (recovery, pre-fill, etc.)
+        await AsyncStorage.setItem("username", trimmedUsername);
 
         showToast("Login successful!", "success");
 
         setTimeout(() => {
           router.push({
             pathname: "/otp2",
-            params: { identifier: trimmed }, // or change to phoneNo if OTP expects only phone
+            params: { identifier: trimmedUsername },
           });
         }, 800);
       } else {
@@ -472,14 +456,13 @@ export default function LoginScreen() {
               Log in to continue to your account.
             </Text>
 
-            <Text style={styles.label}>Phone number or Email *</Text>
+            <Text style={styles.label}>Phone number/email *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter your phone number or email"
+              placeholder="Enter your phone/email"
               placeholderTextColor="#999"
-              value={identifier}
-              onChangeText={setIdentifier}
-              keyboardType="email-address" // better for both phone & email
+              value={username}
+              onChangeText={setUsername}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -538,6 +521,9 @@ export default function LoginScreen() {
   );
 }
 
+// ────────────────────────────────────────────────
+// Styles remain 100% unchanged
+// ────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#fff" },
   topBar: {

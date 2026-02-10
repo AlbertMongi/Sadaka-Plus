@@ -1,24 +1,24 @@
 // // app/profile.jsx
-// import React, { useState, useEffect, useRef } from 'react';
+// import { Ionicons } from '@expo/vector-icons';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+// import { useNavigation } from '@react-navigation/native';
+// import * as ImagePicker from 'expo-image-picker';
+// import { useEffect, useRef, useState } from 'react';
 // import {
-//   View,
-//   Text,
-//   Image,
-//   StyleSheet,
-//   TouchableOpacity,
-//   SafeAreaView,
 //   ActivityIndicator,
-//   ScrollView,
-//   Platform,
-//   Modal,
 //   Animated,
 //   Dimensions,
+//   Image,
+//   Modal,
+//   Platform,
+//   SafeAreaView,
+//   ScrollView,
+//   StyleSheet,
+//   Text,
+//   TouchableOpacity,
 //   TouchableWithoutFeedback,
+//   View,
 // } from 'react-native';
-// import { Ionicons } from '@expo/vector-icons';
-// import { useNavigation } from '@react-navigation/native';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-// import * as ImagePicker from 'expo-image-picker';
 // import { BASE_URL } from './apiConfig';
 // import { fetchBase64Image } from './fetchBase64Image';
 
@@ -40,8 +40,7 @@
 
 // const ProfileScreen = () => {
 //   const navigation = useNavigation();
-  
-//   // Safely get network status — NEVER undefined
+
 //   const networkData = useNetwork();
 //   const isConnected = networkData?.isConnected ?? true;
 
@@ -58,7 +57,7 @@
 //     profile_photo_filename: null,
 //   });
 
-//   // Toast (same as LoginScreen)
+//   // Toast
 //   const [toast, setToast] = useState({ visible: false, message: "", type: "error" });
 //   const showToast = (message, type = "error") => {
 //     setToast({ visible: true, message, type });
@@ -87,15 +86,6 @@
 //     }).start(() => setShowOfflineSheet(false));
 //   };
 
-//   // Watch network changes — now 100% reliable
-//   useEffect(() => {
-//     if (!isConnected) {
-//       openOfflineSheet();
-//     } else {
-//       closeOfflineSheet();
-//     }
-//   }, [isConnected]);
-
 //   // Success Sheet (profile picture update)
 //   const [showSuccessSheet, setShowSuccessSheet] = useState(false);
 //   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
@@ -111,6 +101,36 @@
 //       setShowSuccessSheet(false);
 //     });
 //   };
+
+//   // Delete Account Confirmation Sheet
+//   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+//   const deleteSheetAnim = useRef(new Animated.Value(height)).current;
+
+//   const openDeleteSheet = () => {
+//     setShowDeleteConfirm(true);
+//     Animated.timing(deleteSheetAnim, {
+//       toValue: 0,
+//       duration: 350,
+//       useNativeDriver: true,
+//     }).start();
+//   };
+
+//   const closeDeleteSheet = () => {
+//     Animated.timing(deleteSheetAnim, {
+//       toValue: height,
+//       duration: 300,
+//       useNativeDriver: true,
+//     }).start(() => setShowDeleteConfirm(false));
+//   };
+
+//   // Watch network changes
+//   useEffect(() => {
+//     if (!isConnected) {
+//       openOfflineSheet();
+//     } else {
+//       closeOfflineSheet();
+//     }
+//   }, [isConnected]);
 
 //   // FETCH PROFILE
 //   const fetchProfile = async () => {
@@ -233,6 +253,60 @@
 //     }
 //   };
 
+//   // DELETE ACCOUNT
+//   const handleDeleteAccount = async () => {
+//     if (!isConnected) {
+//       showToast("No internet connection", "error");
+//       closeDeleteSheet();
+//       return;
+//     }
+
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       if (!token) {
+//         showToast("Session expired. Please log in again.", "error");
+//         closeDeleteSheet();
+//         navigation.replace('Login');
+//         return;
+//       }
+
+//       setLoading(true);
+//       closeDeleteSheet();
+
+//       const response = await fetch(`${BASE_URL}/users/account/delete`, {
+//         method: 'POST',
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           'Content-Type': 'application/json',
+//         },
+//       });
+
+//       const json = await response.json();
+
+//       if (json.success) {
+//         showToast("Account deleted successfully", "success");
+
+//         await AsyncStorage.multiRemove([
+//           'userToken',
+//           'ProfileImage',
+//           // add other keys if you store more
+//         ]);
+
+//         navigation.reset({
+//           index: 0,
+//           routes: [{ name: 'Login' }],
+//         });
+//       } else {
+//         throw new Error(json.message || 'Account deletion failed');
+//       }
+//     } catch (err) {
+//       console.error('Delete account error:', err);
+//       showToast(err.message || "Failed to delete account", "error");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
 //   // IMAGE PICKER
 //   const pickImage = async () => {
 //     try {
@@ -260,12 +334,10 @@
 //     }
 //   };
 
-//   // Load profile when connected
 //   useEffect(() => {
 //     fetchProfile();
 //   }, [isConnected]);
 
-//   // Load cached image
 //   useEffect(() => {
 //     (async () => {
 //       try {
@@ -386,41 +458,58 @@
 //               )}
 //             </View>
 
-//             <View style={styles.group}>
-//               <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('EditProfile')}>
-//                 <View style={styles.iconWrapper}>
-//                   <Ionicons name="person-outline" size={22} color={GOLD} />
-//                 </View>
-//                 <Text style={styles.menuText}>Edit Profile Information</Text>
-//                 <Ionicons name="chevron-forward" size={20} color="#666" />
-//               </TouchableOpacity>
+            // <View style={styles.group}>
+            //   <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('EditProfile')}>
+            //     <View style={styles.iconWrapper}>
+            //       <Ionicons name="person-outline" size={22} color={GOLD} />
+            //     </View>
+            //     <Text style={styles.menuText}>Edit Profile Information</Text>
+            //     <Ionicons name="chevron-forward" size={20} color="#666" />
+            //   </TouchableOpacity>
 
-//               <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangePasswordScreen')}>
-//                 <View style={styles.iconWrapper}>
-//                   <Ionicons name="key-outline" size={22} color={GOLD} />
-//                 </View>
-//                 <Text style={styles.menuText}>Change Password</Text>
-//                 <Ionicons name="chevron-forward" size={20} color="#666" />
-//               </TouchableOpacity>
+            //   <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangePasswordScreen')}>
+            //     <View style={styles.iconWrapper}>
+            //       <Ionicons name="key-outline" size={22} color={GOLD} />
+            //     </View>
+            //     <Text style={styles.menuText}>Change Password</Text>
+            //     <Ionicons name="chevron-forward" size={20} color="#666" />
+            //   </TouchableOpacity>
 
-//               <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangeCommunityScreen')}>
-//                 <View style={styles.iconWrapper}>
-//                   <Ionicons name="swap-horizontal-outline" size={22} color={GOLD} />
-//                 </View>
-//                 <Text style={styles.menuText}>Change Community</Text>
-//                 <Ionicons name="chevron-forward" size={20} color="#666" />
+            //   <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangeCommunityScreen')}>
+            //     <View style={styles.iconWrapper}>
+            //       <Ionicons name="swap-horizontal-outline" size={22} color={GOLD} />
+            //     </View>
+            //     <Text style={styles.menuText}>Change Community</Text>
+            //     <Ionicons name="chevron-forward" size={20} color="#666" />
+            //   </TouchableOpacity>
+            // </View>
+
+//             {/* Delete Account Section */}
+//             <View style={[styles.group, { marginTop: 32 }]}>
+//               <TouchableOpacity
+//                 style={[styles.menuItem, { justifyContent: 'center' }]}
+//                 onPress={openDeleteSheet}
+//               >
+//                 <Text style={{
+//                   color: '#ff3b30',
+//                   fontSize: 16,
+//                   fontFamily: 'GothamBold',
+//                   textAlign: 'center',
+//                 }}>
+//                   Delete Account
+//                 </Text>
 //               </TouchableOpacity>
 //             </View>
 //           </>
 //         )}
 //       </ScrollView>
 
-//       {/* Fixed bottom footer with your requested text */}
-//      <View style={styles.footer}>
-//   <Text style={styles.footerText}>powered by EvMak © 2026</Text>
-// </View>
+//       {/* Fixed footer */}
+//       <View style={styles.footer}>
+//         <Text style={styles.footerText}>powered by EvMak © 2026</Text>
+//       </View>
 
-//       {/* Success Sheet */}
+//       {/* Success Sheet (profile picture) */}
 //       <Modal transparent visible={showSuccessSheet} onRequestClose={closeSheet}>
 //         <TouchableWithoutFeedback onPress={closeSheet}>
 //           <View style={styles.modalOverlay}>
@@ -439,19 +528,77 @@
 //             </TouchableWithoutFeedback>
 //           </View>
 //         </TouchableWithoutFeedback>
-//       </Modal>  
+//       </Modal>
+
+//       {/* ────────────────────────────────────────────────
+//            Improved Delete Confirmation Bottom Sheet
+//       ──────────────────────────────────────────────── */}
+//       <Modal
+//         transparent
+//         visible={showDeleteConfirm}
+//         onRequestClose={closeDeleteSheet}
+//         animationType="fade"
+//       >
+//         <TouchableWithoutFeedback onPress={closeDeleteSheet}>
+//           <View style={styles.modalOverlay}>
+//             <TouchableWithoutFeedback>
+//               <Animated.View
+//                 style={[
+//                   styles.sheet,
+//                   {
+//                     transform: [{ translateY: deleteSheetAnim }],
+//                     paddingBottom: Platform.OS === 'ios' ? 50 : 40,
+//                   },
+//                 ]}
+//               >
+//                 <View style={styles.sheetHandle} />
+
+//                 <View style={styles.deleteIconContainer}>
+//                   <Ionicons name="alert-circle" size={64} color="#ff3b30" />
+//                 </View>
+
+//                 <Text style={styles.deleteTitle}>Delete Account?</Text>
+
+//                 <Text style={styles.deleteWarningText}>
+//                   This action is permanent and cannot be undone. All your data, posts, comments, and account information will be permanently deleted.
+//                 </Text>
+
+//                 <View style={styles.buttonContainer}>
+//                   <TouchableOpacity
+//                     style={styles.confirmDeleteButton}
+//                     onPress={handleDeleteAccount}
+//                     activeOpacity={0.8}
+//                   >
+//                     <Text style={styles.confirmDeleteText}>
+//                       Yes, Delete My Account
+//                     </Text>
+//                   </TouchableOpacity>
+
+//                   <TouchableOpacity
+//                     style={styles.cancelButton}
+//                     onPress={closeDeleteSheet}
+//                     activeOpacity={0.7}
+//                   >
+//                     <Text style={styles.cancelText}>Cancel</Text>
+//                   </TouchableOpacity>
+//                 </View>
+//               </Animated.View>
+//             </TouchableWithoutFeedback>
+//           </View>
+//         </TouchableWithoutFeedback>
+//       </Modal>
 //     </SafeAreaView>
 //   );
 // };
 
 // const styles = StyleSheet.create({
 //   safeArea: { flex: 1, backgroundColor: '#fff' },
-//   scrollContent: { padding: 16, paddingBottom: 80 }, // extra bottom padding so footer doesn't overlap content
+//   scrollContent: { padding: 16, paddingBottom: 100 },
 //   header: {
 //     flexDirection: 'row',
 //     justifyContent: 'space-between',
 //     alignItems: 'center',
-//     paddingVertical: Platform.OS === 'android' ? 20 : -25,
+//     paddingVertical: Platform.OS === 'android' ? 20 : 0,
 //     paddingHorizontal: 4,
 //   },
 //   headerTitle: { fontSize: 20, fontFamily: 'GothamBold', color: '#222' },
@@ -533,7 +680,7 @@
 //   toastError: { backgroundColor: "#FF3B30" },
 //   toastText: { color: "#fff", fontSize: 15, fontWeight: "600", fontFamily: "GothamBold" },
 
-//   // Offline Sheet
+//   // Bottom Sheets
 //   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
 //   offlineSheet: {
 //     backgroundColor: '#fff',
@@ -544,13 +691,6 @@
 //     paddingBottom: 40,
 //     alignItems: 'center',
 //   },
-//   sheetHandle: { width: 40, height: 5, backgroundColor: '#ddd', borderRadius: 3, alignSelf: 'center', marginBottom: 20 },
-//   offlineTitle: { fontSize: 20, fontFamily: 'GothamBold', color: '#222', marginTop: 16 },
-//   offlineSubtitle: { fontSize: 14, color: '#666', textAlign: 'center', marginTop: 8, paddingHorizontal: 20, lineHeight: 20 },
-//   retryBtn: { marginTop: 24, backgroundColor: GOLD, paddingHorizontal: 36, paddingVertical: 14, borderRadius: 30 },
-//   retryText: { color: '#fff', fontSize: 16, fontFamily: 'GothamBold' },
-
-//   // Success Sheet
 //   sheet: {
 //     backgroundColor: '#fff',
 //     borderTopLeftRadius: 24,
@@ -558,29 +698,89 @@
 //     paddingTop: 16,
 //     paddingHorizontal: 24,
 //     paddingBottom: 32,
-//     maxHeight: height * 0.7,
 //   },
+//   sheetHandle: { width: 40, height: 5, backgroundColor: '#ddd', borderRadius: 3, alignSelf: 'center', marginBottom: 20 },
+//   offlineTitle: { fontSize: 20, fontFamily: 'GothamBold', color: '#222', marginTop: 16 },
+//   offlineSubtitle: { fontSize: 14, color: '#666', textAlign: 'center', marginTop: 8, paddingHorizontal: 20, lineHeight: 20 },
+//   retryBtn: { marginTop: 24, backgroundColor: GOLD, paddingHorizontal: 36, paddingVertical: 14, borderRadius: 30 },
+//   retryText: { color: '#fff', fontSize: 16, fontFamily: 'GothamBold' },
+
+//   // Success Sheet (profile pic)
 //   updatedData: { marginBottom: 24, alignItems: 'center' },
 //   previewImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: GOLD, marginVertical: 16 },
 //   doneBtn: { backgroundColor: GOLD, paddingVertical: 16, borderRadius: 30, alignItems: 'center' },
 //   doneText: { color: '#fff', fontSize: 16, fontFamily: 'GothamBold' },
 
-//   // New: Fixed bottom footer
+//   // Footer
 //   footer: {
 //     position: 'absolute',
 //     bottom: 0,
 //     left: 0,
 //     right: 0,
-//     // paddingVertical: 12,
-//     // backgroundColor: '#fff',
-//     // borderTopWidth: 1,
-//     // borderTopColor: '#eee',
 //     alignItems: 'center',
 //     justifyContent: 'center',
+//     paddingVertical: 12,
 //   },
 //   footerText: {
 //     fontSize: 13,
 //     color: '#999',
+//     fontFamily: 'GothamMedium',
+//   },
+
+//   // ────────────────────────────────────────────────
+//   //     Delete Account Bottom Sheet Styles
+//   // ────────────────────────────────────────────────
+//   deleteIconContainer: {
+//     alignItems: 'center',
+//     marginTop: 20,
+//     marginBottom: 20,
+//   },
+//   deleteTitle: {
+//     fontSize: 24,
+//     fontFamily: 'GothamBold',
+//     color: '#222',
+//     textAlign: 'center',
+//     marginBottom: 12,
+//     letterSpacing: -0.2,
+//   },
+//   deleteWarningText: {
+//     fontSize: 15,
+//     lineHeight: 23,
+//     color: '#555',
+//     textAlign: 'center',
+//     paddingHorizontal: 20,
+//     marginBottom: 36,
+//   },
+//   buttonContainer: {
+//     width: '100%',
+//     gap: 14,
+//     marginTop: 8,
+//   },
+//   confirmDeleteButton: {
+//     backgroundColor: '#ff3b30',
+//     paddingVertical: 16,
+//     borderRadius: 30,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//   },
+//   confirmDeleteText: {
+//     color: '#fff',
+//     fontSize: 16,
+//     fontFamily: 'GothamBold',
+//     letterSpacing: -0.1,
+//   },
+//   cancelButton: {
+//     paddingVertical: 15,
+//     borderRadius: 30,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     backgroundColor: '#f8f8f8',
+//     borderWidth: 1,
+//     borderColor: '#e0e0e0',
+//   },
+//   cancelText: {
+//     color: '#333',
+//     fontSize: 16,
 //     fontFamily: 'GothamMedium',
 //   },
 // });
@@ -588,11 +788,11 @@
 // export default ProfileScreen;
 
 
-
 // app/profile.jsx
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -613,24 +813,22 @@ import {
 import { BASE_URL } from './apiConfig';
 import { fetchBase64Image } from './fetchBase64Image';
 
-// SAFELY import NetworkStatusProvider — will NOT crash if missing
-let useNetwork = () => ({ isConnected: true }); // Default: assume online
+// SAFELY import NetworkStatusProvider — fallback if missing
+let useNetwork = () => ({ isConnected: true });
 try {
   const imported = require('../../components/NetworkStatusProvider');
-  if (imported && imported.useNetwork) {
-    useNetwork = imported.useNetwork;
-  }
-} catch (err) {
-  console.warn('NetworkStatusProvider not found. Using fallback (always online).');
+  if (imported && imported.useNetwork) useNetwork = imported.useNetwork;
+} catch {
+  console.warn('NetworkStatusProvider not found — using always-online fallback');
 }
 
 const { height } = Dimensions.get('window');
 const GOLD = '#E18731';
-const FALLBACK_IMAGE =
-  'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
+const FALLBACK_IMAGE = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
+  const router = useRouter();
 
   const networkData = useNetwork();
   const isConnected = networkData?.isConnected ?? true;
@@ -649,10 +847,10 @@ const ProfileScreen = () => {
   });
 
   // Toast
-  const [toast, setToast] = useState({ visible: false, message: "", type: "error" });
-  const showToast = (message, type = "error") => {
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'error' });
+  const showToast = (message, type = 'error') => {
     setToast({ visible: true, message, type });
-    setTimeout(() => setToast({ ...toast, visible: false }), 3500);
+    setTimeout(() => setToast({ visible: false, message: '', type: 'error' }), 3800);
   };
 
   // Offline Bottom Sheet
@@ -662,22 +860,16 @@ const ProfileScreen = () => {
   const openOfflineSheet = () => {
     if (showOfflineSheet) return;
     setShowOfflineSheet(true);
-    Animated.timing(offlineSheetAnim, {
-      toValue: 0,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
+    Animated.timing(offlineSheetAnim, { toValue: 0, duration: 400, useNativeDriver: true }).start();
   };
 
   const closeOfflineSheet = () => {
-    Animated.timing(offlineSheetAnim, {
-      toValue: height,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => setShowOfflineSheet(false));
+    Animated.timing(offlineSheetAnim, { toValue: height, duration: 300, useNativeDriver: true }).start(() =>
+      setShowOfflineSheet(false),
+    );
   };
 
-  // Success Sheet (profile picture update)
+  // Success Sheet (profile picture)
   const [showSuccessSheet, setShowSuccessSheet] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
   const sheetAnim = useRef(new Animated.Value(height)).current;
@@ -690,43 +882,33 @@ const ProfileScreen = () => {
   const closeSheet = () => {
     Animated.timing(sheetAnim, { toValue: height, duration: 300, useNativeDriver: true }).start(() => {
       setShowSuccessSheet(false);
+      setUploadedImageUrl('');
     });
   };
 
-  // Delete Account Confirmation Sheet
+  // Delete Confirmation Sheet
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteSheetAnim = useRef(new Animated.Value(height)).current;
 
   const openDeleteSheet = () => {
     setShowDeleteConfirm(true);
-    Animated.timing(deleteSheetAnim, {
-      toValue: 0,
-      duration: 350,
-      useNativeDriver: true,
-    }).start();
+    Animated.timing(deleteSheetAnim, { toValue: 0, duration: 350, useNativeDriver: true }).start();
   };
 
   const closeDeleteSheet = () => {
-    Animated.timing(deleteSheetAnim, {
-      toValue: height,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => setShowDeleteConfirm(false));
+    Animated.timing(deleteSheetAnim, { toValue: height, duration: 300, useNativeDriver: true }).start(() =>
+      setShowDeleteConfirm(false),
+    );
   };
 
-  // Watch network changes
   useEffect(() => {
-    if (!isConnected) {
-      openOfflineSheet();
-    } else {
-      closeOfflineSheet();
-    }
+    if (!isConnected) openOfflineSheet();
+    else closeOfflineSheet();
   }, [isConnected]);
 
-  // FETCH PROFILE
   const fetchProfile = async () => {
     if (!isConnected) {
-      showToast("No internet connection", "error");
+      showToast('No internet connection', 'error');
       setLoading(false);
       return;
     }
@@ -735,8 +917,7 @@ const ProfileScreen = () => {
       setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
-        showToast("Session expired. Please log in again.", "error");
-        navigation.replace('Login');
+        router.replace('/login');
         return;
       }
 
@@ -752,6 +933,9 @@ const ProfileScreen = () => {
 
       if (json.success && json.data) {
         const d = json.data;
+        const imageUri = d.profile_photo
+          ? (await fetchBase64Image(d.profile_photo)) || FALLBACK_IMAGE
+          : FALLBACK_IMAGE;
 
         setUser({
           firstName: d.firstName || '',
@@ -760,12 +944,10 @@ const ProfileScreen = () => {
           email: d.email || '',
           accountVerified: !!d.accountVerified,
           profile_photo_filename: d.profile_photo || null,
-          profileImage: FALLBACK_IMAGE,
+          profileImage: imageUri,
         });
 
-        if (d.profile_photo) {
-          const imageUri = await fetchBase64Image(d.profile_photo);
-          setUser(prev => ({ ...prev, profileImage: imageUri }));
+        if (imageUri !== FALLBACK_IMAGE) {
           await AsyncStorage.setItem('ProfileImage', imageUri);
         }
       } else {
@@ -773,31 +955,19 @@ const ProfileScreen = () => {
       }
     } catch (err) {
       console.error('Profile fetch error:', err);
-      showToast(err.message || "Failed to load profile", "error");
+      showToast('Failed to load profile', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // UPLOAD PROFILE PICTURE
   const uploadProfilePicture = async (localUri) => {
-    if (!isConnected) {
-      showToast("No internet connection", "error");
-      return;
-    }
-
-    if (!localUri) {
-      showToast("No image selected.", "error");
-      return;
-    }
+    if (!isConnected || !localUri) return;
 
     try {
       setUploading(true);
       const token = await AsyncStorage.getItem('userToken');
-      if (!token) {
-        showToast("Authentication missing. Please log in.", "error");
-        return;
-      }
+      if (!token) return;
 
       const formData = new FormData();
       const fileName = localUri.split('/').pop() || `profile_${Date.now()}.jpg`;
@@ -806,7 +976,7 @@ const ProfileScreen = () => {
 
       formData.append('image', { uri, name: fileName, type: fileType });
 
-      const response = await fetch(`${BASE_URL}/users/profile/picture`, {
+      const res = await fetch(`${BASE_URL}/users/profile/picture`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -815,56 +985,51 @@ const ProfileScreen = () => {
         body: formData,
       });
 
-      const json = await response.json();
+      const json = await res.json();
 
       if (json.success && json.data?.profile_photo) {
         const filename = json.data.profile_photo;
-        const imageUri = await fetchBase64Image(filename);
+        const imageUri = (await fetchBase64Image(filename)) || FALLBACK_IMAGE;
 
-        setUser(prev => ({
+        setUser((prev) => ({
           ...prev,
           profileImage: imageUri,
           profile_photo_filename: filename,
         }));
         await AsyncStorage.setItem('ProfileImage', imageUri);
         setUploadedImageUrl(imageUri);
-        showToast("Profile picture updated successfully!", "success");
+        showToast('Profile picture updated!', 'success');
         openSheet();
-        setTimeout(closeSheet, 3000);
+        setTimeout(closeSheet, 3400);
       } else {
         throw new Error(json.message || 'Upload failed');
       }
     } catch (err) {
       console.error('Upload failed:', err);
-      showToast(err.message || "Failed to upload image", "error");
-      const saved = await AsyncStorage.getItem('ProfileImage');
-      if (saved) setUser(prev => ({ ...prev, profileImage: saved }));
+      showToast('Failed to upload image', 'error');
     } finally {
       setUploading(false);
     }
   };
 
-  // DELETE ACCOUNT
   const handleDeleteAccount = async () => {
     if (!isConnected) {
-      showToast("No internet connection", "error");
+      showToast('No internet connection', 'error');
       closeDeleteSheet();
       return;
     }
 
     try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) {
-        showToast("Session expired. Please log in again.", "error");
-        closeDeleteSheet();
-        navigation.replace('Login');
-        return;
-      }
-
       setLoading(true);
       closeDeleteSheet();
 
-      const response = await fetch(`${BASE_URL}/users/account/delete/`, {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        router.replace('/login');
+        return;
+      }
+
+      const res = await fetch(`${BASE_URL}/users/account/delete`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -872,38 +1037,35 @@ const ProfileScreen = () => {
         },
       });
 
-      const json = await response.json();
+      const json = await res.json();
 
       if (json.success) {
-        showToast("Account deleted successfully", "success");
+        showToast('Account deleted successfully', 'success');
 
-        await AsyncStorage.multiRemove([
-          'userToken',
-          'ProfileImage',
-          // add other keys if you store more
-        ]);
+        // Clear storage
+        await AsyncStorage.multiRemove(['userToken', 'ProfileImage']);
 
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        });
+        // Let user see success message
+        await new Promise((resolve) => setTimeout(resolve, 1600));
+
+        // Redirect using Expo Router (this fixes the navigator error)
+        router.replace('/login');
       } else {
         throw new Error(json.message || 'Account deletion failed');
       }
     } catch (err) {
       console.error('Delete account error:', err);
-      showToast(err.message || "Failed to delete account", "error");
+      showToast(err.message || 'Failed to delete account', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // IMAGE PICKER
   const pickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        showToast("Gallery access denied. Please enable in settings.", "error");
+        showToast('Gallery access denied', 'error');
         return;
       }
 
@@ -916,12 +1078,12 @@ const ProfileScreen = () => {
 
       if (!result.canceled && result.assets?.[0]?.uri) {
         const uri = result.assets[0].uri;
-        setUser(prev => ({ ...prev, profileImage: uri }));
+        setUser((prev) => ({ ...prev, profileImage: uri }));
         await AsyncStorage.setItem('ProfileImage', uri);
         await uploadProfilePicture(uri);
       }
     } catch (err) {
-      showToast("Failed to pick image", "error");
+      showToast('Failed to pick image', 'error');
     }
   };
 
@@ -933,19 +1095,12 @@ const ProfileScreen = () => {
     (async () => {
       try {
         const img = await AsyncStorage.getItem('ProfileImage');
-        if (img) {
-          setUser(prev => ({ ...prev, profileImage: img }));
-        }
-      } catch (err) {
-        console.warn('Failed to load cached image');
-      }
+        if (img) setUser((prev) => ({ ...prev, profileImage: img }));
+      } catch {}
     })();
   }, []);
 
-  const fullName = [user.firstName, user.lastName]
-    .filter(Boolean)
-    .join(' ')
-    .trim() || 'User';
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || 'User';
 
   const ContactInfo = () => {
     const hasPhone = !!user.phoneNo;
@@ -975,9 +1130,9 @@ const ProfileScreen = () => {
       {/* Toast */}
       {toast.visible && (
         <View style={styles.toastContainer}>
-          <View style={[styles.toast, toast.type === "success" ? styles.toastSuccess : styles.toastError]}>
+          <View style={[styles.toast, toast.type === 'success' ? styles.toastSuccess : styles.toastError]}>
             <Ionicons
-              name={toast.type === "success" ? "checkmark-circle" : "close-circle"}
+              name={toast.type === 'success' ? 'checkmark-circle' : 'close-circle'}
               size={22}
               color="#fff"
             />
@@ -986,7 +1141,7 @@ const ProfileScreen = () => {
         </View>
       )}
 
-      {/* OFFLINE BOTTOM SHEET */}
+      {/* Offline sheet */}
       <Modal transparent visible={showOfflineSheet} onRequestClose={closeOfflineSheet}>
         <TouchableWithoutFeedback onPress={closeOfflineSheet}>
           <View style={styles.modalOverlay}>
@@ -1025,17 +1180,9 @@ const ProfileScreen = () => {
           <>
             <View style={styles.profileHeader}>
               <View style={styles.imageWrapper}>
-                <Image
-                  source={{ uri: user.profileImage }}
-                  style={styles.avatar}
-                  defaultSource={{ uri: FALLBACK_IMAGE }}
-                />
+                <Image source={{ uri: user.profileImage }} style={styles.avatar} defaultSource={{ uri: FALLBACK_IMAGE }} />
                 <TouchableOpacity style={styles.editBtn} onPress={pickImage} disabled={uploading}>
-                  {uploading ? (
-                    <ActivityIndicator size={14} color="#fff" />
-                  ) : (
-                    <Ionicons name="pencil" size={16} color="#fff" />
-                  )}
+                  {uploading ? <ActivityIndicator size={14} color="#fff" /> : <Ionicons name="pencil" size={16} color="#fff" />}
                 </TouchableOpacity>
               </View>
 
@@ -1075,18 +1222,16 @@ const ProfileScreen = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Delete Account Section */}
             <View style={[styles.group, { marginTop: 32 }]}>
-              <TouchableOpacity
-                style={[styles.menuItem, { justifyContent: 'center' }]}
-                onPress={openDeleteSheet}
-              >
-                <Text style={{
-                  color: '#ff3b30',
-                  fontSize: 16,
-                  fontFamily: 'GothamBold',
-                  textAlign: 'center',
-                }}>
+              <TouchableOpacity style={[styles.menuItem, { justifyContent: 'center' }]} onPress={openDeleteSheet}>
+                <Text
+                  style={{
+                    color: '#ff3b30',
+                    fontSize: 16,
+                    fontFamily: 'GothamBold',
+                    textAlign: 'center',
+                  }}
+                >
                   Delete Account
                 </Text>
               </TouchableOpacity>
@@ -1095,12 +1240,11 @@ const ProfileScreen = () => {
         )}
       </ScrollView>
 
-      {/* Fixed footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>powered by EvMak © 2026</Text>
       </View>
 
-      {/* Success Sheet (profile picture) */}
+      {/* Success sheet – profile picture */}
       <Modal transparent visible={showSuccessSheet} onRequestClose={closeSheet}>
         <TouchableWithoutFeedback onPress={closeSheet}>
           <View style={styles.modalOverlay}>
@@ -1121,15 +1265,8 @@ const ProfileScreen = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* ────────────────────────────────────────────────
-           Improved Delete Confirmation Bottom Sheet
-      ──────────────────────────────────────────────── */}
-      <Modal
-        transparent
-        visible={showDeleteConfirm}
-        onRequestClose={closeDeleteSheet}
-        animationType="fade"
-      >
+      {/* Delete confirmation sheet */}
+      <Modal transparent visible={showDeleteConfirm} onRequestClose={closeDeleteSheet} animationType="fade">
         <TouchableWithoutFeedback onPress={closeDeleteSheet}>
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
@@ -1155,21 +1292,11 @@ const ProfileScreen = () => {
                 </Text>
 
                 <View style={styles.buttonContainer}>
-                  <TouchableOpacity
-                    style={styles.confirmDeleteButton}
-                    onPress={handleDeleteAccount}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.confirmDeleteText}>
-                      Yes, Delete My Account
-                    </Text>
+                  <TouchableOpacity style={styles.confirmDeleteButton} onPress={handleDeleteAccount} activeOpacity={0.8}>
+                    <Text style={styles.confirmDeleteText}>Yes, Delete My Account</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={closeDeleteSheet}
-                    activeOpacity={0.7}
-                  >
+                  <TouchableOpacity style={styles.cancelButton} onPress={closeDeleteSheet} activeOpacity={0.7}>
                     <Text style={styles.cancelText}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
@@ -1182,6 +1309,9 @@ const ProfileScreen = () => {
   );
 };
 
+// ────────────────────────────────────────────────
+// Styles (unchanged from your original)
+// ────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#fff' },
   scrollContent: { padding: 16, paddingBottom: 100 },
@@ -1245,33 +1375,31 @@ const styles = StyleSheet.create({
   iconWrapper: { width: 36, alignItems: 'center' },
   menuText: { flex: 1, marginLeft: 12, fontSize: 15, color: '#222', fontFamily: 'GothamMedium' },
 
-  // Toast
   toastContainer: {
-    position: "absolute",
+    position: 'absolute',
     top: 60,
     left: 20,
     right: 20,
     zIndex: 9999,
-    alignItems: "center",
+    alignItems: 'center',
   },
   toast: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 10,
     gap: 10,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 4,
     elevation: 3,
   },
-  toastSuccess: { backgroundColor: "#4CAF50" },
-  toastError: { backgroundColor: "#FF3B30" },
-  toastText: { color: "#fff", fontSize: 15, fontWeight: "600", fontFamily: "GothamBold" },
+  toastSuccess: { backgroundColor: '#4CAF50' },
+  toastError: { backgroundColor: '#FF3B30' },
+  toastText: { color: '#fff', fontSize: 15, fontWeight: '600', fontFamily: 'GothamBold' },
 
-  // Bottom Sheets
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   offlineSheet: {
     backgroundColor: '#fff',
@@ -1296,13 +1424,11 @@ const styles = StyleSheet.create({
   retryBtn: { marginTop: 24, backgroundColor: GOLD, paddingHorizontal: 36, paddingVertical: 14, borderRadius: 30 },
   retryText: { color: '#fff', fontSize: 16, fontFamily: 'GothamBold' },
 
-  // Success Sheet (profile pic)
   updatedData: { marginBottom: 24, alignItems: 'center' },
   previewImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: GOLD, marginVertical: 16 },
   doneBtn: { backgroundColor: GOLD, paddingVertical: 16, borderRadius: 30, alignItems: 'center' },
   doneText: { color: '#fff', fontSize: 16, fontFamily: 'GothamBold' },
 
-  // Footer
   footer: {
     position: 'absolute',
     bottom: 0,
@@ -1312,20 +1438,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
   },
-  footerText: {
-    fontSize: 13,
-    color: '#999',
-    fontFamily: 'GothamMedium',
-  },
+  footerText: { fontSize: 13, color: '#999', fontFamily: 'GothamMedium' },
 
-  // ────────────────────────────────────────────────
-  //     Delete Account Bottom Sheet Styles
-  // ────────────────────────────────────────────────
-  deleteIconContainer: {
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 20,
-  },
+  deleteIconContainer: { alignItems: 'center', marginTop: 20, marginBottom: 20 },
   deleteTitle: {
     fontSize: 24,
     fontFamily: 'GothamBold',
@@ -1342,11 +1457,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 36,
   },
-  buttonContainer: {
-    width: '100%',
-    gap: 14,
-    marginTop: 8,
-  },
+  buttonContainer: { width: '100%', gap: 14, marginTop: 8 },
   confirmDeleteButton: {
     backgroundColor: '#ff3b30',
     paddingVertical: 16,
@@ -1369,11 +1480,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
-  cancelText: {
-    color: '#333',
-    fontSize: 16,
-    fontFamily: 'GothamMedium',
-  },
+  cancelText: { color: '#333', fontSize: 16, fontFamily: 'GothamMedium' },
 });
 
 export default ProfileScreen;

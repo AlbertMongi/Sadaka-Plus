@@ -879,8 +879,6 @@
 // });
 
 // export default HomeScreen;
-
-
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -901,11 +899,12 @@ import {
   View
 } from 'react-native';
 import { BASE_URL } from '../apiConfig';
-import { fetchBase64Image } from '../fetchBase64Image';
+import { fetchBase64Image } from '../fetchBase64Image'; // ← adjust path if needed
 
 const { width, height } = Dimensions.get('window');
 const GOLD = '#E18731';
 const FALLBACK_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
+const FALLBACK_AVATAR = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
 
 const EmptyState = ({ icon, title, subtitle }) => (
   <View style={styles.emptyContainer}>
@@ -965,6 +964,10 @@ const HomeScreen = () => {
   const [likedStatus, setLikedStatus] = useState({});
   const [shares, setShares] = useState({});
 
+  // Track which images failed to load → show fallback
+  const [scriptureImageErrors, setScriptureImageErrors] = useState({});
+  const [sermonImageErrors, setSermonImageErrors] = useState({});
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scriptureAnims = useRef([]);
   const historyAnimsRef = useRef(new Map());
@@ -1000,10 +1003,7 @@ const HomeScreen = () => {
   const fetchUserProfile = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      if (!token) {
-        setProfileImage(FALLBACK_IMAGE);
-        return;
-      }
+      if (!token) return;
 
       const res = await fetch(`${BASE_URL}/users/profile`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -1014,23 +1014,14 @@ const HomeScreen = () => {
         const d = json.data;
         setFirstName(d.firstName || '');
 
-        let finalImage = FALLBACK_IMAGE;
-        if (d.profile_photo && typeof d.profile_photo === 'string' && d.profile_photo.trim()) {
-          try {
-            const processed = await fetchBase64Image(d.profile_photo.trim());
-            if (processed && typeof processed === 'string' && processed.trim()) {
-              finalImage = processed;
-            }
-          } catch (imgErr) {
-            console.log('Profile image processing failed:', imgErr);
-          }
-        }
-        setProfileImage(finalImage);
-        await AsyncStorage.setItem('ProfileImage', finalImage);
+        const profileUri = await fetchBase64Image(d.profile_photo);
+        setProfileImage(profileUri || FALLBACK_IMAGE);
+        await AsyncStorage.setItem('ProfileImage', profileUri || FALLBACK_IMAGE);
       }
     } catch (err) {
       console.error('fetchUserProfile error:', err);
-      setProfileImage(FALLBACK_IMAGE);
+    } finally {
+      setProfileImage(prev => prev || FALLBACK_IMAGE);
     }
   }, []);
 
@@ -1080,7 +1071,7 @@ const HomeScreen = () => {
     setLoadingCommunities(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
-      if (!token) throw new Error('No token');
+      if (!token) throw new Error();
 
       const res = await fetch(`${BASE_URL}/communities/joined`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -1090,21 +1081,11 @@ const HomeScreen = () => {
       if (json.success && json.data?.length > 0) {
         const communities = await Promise.all(
           json.data.map(async (c) => {
-            let image = FALLBACK_IMAGE;
-            if (c.logo && typeof c.logo === 'string' && c.logo.trim()) {
-              try {
-                const processed = await fetchBase64Image(c.logo.trim());
-                if (processed && typeof processed === 'string' && processed.trim()) {
-                  image = processed;
-                }
-              } catch (err) {
-                console.log('Community logo fetch failed:', err);
-              }
-            }
+            const logoUri = await fetchBase64Image(c.logo);
             return {
               id: c.id.toString(),
               name: c.name || 'Unnamed',
-              image,
+              image: logoUri || FALLBACK_IMAGE,
             };
           })
         );
@@ -1136,6 +1117,8 @@ const HomeScreen = () => {
     }
 
     setDataLoading(true);
+    setScriptureImageErrors({});
+    setSermonImageErrors({});
 
     try {
       const token = await AsyncStorage.getItem('userToken');
@@ -1150,28 +1133,20 @@ const HomeScreen = () => {
       const sermonJson = await sermonRes.json();
 
       if (scriptJson.success && Array.isArray(scriptJson.data)) {
-        const data = await Promise.all(scriptJson.data.map(async (s) => {
-          let imageUrl = FALLBACK_IMAGE;
-          if (s.photo && typeof s.photo === 'string' && s.photo.trim()) {
-            try {
-              const processed = await fetchBase64Image(s.photo.trim());
-              if (processed && typeof processed === 'string' && processed.trim()) {
-                imageUrl = processed;
-              }
-            } catch (err) {
-              console.log('Scripture image fetch failed:', err);
-            }
-          }
-          return {
-            id: s.id.toString(),
-            verse_reference: s.name || '',
-            verse_text: s.description || '',
-            imageUrl,
-            likes: s.likes || 0,
-            liked: !!s.liked,
-            shares: s.shares || 0,
-          };
-        }));
+        const data = await Promise.all(
+          scriptJson.data.map(async (s) => {
+            const imageUri = await fetchBase64Image(s.photo);
+            return {
+              id: s.id.toString(),
+              verse_reference: s.name || '',
+              verse_text: s.description || '',
+              imageUrl: imageUri || FALLBACK_IMAGE,
+              likes: s.likes || 0,
+              liked: s.liked || false,
+              shares: s.shares || 0,
+            };
+          })
+        );
         setScriptures(data);
         setCurrentScriptureIndex(0);
 
@@ -1186,35 +1161,30 @@ const HomeScreen = () => {
         setShares(sharesObj);
 
         scriptureAnims.current = data.map(() => ({ fade: new Animated.Value(0), scale: new Animated.Value(0.9) }));
+      } else {
+        setScriptures([]);
       }
 
       if (sermonJson.success && Array.isArray(sermonJson.data)) {
-        const data = await Promise.all(sermonJson.data.map(async (s) => {
-          let imageUrl = FALLBACK_IMAGE;
-          if (s.photo && typeof s.photo === 'string' && s.photo.trim()) {
-            try {
-              const processed = await fetchBase64Image(s.photo.trim());
-              if (processed && typeof processed === 'string' && processed.trim()) {
-                imageUrl = processed;
-              }
-            } catch (err) {
-              console.log('Sermon image fetch failed:', err);
-            }
-          }
-          return {
-            id: s.id.toString(),
-            title: s.name || '',
-            description: s.description || '',
-            imageUrl,
-          };
-        }));
+        const data = await Promise.all(
+          sermonJson.data.map(async (s) => {
+            const imageUri = await fetchBase64Image(s.photo);
+            return {
+              id: s.id.toString(),
+              title: s.name || '',
+              description: s.description || '',
+              imageUrl: imageUri || FALLBACK_IMAGE,
+            };
+          })
+        );
         setSermons(data);
+      } else {
+        setSermons([]);
       }
     } catch (err) {
-      console.log('fetchCommunityContent error:', err);
+      console.error('Fetch community content error:', err);
       setScriptures([]);
       setSermons([]);
-      scriptureAnims.current = [];
     } finally {
       setDataLoading(false);
     }
@@ -1224,11 +1194,9 @@ const HomeScreen = () => {
     setRefreshing(true);
     setDataLoading(true);
 
-    await Promise.all([
-      fetchJoinedCommunities(),
-      fetchUserProfile(),
-      fetchTransactions(),
-    ]);
+    await fetchJoinedCommunities();
+    await fetchUserProfile();
+    await fetchTransactions();
 
     if (selectedCommunityId) {
       await fetchCommunityContent(selectedCommunityId);
@@ -1242,17 +1210,16 @@ const HomeScreen = () => {
   useEffect(() => {
     const loadInitialData = async () => {
       setDataLoading(true);
-      await Promise.all([
-        fetchJoinedCommunities(),
-        fetchUserProfile(),
-        fetchTransactions(),
-      ]);
+      await fetchJoinedCommunities();
+      await fetchUserProfile();
+      await fetchTransactions();
     };
+
     loadInitialData();
   }, []);
 
   useEffect(() => {
-    if (!loadingCommunities && selectedCommunityId) {
+    if (!loadingCommunities) {
       fetchCommunityContent(selectedCommunityId);
     }
   }, [selectedCommunityId, loadingCommunities]);
@@ -1356,9 +1323,9 @@ const HomeScreen = () => {
                 <Image
                   source={{ uri: profileImage || FALLBACK_IMAGE }}
                   style={styles.avatar}
+                  defaultSource={{ uri: FALLBACK_AVATAR }}
                   resizeMode="cover"
-                  defaultSource={{ uri: FALLBACK_IMAGE }}
-                  onError={(e) => console.log('Profile image error:', e.nativeEvent.error)}
+                  onError={() => setProfileImage(FALLBACK_IMAGE)}
                 />
               </TouchableOpacity>
               <Text style={styles.tabActive}>What would you like to do today?</Text>
@@ -1452,11 +1419,16 @@ const HomeScreen = () => {
                           >
                             <View style={styles.smallImageItem}>
                               <Image
-                                source={{ uri: item.imageUrl || FALLBACK_IMAGE }}
+                                source={{
+                                  uri: scriptureImageErrors[item.id]
+                                    ? FALLBACK_IMAGE
+                                    : (item.imageUrl || FALLBACK_IMAGE)
+                                }}
                                 style={styles.smallImage}
                                 resizeMode="cover"
-                                defaultSource={{ uri: FALLBACK_IMAGE }}
-                                onError={(e) => console.log('Thumbnail image error:', e.nativeEvent.error)}
+                                onError={() =>
+                                  setScriptureImageErrors((prev) => ({ ...prev, [item.id]: true }))
+                                }
                               />
                               <View style={styles.smallOverlay} />
                               <View style={styles.smallTextContainer}>
@@ -1467,23 +1439,34 @@ const HomeScreen = () => {
                             </View>
                           </Animated.View>
                         )}
-                        keyExtractor={item => item.id}
+                        keyExtractor={(item) => item.id}
                         getItemLayout={(data, index) => ({ length: 60, offset: 60 * index, index })}
                       />
                     </View>
 
                     <View style={styles.wordCard}>
                       <Image
-                        source={{ uri: scriptures[currentScriptureIndex]?.imageUrl || FALLBACK_IMAGE }}
+                        source={{
+                          uri:
+                            scriptureImageErrors[scriptures[currentScriptureIndex]?.id]
+                              ? FALLBACK_IMAGE
+                              : scriptures[currentScriptureIndex]?.imageUrl || FALLBACK_IMAGE,
+                        }}
                         style={styles.wordImage}
                         resizeMode="cover"
-                        defaultSource={{ uri: FALLBACK_IMAGE }}
-                        onError={(e) => console.log('Main verse image error:', e.nativeEvent.error)}
+                        onError={() => {
+                          const id = scriptures[currentScriptureIndex]?.id;
+                          if (id) {
+                            setScriptureImageErrors((prev) => ({ ...prev, [id]: true }));
+                          }
+                        }}
                       />
                       <View style={styles.wordOverlay} />
                       <View style={styles.wordContent}>
                         <Text style={styles.verseText}>{scriptures[currentScriptureIndex]?.verse_text}</Text>
-                        <Text style={styles.verseReference}>{scriptures[currentScriptureIndex]?.verse_reference}</Text>
+                        <Text style={styles.verseReference}>
+                          {scriptures[currentScriptureIndex]?.verse_reference}
+                        </Text>
                       </View>
 
                       <View style={styles.actionButtons}>
@@ -1540,19 +1523,26 @@ const HomeScreen = () => {
                         onPress={() => router.push({ pathname: '/sermon', params: { id: sermon.id } })}
                       >
                         <Image
-                          source={{ uri: sermon.imageUrl || FALLBACK_IMAGE }}
+                          source={{
+                            uri: sermonImageErrors[sermon.id]
+                              ? FALLBACK_IMAGE
+                              : (sermon.imageUrl || FALLBACK_IMAGE),
+                          }}
                           style={styles.eventImageVertical}
                           resizeMode="cover"
-                          defaultSource={{ uri: FALLBACK_IMAGE }}
-                          onError={(e) => console.log('Sermon image error:', e.nativeEvent.error)}
+                          onError={() =>
+                            setSermonImageErrors((prev) => ({ ...prev, [sermon.id]: true }))
+                          }
                         />
                         <View style={styles.eventInfoVertical}>
-                          <Text style={styles.eventName} numberOfLines={2}>{sermon.title}</Text>
+                          <Text style={styles.eventName} numberOfLines={2}>
+                            {sermon.title}
+                          </Text>
                           <Text style={styles.eventTime}>
                             {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </Text>
                           <Text style={styles.eventLocation} numberOfLines={2}>
-                            {sermon.description || "Tap to listen to this powerful message of faith and hope."}
+                            {sermon.description || 'Tap to listen to this powerful message of faith and hope.'}
                           </Text>
                         </View>
                       </TouchableOpacity>
@@ -1576,7 +1566,10 @@ const HomeScreen = () => {
                   <View style={{ flex: 1, marginLeft: 16 }}>
                     <Text style={styles.quizTitle}>Bible Quiz of the Day</Text>
                   </View>
-                  <TouchableOpacity style={styles.startBtn} onPress={() => router.push('bible-quize/screens/WelcomeScreen')}>
+                  <TouchableOpacity
+                    style={styles.startBtn}
+                    onPress={() => router.push('bible-quize/screens/WelcomeScreen')}
+                  >
                     <Text style={styles.startText}>Start</Text>
                     <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
                   </TouchableOpacity>
@@ -1584,7 +1577,14 @@ const HomeScreen = () => {
               </View>
 
               <View style={[styles.section, { paddingBottom: 20 }]}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingHorizontal: 14,
+                  }}
+                >
                   <Text style={styles.sectionTitle}>Recent Transactions</Text>
                   <TouchableOpacity onPress={() => router.push('/history')}>
                     <Text style={{ color: GOLD, fontSize: 13, fontFamily: 'GothamMedium' }}>
@@ -1620,7 +1620,9 @@ const HomeScreen = () => {
                     );
                   })
                 ) : (
-                  <Text style={{ textAlign: 'center', color: '#888', padding: 20 }}>No transactions yet</Text>
+                  <Text style={{ textAlign: 'center', color: '#888', padding: 20 }}>
+                    No transactions yet
+                  </Text>
                 )}
               </View>
             </>
@@ -1678,7 +1680,14 @@ const HomeScreen = () => {
           </View>
 
           <View style={[styles.section, { paddingBottom: 20 }]}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingHorizontal: 14,
+              }}
+            >
               <Text style={styles.sectionTitle}>Recent Transactions</Text>
               <View style={{ height: 14, width: 70, backgroundColor: '#eee', borderRadius: 6 }} />
             </View>
@@ -1751,6 +1760,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 4,
     width: 240,
+    numberOfLines: 1,
   },
 
   wordCard: { flex: 1, height: 260, borderRadius: 12, overflow: 'hidden', position: 'relative' },
@@ -1765,20 +1775,71 @@ const styles = StyleSheet.create({
   socialButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   likeCount: { color: '#fff', marginLeft: 6, fontSize: 13, fontFamily: 'GothamBold' },
 
-  eventCardVertical: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 12, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 6 },
+  eventCardVertical: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+  },
   eventImageVertical: { width: 110, height: 90, borderRadius: 12, backgroundColor: '#eee' },
   eventInfoVertical: { flex: 1, paddingLeft: 16, justifyContent: 'center' },
   eventName: { fontSize: 12.5, color: '#222', fontFamily: 'GothamBold', lineHeight: 21 },
   eventTime: { fontSize: 13, color: GOLD, marginTop: 4, fontFamily: 'GothamMedium' },
   eventLocation: { fontSize: 13, color: '#666', marginTop: 6, fontFamily: 'GothamRegular', lineHeight: 18 },
 
-  quizCard: { backgroundColor: '#fff', borderRadius: 22, padding: 20, marginHorizontal: 16, marginTop: 12, flexDirection: 'row', alignItems: 'center', elevation: 10, shadowOpacity: 0.09, shadowRadius: 14, borderColor: '#f0f0f0', height: 115 },
-  quizIconCircle: { width: 76, height: 76, borderRadius: 38, backgroundColor: '#FFF8F0', justifyContent: 'center', alignItems: 'center', borderWidth: 2.5, borderColor: GOLD, borderStyle: 'dashed' },
+  quizCard: {
+    backgroundColor: '#fff',
+    borderRadius: 22,
+    padding: 20,
+    marginHorizontal: 16,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 10,
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    borderColor: '#f0f0f0',
+    height: 115,
+  },
+  quizIconCircle: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: '#FFF8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2.5,
+    borderColor: GOLD,
+    borderStyle: 'dashed',
+  },
   quizTitle: { fontFamily: 'GothamBold', fontSize: 18, color: '#222' },
-  startBtn: { backgroundColor: GOLD, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 30 },
+  startBtn: {
+    backgroundColor: GOLD,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 30,
+  },
   startText: { color: '#fff', fontFamily: 'GothamBold', fontSize: 16 },
 
-  historyRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 8, padding: 15, marginHorizontal: 16, marginBottom: 8, shadowOpacity: 0.15, shadowRadius: 4.65, elevation: 4 },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 15,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    shadowOpacity: 0.15,
+    shadowRadius: 4.65,
+    elevation: 4,
+  },
   historyContent: { marginLeft: 10, flex: 1 },
   historyAmount: { fontSize: 14, color: GOLD, fontFamily: 'GothamBold' },
   historyCommunity: { fontSize: 13, color: '#222', fontFamily: 'GothamBold', marginTop: 4 },
