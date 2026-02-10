@@ -978,7 +978,7 @@ export default function GiveScreen() {
           countryCode,
           postalCode,
           address: address || "Dar es Salaam, Tanzania",
-          // cardNumber: cardNumber.replace(/\s/g, ''),   // ← uncomment if backend needs it
+          cardNumber: cardNumber.replace(/\s/g, ''),  
         };
 
         const res = await fetch(`${BASE_URL}/payments/card`, {
@@ -1025,6 +1025,7 @@ export default function GiveScreen() {
           countryCode,
           postalCode,
           address,
+          cardNumber: cardNumber.replace(/\s/g, ''), 
         }),
       });
 
