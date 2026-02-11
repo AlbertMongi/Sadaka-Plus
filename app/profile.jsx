@@ -1071,11 +1071,6 @@ const ProfileScreen = () => {
                 <Ionicons name="chevron-forward" size={20} color="#666" />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/change-community')}>
-                <Ionicons name="swap-horizontal-outline" size={22} color={GOLD} style={styles.menuIcon} />
-                <Text style={styles.menuText}>Change Community</Text>
-                <Ionicons name="chevron-forward" size={20} color="#666" />
-              </TouchableOpacity>
             </View>
 
             <View style={[styles.menuGroup, { marginTop: 32 }]}>
