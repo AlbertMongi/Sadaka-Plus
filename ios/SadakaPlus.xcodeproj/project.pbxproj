@@ -8,11 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		239CF2719E429A14659DF039 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E1F6A19CD5F72EFF108CC2 /* ExpoModulesProvider.swift */; };
+		2696275D118A14EACC66DBD3 /* libPods-SadakaPlus.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 59B9AF56FB3A8BAE5A195090 /* libPods-SadakaPlus.a */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		42174357B42CFCD6FA8C4CAB /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3F87D2315900ECF605151161 /* PrivacyInfo.xcprivacy */; };
-		64B71AAD7667547FB118D1A5 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 910D057334D40B7EC88993BB /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		C087638CC4E9CC56D4E500B2 /* libPods-SadakaPlus.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D33A92A626BC7E270EA905C /* libPods-SadakaPlus.a */; };
+		D187CFEAFA9309335654A212 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D6316899BF8F85DD46C42E2E /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
@@ -20,16 +20,16 @@
 		13B07F961A680F5B00A75B9A /* SadakaPlus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SadakaPlus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = SadakaPlus/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = SadakaPlus/Info.plist; sourceTree = "<group>"; };
-		3D33A92A626BC7E270EA905C /* libPods-SadakaPlus.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-SadakaPlus.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3F87D2315900ECF605151161 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = SadakaPlus/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		910D057334D40B7EC88993BB /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-SadakaPlus/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		A8B103AE598BD084E3E700DD /* Pods-SadakaPlus.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SadakaPlus.debug.xcconfig"; path = "Target Support Files/Pods-SadakaPlus/Pods-SadakaPlus.debug.xcconfig"; sourceTree = "<group>"; };
+		467A8CF68F8E234A4D8863F5 /* Pods-SadakaPlus.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SadakaPlus.debug.xcconfig"; path = "Target Support Files/Pods-SadakaPlus/Pods-SadakaPlus.debug.xcconfig"; sourceTree = "<group>"; };
+		59B9AF56FB3A8BAE5A195090 /* libPods-SadakaPlus.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-SadakaPlus.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		93F3938B525FC761167D304F /* Pods-SadakaPlus.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SadakaPlus.release.xcconfig"; path = "Target Support Files/Pods-SadakaPlus/Pods-SadakaPlus.release.xcconfig"; sourceTree = "<group>"; };
+		A9E1F6A19CD5F72EFF108CC2 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-SadakaPlus/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = SadakaPlus/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		D6316899BF8F85DD46C42E2E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = SadakaPlus/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = SadakaPlus/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* SadakaPlus-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "SadakaPlus-Bridging-Header.h"; path = "SadakaPlus/SadakaPlus-Bridging-Header.h"; sourceTree = "<group>"; };
-		F966A7914AA327EDB64E897C /* Pods-SadakaPlus.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SadakaPlus.release.xcconfig"; path = "Target Support Files/Pods-SadakaPlus/Pods-SadakaPlus.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,7 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C087638CC4E9CC56D4E500B2 /* libPods-SadakaPlus.a in Frameworks */,
+				2696275D118A14EACC66DBD3 /* libPods-SadakaPlus.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,7 +53,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				3F87D2315900ECF605151161 /* PrivacyInfo.xcprivacy */,
+				D6316899BF8F85DD46C42E2E /* PrivacyInfo.xcprivacy */,
 			);
 			name = SadakaPlus;
 			sourceTree = "<group>";
@@ -62,34 +62,34 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				3D33A92A626BC7E270EA905C /* libPods-SadakaPlus.a */,
+				59B9AF56FB3A8BAE5A195090 /* libPods-SadakaPlus.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		38A6ABC3AC6B338B74D30947 /* Pods */ = {
+		2DF0FD5ED483C82AF053B023 /* SadakaPlus */ = {
 			isa = PBXGroup;
 			children = (
-				A8B103AE598BD084E3E700DD /* Pods-SadakaPlus.debug.xcconfig */,
-				F966A7914AA327EDB64E897C /* Pods-SadakaPlus.release.xcconfig */,
+				A9E1F6A19CD5F72EFF108CC2 /* ExpoModulesProvider.swift */,
 			);
-			path = Pods;
+			name = SadakaPlus;
 			sourceTree = "<group>";
 		};
-		5222BBCCF93E06A91C745F63 /* ExpoModulesProviders */ = {
+		37D24101AB5D4D3AC2E06870 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				7F05D293DAB8C209C54F3664 /* SadakaPlus */,
+				2DF0FD5ED483C82AF053B023 /* SadakaPlus */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
-		7F05D293DAB8C209C54F3664 /* SadakaPlus */ = {
+		737F9F82DC3E173F4C26F758 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				910D057334D40B7EC88993BB /* ExpoModulesProvider.swift */,
+				467A8CF68F8E234A4D8863F5 /* Pods-SadakaPlus.debug.xcconfig */,
+				93F3938B525FC761167D304F /* Pods-SadakaPlus.release.xcconfig */,
 			);
-			name = SadakaPlus;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -106,8 +106,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				38A6ABC3AC6B338B74D30947 /* Pods */,
-				5222BBCCF93E06A91C745F63 /* ExpoModulesProviders */,
+				737F9F82DC3E173F4C26F758 /* Pods */,
+				37D24101AB5D4D3AC2E06870 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -139,13 +139,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "SadakaPlus" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				95F4D52A5E6565633C485E17 /* [Expo] Configure project */,
+				8180ED3999F013BE61044F53 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				5CE6C0707B8BAB2623626B25 /* [CP] Embed Pods Frameworks */,
+				A85529A71975DFCD2B2DA1DA /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -195,7 +195,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				42174357B42CFCD6FA8C4CAB /* PrivacyInfo.xcprivacy in Resources */,
+				D187CFEAFA9309335654A212 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -241,24 +241,6 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		5CE6C0707B8BAB2623626B25 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-SadakaPlus/Pods-SadakaPlus-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SadakaPlus/Pods-SadakaPlus-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -273,7 +255,6 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoSystemUI/ExpoSystemUI_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleMaps/GoogleMapsResources.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/RCT-Folly/RCT-Folly_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNCAsyncStorage/RNCAsyncStorage_resources.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle",
 				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/AntDesign.ttf",
@@ -298,8 +279,6 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/SDWebImage/SDWebImage.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/boost/boost_privacy.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/glog/glog_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/react-native-google-maps/GoogleMapsPrivacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/react-native-maps/ReactNativeMapsPrivacy.bundle",
 			);
@@ -312,7 +291,6 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoSystemUI_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleMapsResources.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RCT-Folly_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNCAsyncStorage_resources.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNSVGFilters.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/AntDesign.ttf",
@@ -337,8 +315,6 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/SDWebImage.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/boost_privacy.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/glog_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleMapsPrivacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ReactNativeMapsPrivacy.bundle",
 			);
@@ -347,7 +323,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SadakaPlus/Pods-SadakaPlus-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		95F4D52A5E6565633C485E17 /* [Expo] Configure project */ = {
+		8180ED3999F013BE61044F53 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -371,6 +347,28 @@
 			shellPath = /bin/sh;
 			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-SadakaPlus/expo-configure-project.sh\"\n";
 		};
+		A85529A71975DFCD2B2DA1DA /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SadakaPlus/Pods-SadakaPlus-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SadakaPlus/Pods-SadakaPlus-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -379,7 +377,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				64B71AAD7667547FB118D1A5 /* ExpoModulesProvider.swift in Sources */,
+				239CF2719E429A14659DF039 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -388,7 +386,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A8B103AE598BD084E3E700DD /* Pods-SadakaPlus.debug.xcconfig */;
+			baseConfigurationReference = 467A8CF68F8E234A4D8863F5 /* Pods-SadakaPlus.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -425,7 +423,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F966A7914AA327EDB64E897C /* Pods-SadakaPlus.release.xcconfig */;
+			baseConfigurationReference = 93F3938B525FC761167D304F /* Pods-SadakaPlus.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;

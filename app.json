@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "buildNumber": "6",
       "supportsTablet": true,
       "bundleIdentifier": "com.evmak.sadakaapp",
       "config": {
@@ -19,6 +20,7 @@
         "NSLocationAlwaysUsageDescription": "This app needs access to your location to provide personalized donation recommendations based on your area."
       }
     },
+
     "android": {
       "versionCode": 1,
       "adaptiveIcon": {
@@ -27,10 +29,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.evmak.sadakaapp",
-      "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
-      ],
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyBrn_XIiyIQ_4nwQsD7VJX9ltMpEXVJRws"
@@ -61,7 +60,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "0990c63b-0a4f-404d-a4ed-69f63dbabe7d"
+        "projectId": "72b0fd8f-be3c-445b-ba41-f3484e23c0f9"
       }
     }
   }
