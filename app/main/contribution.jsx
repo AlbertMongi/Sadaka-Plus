@@ -1,17 +1,13 @@
 // import { Ionicons } from '@expo/vector-icons';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
+// import * as SecureStore from 'expo-secure-store';   // ← for userId (secure)
 // import { useNavigation } from '@react-navigation/native';
 // import * as Linking from 'expo-linking';
 // import { useRouter } from 'expo-router';
-// import * as WebBrowser from 'expo-web-browser';
-// import { useEffect, useRef, useState } from 'react';
+// import { useEffect, useState } from 'react';
 // import {
-//   Animated,
 //   Dimensions,
-//   Image,
 //   KeyboardAvoidingView,
-//   Modal,
-//   PanResponder,
 //   Platform,
 //   RefreshControl,
 //   ScrollView,
@@ -19,7 +15,6 @@
 //   Text,
 //   TextInput,
 //   TouchableOpacity,
-//   TouchableWithoutFeedback,
 //   View,
 //   ActivityIndicator,
 // } from 'react-native';
@@ -28,12 +23,6 @@
 // const { height } = Dimensions.get('window');
 // const GOLD = '#E18731';
 
-// const mobileNetworks = [
-//   { name: 'HaloPesa', logo: 'https://portal.powertec.com.au/sites/default/files/styles/scale_square/public/2024-01/Viettel_Tanzania_Halotel_logo.png.webp?itok=1EgsL4zb' },
-//   { name: 'TigoPesa', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRbiP_Qnuwr0BRypVtoHN3fFKwwxdd89_sqQw&s' },
-//   { name: 'AirtelMoney', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTdtdumPWtXlSSZ_nEnxNzl2JLce4N7aPh-Jg&s' },
-// ];
-
 // export default function GiveScreen() {
 //   const navigation = useNavigation();
 //   const router = useRouter();
@@ -41,66 +30,38 @@
 //   const [offering, setOffering] = useState('');
 //   const [frequency, setFrequency] = useState('One time');
 //   const [amount, setAmount] = useState('');
-//   const [location, setLocation] = useState('');
-//   const [cardNumber, setCardNumber] = useState('');
+//   const [communityId, setCommunityId] = useState('');
 //   const [phoneNumber, setPhoneNumber] = useState('');
-//   const [showPaymentSheet, setShowPaymentSheet] = useState(false);
-//   const [paymentMethod, setPaymentMethod] = useState('Mobile money');
-//   const [selectedNetwork, setSelectedNetwork] = useState(mobileNetworks[0].name);
-//   const [currency, setCurrency] = useState('TZS');
-//   const [countryCode, setCountryCode] = useState('TZ');
-//   const [postalCode, setPostalCode] = useState('');
-//   const [address, setAddress] = useState('');
 //   const [token, setToken] = useState(null);
-//   const [userEmail, setUserEmail] = useState('');
+//   const [userId, setUserId] = useState(null);           // ← NEW
 //   const [joinedCommunities, setJoinedCommunities] = useState([]);
 //   const [offerings, setOfferings] = useState([]);
 //   const [loading, setLoading] = useState(false);
 //   const [communitiesLoading, setCommunitiesLoading] = useState(true);
 //   const [offeringsLoading, setOfferingsLoading] = useState(false);
-
 //   const [toast, setToast] = useState({ visible: false, message: '', type: 'error' });
 
-//   const sheetAnim = useRef(new Animated.Value(height)).current;
-
-//   const panResponder = useRef(
-//     PanResponder.create({
-//       onStartShouldSetPanResponder: () => false,
-//       onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 8,
-//       onPanResponderMove: (_, gs) => {
-//         if (gs.dy > 0) sheetAnim.setValue(gs.dy);
-//       },
-//       onPanResponderRelease: (_, gs) => {
-//         const shouldClose = gs.dy > 140 || gs.vy > 0.7;
-//         if (shouldClose) {
-//           Animated.timing(sheetAnim, { toValue: height, duration: 280, useNativeDriver: true }).start(() => {
-//             setShowPaymentSheet(false);
-//             setPaymentMethod('Mobile money');
-//             setSelectedNetwork(mobileNetworks[0].name);
-//           });
-//         } else {
-//           Animated.timing(sheetAnim, { toValue: 0, duration: 220, useNativeDriver: true }).start();
-//         }
-//       },
-//     })
-//   ).current;
-
-//   const sheetHeight = paymentMethod === 'Mobile money' 
-//     ? Math.min(height * 0.68, 580)
-//     : height * 0.92;
-
+//   // Load token + userId
 //   useEffect(() => {
 //     (async () => {
-//       const t = await AsyncStorage.getItem('userToken');
-//       const userData = await AsyncStorage.getItem('userData');
-//       if (!t) {
+//       try {
+//         const t = await AsyncStorage.getItem('userToken');
+//         // Try SecureStore first (as saved in OTP screen), fallback to AsyncStorage
+//         let uid = await SecureStore.getItemAsync('userId');
+//         if (!uid) {
+//           uid = await AsyncStorage.getItem('userId'); // fallback
+//         }
+
+//         if (!t || !uid) {
+//           router.replace('/login');
+//           return;
+//         }
+
+//         setToken(t);
+//         setUserId(uid);
+//       } catch (err) {
+//         console.warn('Auth / userId load error:', err);
 //         router.replace('/login');
-//         return;
-//       }
-//       setToken(t);
-//       if (userData) {
-//         const parsed = JSON.parse(userData);
-//         setUserEmail(parsed.email || '');
 //       }
 //     })();
 //   }, [router]);
@@ -112,207 +73,110 @@
 //       const res = await fetch(`${BASE_URL}/communities/joined`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
+//       if (!res.ok) throw new Error('Failed to fetch communities');
 //       const json = await res.json();
-//       setJoinedCommunities(res.ok && Array.isArray(json.data) ? json.data : []);
-//     } catch (e) {
-//       console.error('Communities error:', e);
+//       setJoinedCommunities(Array.isArray(json.data) ? json.data : []);
+//     } catch (err) {
+//       console.error('Communities fetch error:', err);
 //     } finally {
 //       setCommunitiesLoading(false);
 //     }
 //   };
 
-//   useEffect(() => { if (token) fetchCommunities(); }, [token]);
+//   useEffect(() => {
+//     if (token) fetchCommunities();
+//   }, [token]);
 
 //   const fetchOfferings = async (id) => {
 //     if (!id || !token) {
 //       setOfferings([]);
 //       return;
 //     }
-//     setOfferingsLoading(true);
 //     try {
+//       setOfferingsLoading(true);
 //       const res = await fetch(`${BASE_URL}/offers/community/${id}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
+//       if (!res.ok) throw new Error('Failed to fetch offerings');
 //       const json = await res.json();
-//       const list = res.ok && json.success && Array.isArray(json.data)
-//         ? json.data.map(i => ({ id: String(i.id), name: i.name || 'General Offering' }))
+//       const list = Array.isArray(json.data)
+//         ? json.data.map((i) => ({ id: String(i.id), name: i.name || 'General Offering' }))
 //         : [];
 //       setOfferings(list);
-//     } catch (e) {
-//       console.error('Offerings error:', e);
+//     } catch (err) {
+//       console.error('Offerings fetch error:', err);
 //     } finally {
 //       setOfferingsLoading(false);
 //     }
 //   };
 
 //   useEffect(() => {
-//     if (location) fetchOfferings(location);
+//     if (communityId) fetchOfferings(communityId);
 //     else {
 //       setOfferings([]);
 //       setOffering('');
 //     }
-//   }, [location]);
+//   }, [communityId]);
 
-//   const formatCardNumber = (text) => {
-//     const cleaned = text.replace(/\D/g, '');
-//     const chunks = cleaned.match(/.{1,4}/g) || [];
-//     return chunks.join(' ');
+//   const handleAmountChange = (value) => {
+//     const num = value.replace(/[^0-9]/g, '');
+//     setAmount(num ? Number(num).toLocaleString('en-US') : '');
 //   };
 
-//   const handleAmountChange = (v) => {
-//     const num = v.replace(/[^0-9]/g, '');
-//     setAmount(num ? Number(num).toLocaleString() : '');
-//   };
-
-//   const showToast = (message, type = "error") => {
+//   const showToast = (message, type = 'error') => {
 //     setToast({ visible: true, message, type });
-//     setTimeout(() => setToast({ visible: false, message: "", type: "error" }), 4000);
+//     setTimeout(() => setToast({ visible: false, message: '', type: 'error' }), 4500);
 //   };
 
-//   const openSheet = () => {
-//     setShowPaymentSheet(true);
-//     Animated.timing(sheetAnim, { toValue: 0, duration: 350, useNativeDriver: true }).start();
-//   };
-
-//   const closeSheet = () => {
-//     Animated.timing(sheetAnim, { toValue: height, duration: 300, useNativeDriver: true }).start(() => {
-//       setShowPaymentSheet(false);
-//       setPaymentMethod('Mobile money');
-//       setSelectedNetwork(mobileNetworks[0].name);
-//     });
-//   };
-
-//   const openPaymentLink = async (url) => {
-//     if (!url || typeof url !== 'string') {
-//       showToast('Invalid payment link');
-//       return;
-//     }
-//     try {
-//       if (Platform.OS === 'web') {
-//         window.open(url.trim(), '_blank');
-//       } else {
-//         const supported = await Linking.canOpenURL(url);
-//         if (supported) {
-//           await Linking.openURL(url);
-//         } else {
-//           await WebBrowser.openBrowserAsync(url);
-//         }
-//       }
-//     } catch (err) {
-//       console.error('Open link error:', err);
-//       showToast('Could not open payment page');
-//     }
-//   };
-
-//   const sendContribution = async () => {
-//     if (!location || !amount || !offering) {
-//       showToast('Please fill all required fields (community, offering, amount)');
-//       return;
-//     }
+//   const proceedToWeb = async () => {
+//     // Required fields validation
+//     if (!communityId) return showToast('Please select a community');
+//     if (!offering) return showToast('Please select an offering');
+//     if (!amount) return showToast('Please enter an amount');
+//     if (!userId) return showToast('User session error – please login again');
 
 //     const rawAmount = Number(amount.replace(/,/g, ''));
-//     if (rawAmount < 100) {
-//       showToast('Minimum amount is 100 TZS');
-//       return;
-//     }
-
-//     if (paymentMethod === 'Mobile money' && !phoneNumber.trim()) {
-//       showToast('Phone number is required for mobile money');
-//       return;
-//     }
-
-//     if (paymentMethod === 'Card payment' && !cardNumber.trim()) {
-//       showToast('Card number is required for card payment');
-//       return;
+//     if (isNaN(rawAmount) || rawAmount < 100) {
+//       return showToast('Amount must be at least 100 TZS');
 //     }
 
 //     setLoading(true);
 
 //     try {
-//       let paymentUrl = null;
+//       const params = new URLSearchParams({
+//         userId,                 // ← ADDED – this is what you asked for
+//         amount: rawAmount.toString(),
+//         communityId,
+//         offering,
+//         frequency,
+//         phoneNumber: phoneNumber.trim() || '', // optional
+//       });
 
-//       if (paymentMethod === 'Mobile money') {
-//         const payload = {
-//           offerType: offering,
-//           amount: rawAmount,
-//           phoneNo: phoneNumber.trim(),
-//           purpose: frequency,
-//           paymentMethod: selectedNetwork,
-//           communityId: location,
-//           cardNumber: cardNumber.replace(/\s/g, '') || '',
-//         };
+//       // Use your real production URL here in production builds
+//       // For local testing you can keep localhost
+//       const webUrl = ` http://192.168.100.138:3000/serve?${params.toString()}`;
+//       // Production example:
+//       // const webUrl = `https://your-domain.com/serve?${params.toString()}`;
 
-//         const res = await fetch(`${BASE_URL}/payments/mobile`, {
-//           method: 'POST',
-//           headers: {
-//             'Content-Type': 'application/json',
-//             Authorization: `Bearer ${token}`,
-//           },
-//           body: JSON.stringify(payload),
-//         });
-
-//         const data = await res.json();
-
-//         if (res.ok && data.success && data.code === 201 && data.data?.paymentLink) {
-//           paymentUrl = data.data.paymentLink;
-//           showToast('Redirecting to payment page...', 'success');
-//         } else {
-//           showToast(data.message || 'Mobile payment initiation failed');
-//           setLoading(false);
-//           return;
-//         }
+//       const canOpen = await Linking.canOpenURL(webUrl);
+//       if (canOpen) {
+//         await Linking.openURL(webUrl);
+//         showToast('Opening payment page...', 'success');
 //       } else {
-//         // Card payment
-//         const payload = {
-//           amount: rawAmount,
-//           payTo: location,
-//           transactionDetails: offering,
-//           email: userEmail || `${phoneNumber || 'no-phone'}@example.com`,
-//           communityId: location,
-//           currency,
-//           countryCode,
-//           postalCode,
-//           address: address || "Dar es Salaam, Tanzania",
-//           cardNumber: cardNumber.replace(/\s/g, ''),
-//         };
-
-//         const res = await fetch(`${BASE_URL}/payments/card`, {
-//           method: 'POST',
-//           headers: {
-//             'Content-Type': 'application/json',
-//             Authorization: `Bearer ${token}`,
-//           },
-//           body: JSON.stringify(payload),
-//         });
-
-//         const data = await res.json();
-
-//         if (res.ok && data.success && data.data?.paymentUrl) {
-//           paymentUrl = data.data.paymentUrl;
-//           showToast('Redirecting to card payment...', 'success');
-//         } else {
-//           showToast(data.message || 'Card payment failed');
-//           setLoading(false);
-//           return;
-//         }
+//         showToast('Cannot open browser');
 //       }
 
-//       // Common success path: close sheet → redirect
-//       closeSheet();
+//       // Reset form
 //       setTimeout(() => {
-//         openPaymentLink(paymentUrl);
-//         // Reset form after redirect attempt
 //         setAmount('');
 //         setOffering('');
-//         setCardNumber('');
 //         setPhoneNumber('');
-//         setLocation('');
+//         setCommunityId('');
 //         setFrequency('One time');
-//       }, 800);
-
+//       }, 1200);
 //     } catch (err) {
-//       console.error('Payment error:', err);
-//       showToast('Network error. Please check your connection.');
+//       console.error('Redirect failed:', err);
+//       showToast('Failed to open payment page');
 //     } finally {
 //       setLoading(false);
 //     }
@@ -320,8 +184,8 @@
 
 //   const ModernDropdown = ({ label, items = [], value, onSelect, placeholder, disabled = false, loading = false }) => {
 //     const [open, setOpen] = useState(false);
-//     const selectedItem = items.find(i => i.id === value);
-//     const displayText = loading ? 'Loading...' : selectedItem?.name || placeholder;
+//     const selected = items.find((i) => i.id === value);
+//     const text = loading ? 'Loading...' : selected?.name || placeholder;
 
 //     return (
 //       <View style={styles.dropdownWrapper}>
@@ -329,18 +193,18 @@
 //         <TouchableOpacity
 //           style={[styles.customDropdown, (disabled || loading) && styles.disabledDropdown]}
 //           onPress={() => !disabled && !loading && setOpen(!open)}
-//           disabled={disabled || loading}
+//           activeOpacity={0.7}
 //         >
-//           <Text style={[styles.dropdownText, !value && !loading && styles.placeholderText]}>
-//             {displayText}
+//           <Text style={[styles.dropdownText, !value && styles.placeholderText]}>
+//             {text}
 //           </Text>
 //           <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={GOLD} />
 //         </TouchableOpacity>
 
 //         {open && items.length > 0 && (
 //           <View style={styles.dropdownMenu}>
-//             <ScrollView nestedScrollEnabled style={{ maxHeight: 180 }}>
-//               {items.map(item => (
+//             <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
+//               {items.map((item) => (
 //                 <TouchableOpacity
 //                   key={item.id}
 //                   style={styles.dropdownItem}
@@ -359,15 +223,15 @@
 //     );
 //   };
 
-//   const isDisabled = !communitiesLoading && joinedCommunities.length === 0;
+//   const isFormDisabled = communitiesLoading || joinedCommunities.length === 0;
 
 //   return (
 //     <View style={styles.container}>
 //       {toast.visible && (
 //         <View style={styles.toastContainer}>
-//           <View style={[styles.toast, toast.type === "success" ? styles.toastSuccess : styles.toastError]}>
+//           <View style={[styles.toast, toast.type === 'success' ? styles.toastSuccess : styles.toastError]}>
 //             <Ionicons
-//               name={toast.type === "success" ? "checkmark-circle" : "close-circle"}
+//               name={toast.type === 'success' ? 'checkmark-circle' : 'close-circle'}
 //               size={22}
 //               color="#fff"
 //             />
@@ -379,7 +243,14 @@
 //       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
 //         <ScrollView
 //           contentContainerStyle={styles.scrollContent}
-//           refreshControl={<RefreshControl refreshing={communitiesLoading} onRefresh={fetchCommunities} colors={[GOLD]} />}
+//           refreshControl={
+//             <RefreshControl
+//               refreshing={communitiesLoading}
+//               onRefresh={fetchCommunities}
+//               colors={[GOLD]}
+//               tintColor={GOLD}
+//             />
+//           }
 //         >
 //           <View style={styles.header}>
 //             <Text style={styles.title}>Give</Text>
@@ -388,21 +259,44 @@
 //             </TouchableOpacity>
 //           </View>
 
-//           {isDisabled ? (
+//           {isFormDisabled ? (
 //             <View style={styles.emptyState}>
 //               <Ionicons name="heart-outline" size={70} color={GOLD} />
 //               <Text style={styles.emptyText}>Join a community first to give</Text>
 //             </View>
 //           ) : (
 //             <>
-//               <ModernDropdown label="Select community" items={joinedCommunities} value={location} onSelect={setLocation} placeholder="Select community" disabled={communitiesLoading} />
-//               <ModernDropdown label="What's your offering?" items={offerings} value={offering} onSelect={setOffering} placeholder="Select offering" disabled={!location} loading={offeringsLoading} />
+//               <ModernDropdown
+//                 label="Select community"
+//                 items={joinedCommunities}
+//                 value={communityId}
+//                 onSelect={setCommunityId}
+//                 placeholder="Select community"
+//                 disabled={communitiesLoading}
+//                 loading={communitiesLoading}
+//               />
+
+//               <ModernDropdown
+//                 label="What's your offering?"
+//                 items={offerings}
+//                 value={offering}
+//                 onSelect={setOffering}
+//                 placeholder="Select offering"
+//                 disabled={!communityId || offeringsLoading}
+//                 loading={offeringsLoading}
+//               />
 
 //               <Text style={styles.label}>Frequency</Text>
 //               <View style={styles.freqRow}>
-//                 {['One time', 'Weekly', 'Monthly'].map(f => (
-//                   <TouchableOpacity key={f} style={[styles.freqBtn, frequency === f && styles.freqActive]} onPress={() => setFrequency(f)}>
-//                     <Text style={[styles.freqText, frequency === f && styles.freqTextActive]}>{f}</Text>
+//                 {['One time', 'Weekly', 'Monthly'].map((f) => (
+//                   <TouchableOpacity
+//                     key={f}
+//                     style={[styles.freqBtn, frequency === f && styles.freqActive]}
+//                     onPress={() => setFrequency(f)}
+//                   >
+//                     <Text style={[styles.freqText, frequency === f && styles.freqTextActive]}>
+//                       {f}
+//                     </Text>
 //                   </TouchableOpacity>
 //                 ))}
 //               </View>
@@ -415,283 +309,192 @@
 //                   onChangeText={handleAmountChange}
 //                   keyboardType="numeric"
 //                   placeholder="0"
+//                   maxLength={12}
 //                 />
 //               </View>
 
-//               <Text style={styles.label}>Card Number</Text>
+//               {/* Phone field is commented out – keep if needed */}
+//               {/* <Text style={styles.label}>Phone Number (required for payment)</Text>
 //               <TextInput
 //                 style={styles.input}
-//                 value={cardNumber}
-//                 onChangeText={(t) => setCardNumber(formatCardNumber(t))}
-//                 placeholder="Card number (Optional)"
-//                 keyboardType="numeric"
-//                 maxLength={19}
-//               />
+//                 value={phoneNumber}
+//                 onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9+]/g, ''))}
+//                 placeholder="e.g. 0712345678 or +255712345678"
+//                 keyboardType="phone-pad"
+//                 maxLength={15}
+//               /> */}
 
-//               <TouchableOpacity style={styles.continueBtn} onPress={openSheet}>
-//                 <Text style={styles.continueText}>Continue</Text>
+//               <TouchableOpacity
+//                 style={[styles.continueBtn, loading && styles.btnDisabled]}
+//                 onPress={proceedToWeb}
+//                 disabled={loading}
+//                 activeOpacity={0.8}
+//               >
+//                 {loading ? (
+//                   <ActivityIndicator size="small" color="#fff" />
+//                 ) : (
+//                   <Text style={styles.continueText}>Continue to Payment</Text>
+//                 )}
 //               </TouchableOpacity>
 //             </>
 //           )}
 //         </ScrollView>
 //       </KeyboardAvoidingView>
-
-//       <Modal visible={showPaymentSheet} transparent animationType="none">
-//         <TouchableWithoutFeedback onPress={closeSheet}>
-//           <View style={styles.modalOverlay} />
-//         </TouchableWithoutFeedback>
-
-//         <Animated.View
-//           {...panResponder.panHandlers}
-//           style={[styles.sheet, { transform: [{ translateY: sheetAnim }], height: sheetHeight }]}
-//         >
-//           <View style={styles.handle} />
-
-//           <ScrollView
-//             contentContainerStyle={styles.sheetContent}
-//             showsVerticalScrollIndicator={false}
-//             keyboardShouldPersistTaps="handled"
-//           >
-//             <Text style={styles.sheetTitle}>Confirm Contribution</Text>
-
-//             <View style={styles.summaryRow}>
-//               <Text style={styles.summaryLabel}>Amount</Text>
-//               <Text style={styles.summaryValue}>TZS {amount}</Text>
-//             </View>
-
-//             <Text style={styles.label}>
-//               Phone Number {paymentMethod === 'Mobile money' ? '(required)' : '(for receipt)'}
-//             </Text>
-//             <TextInput
-//               style={styles.input}
-//               value={phoneNumber}
-//               onChangeText={setPhoneNumber}
-//               placeholder="0712345678"
-//               keyboardType="phone-pad"
-//               maxLength={15}
-//             />
-
-//             <Text style={styles.label}>Payment Method</Text>
-//             <View style={styles.methodRow}>
-//               {['Mobile money', 'Card payment'].map(m => (
-//                 <TouchableOpacity
-//                   key={m}
-//                   style={[styles.methodBtn, paymentMethod === m && styles.methodActive]}
-//                   onPress={() => setPaymentMethod(m)}
-//                 >
-//                   <Text style={[styles.methodText, paymentMethod === m && styles.methodTextActive]}>
-//                     {m === 'Mobile money' ? 'Mobile Money' : 'Card'}
-//                   </Text>
-//                 </TouchableOpacity>
-//               ))}
-//             </View>
-
-//             {paymentMethod === 'Mobile money' && (
-//               <>
-//                 <Text style={styles.label}>Choose mobile network</Text>
-//                 <View style={styles.networkRow}>
-//                   {mobileNetworks.map(n => (
-//                     <TouchableOpacity
-//                       key={n.name}
-//                       style={[styles.netBtn, selectedNetwork === n.name && styles.netActive]}
-//                       onPress={() => setSelectedNetwork(n.name)}
-//                     >
-//                       <Image source={{ uri: n.logo }} style={styles.netLogo} />
-//                     </TouchableOpacity>
-//                   ))}
-//                 </View>
-//               </>
-//             )}
-
-//             {paymentMethod === 'Card payment' && (
-//               <>
-//                 <Text style={styles.label}>Email</Text>
-//                 <TextInput
-//                   style={styles.input}
-//                   value={userEmail}
-//                   onChangeText={setUserEmail}
-//                   placeholder="you@example.com"
-//                   keyboardType="email-address"
-//                   autoCapitalize="none"
-//                 />
-
-//                 <Text style={styles.label}>Currency</Text>
-//                 <View style={styles.currencyRow}>
-//                   {['TZS', 'USD'].map(c => (
-//                     <TouchableOpacity
-//                       key={c}
-//                       style={[styles.freqBtn, currency === c && styles.freqActive]}
-//                       onPress={() => setCurrency(c)}
-//                     >
-//                       <Text style={[styles.freqText, currency === c && styles.freqTextActive]}>{c}</Text>
-//                     </TouchableOpacity>
-//                   ))}
-//                 </View>
-
-//                 <Text style={styles.label}>Country Code</Text>
-//                 <TextInput
-//                   style={styles.input}
-//                   value={countryCode}
-//                   onChangeText={setCountryCode}
-//                   placeholder="TZ"
-//                   autoCapitalize="characters"
-//                   maxLength={5}
-//                 />
-
-//                 <Text style={styles.label}>Postal Code</Text>
-//                 <TextInput
-//                   style={styles.input}
-//                   value={postalCode}
-//                   onChangeText={setPostalCode}
-//                   placeholder="Postal code"
-//                 />
-
-//                 <Text style={styles.label}>Address</Text>
-//                 <TextInput
-//                   style={[styles.input, styles.multilineInput]}
-//                   value={address}
-//                   onChangeText={setAddress}
-//                   placeholder="Street, City"
-//                   multiline
-//                   textAlignVertical="top"
-//                 />
-//               </>
-//             )}
-
-//             <TouchableOpacity
-//               style={[styles.sendBtn, loading && { opacity: 0.6 }]}
-//               onPress={sendContribution}
-//               disabled={loading}
-//             >
-//               {loading ? (
-//                 <ActivityIndicator size="small" color="#fff" />
-//               ) : (
-//                 <Text style={styles.sendText}>Proceed to Payment</Text>
-//               )}
-//             </TouchableOpacity>
-//           </ScrollView>
-//         </Animated.View>
-//       </Modal>
 //     </View>
 //   );
 // }
 
+// // ────────────────────────────────────────────────
+// // Styles remain unchanged – keeping your beautiful design
+// // ────────────────────────────────────────────────
 // const styles = StyleSheet.create({
 //   container: { flex: 1, backgroundColor: '#fff' },
-//   scrollContent: { paddingHorizontal: 18, paddingTop: Platform.OS === 'android' ? 27 : 9, paddingBottom: 80 },
-//   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-//   title: { fontSize: 22, fontWeight: 'bold', color: '#222' },
-//   dropdownWrapper: { marginBottom: 12 },
-//   label: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 6, marginTop: 9 },
-//   customDropdown: { height: 40, borderWidth: 1, borderColor: GOLD, borderRadius: 6, backgroundColor: '#fff', paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-//   disabledDropdown: { opacity: 0.5 },
-//   dropdownText: { fontSize: 14, color: '#333', fontWeight: '600' },
-//   placeholderText: { color: '#999', fontWeight: 'normal' },
-//   dropdownMenu: { marginTop: 4, borderWidth: 1, borderColor: GOLD, borderRadius: 6, backgroundColor: '#fff', maxHeight: 180, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 5 },
-//   dropdownItem: { paddingVertical: 10, paddingHorizontal: 12 },
-//   dropdownItemText: { fontSize: 14, color: '#333' },
-//   freqRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-//   freqBtn: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#FFF4E5', borderRadius: 20 },
-//   freqActive: { backgroundColor: GOLD },
-//   freqText: { fontSize: 12, color: '#666' },
-//   freqTextActive: { color: '#fff', fontWeight: 'bold' },
-//   amountBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: GOLD, borderRadius: 6, height: 70, paddingHorizontal: 12, backgroundColor: '#fff', marginTop: 8, justifyContent: 'center' },
-//   amountInput: { fontSize: 30, fontWeight: '500', color: '#000', textAlign: 'center', flex: 1 },
-//   input: { height: 40, borderWidth: 1, borderColor: GOLD, borderRadius: 6, paddingHorizontal: 12, fontSize: 14, backgroundColor: '#fff', marginTop: 8 },
-//   multilineInput: { height: 80, textAlignVertical: 'top' },
-//   continueBtn: { backgroundColor: GOLD, paddingVertical: 15, borderRadius: 30, alignItems: 'center', marginTop: 20 },
-//   continueText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-//   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-//   emptyText: { marginTop: 20, fontSize: 16, color: '#888', textAlign: 'center' },
-
-//   modalOverlay: {
-//     ...StyleSheet.absoluteFillObject,
-//     backgroundColor: 'rgba(0, 0, 0, 0.6)',
+//   scrollContent: {
+//     paddingHorizontal: 18,
+//     paddingTop: Platform.OS === 'android' ? 27 : 9,
+//     paddingBottom: 100,
 //   },
-//   sheet: {
-//     position: 'absolute',
-//     left: 0,
-//     right: 0,
-//     bottom: 0,
-//     backgroundColor: '#fff',
-//     borderTopLeftRadius: 24,
-//     borderTopRightRadius: 24,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: -5 },
-//     shadowOpacity: 0.25,
-//     shadowRadius: 10,
-//     elevation: 30,
-//   },
-//   handle: {
-//     width: 40,
-//     height: 5,
-//     backgroundColor: '#ccc',
-//     borderRadius: 3,
-//     alignSelf: 'center',
-//     marginTop: 12,
-//     marginBottom: 8,
-//   },
-//   sheetContent: {
-//     paddingHorizontal: 24,
-//     paddingBottom: 60,
-//   },
-//   sheetTitle: { fontSize: 19, fontWeight: 'bold', textAlign: 'center', marginVertical: 12, color: '#222' },
-//   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
-//   summaryLabel: { fontSize: 14, color: '#666' },
-//   summaryValue: { fontSize: 15, fontWeight: 'bold', color: '#222' },
-//   methodRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
-//   methodBtn: { flex: 1, padding: 16, borderRadius: 14, backgroundColor: '#f8f8f8', alignItems: 'center' },
-//   methodActive: { backgroundColor: GOLD },
-//   methodText: { fontSize: 15, fontWeight: '600', color: '#555' },
-//   methodTextActive: { color: '#fff' },
-//   networkRow: { flexDirection: 'row', justifyContent: 'space-around', marginVertical: 20 },
-//   netBtn: { padding: 8 },
-//   netActive: { borderWidth: 3, borderColor: GOLD, borderRadius: 14 },
-//   netLogo: { width: 54, height: 54, borderRadius: 12 },
-//   currencyRow: { flexDirection: 'row', gap: 12, marginTop: 8, marginBottom: 16 },
-//   sendBtn: {
-//     backgroundColor: GOLD,
-//     padding: 18,
-//     borderRadius: 14,
+//   header: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
 //     alignItems: 'center',
-//     marginTop: 30,
+//     marginBottom: 24,
 //   },
-//   sendText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+//   title: { fontSize: 24, fontWeight: '700', color: '#111' },
+//   label: {
+//     fontSize: 15,
+//     fontWeight: '600',
+//     color: '#333',
+//     marginTop: 16,
+//     marginBottom: 6,
+//   },
+//   dropdownWrapper: { marginBottom: 16 },
+//   customDropdown: {
+//     height: 48,
+//     borderWidth: 1.5,
+//     borderColor: GOLD,
+//     borderRadius: 10,
+//     backgroundColor: '#fff',
+//     paddingHorizontal: 14,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//   },
+//   disabledDropdown: { opacity: 0.5, backgroundColor: '#f9f9f9' },
+//   dropdownText: { fontSize: 16, color: '#222', fontWeight: '500' },
+//   placeholderText: { color: '#aaa' },
+//   dropdownMenu: {
+//     marginTop: 4,
+//     borderWidth: 1,
+//     borderColor: GOLD,
+//     borderRadius: 10,
+//     backgroundColor: '#fff',
+//     maxHeight: 220,
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: 4 },
+//     shadowOpacity: 0.12,
+//     shadowRadius: 8,
+//     elevation: 6,
+//   },
+//   dropdownItem: { paddingVertical: 12, paddingHorizontal: 16 },
+//   dropdownItemText: { fontSize: 15, color: '#333' },
+
+//   freqRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
+//   freqBtn: {
+//     paddingHorizontal: 18,
+//     paddingVertical: 10,
+//     backgroundColor: '#FFF8F0',
+//     borderRadius: 30,
+//   },
+//   freqActive: { backgroundColor: GOLD },
+//   freqText: { fontSize: 14, color: '#555' },
+//   freqTextActive: { color: '#fff', fontWeight: '700' },
+
+//   amountBox: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     borderWidth: 1.5,
+//     borderColor: GOLD,
+//     borderRadius: 12,
+//     height: 72,
+//     paddingHorizontal: 16,
+//     backgroundColor: '#fff',
+//     marginTop: 6,
+//   },
+//   amountInput: {
+//     flex: 1,
+//     fontSize: 32,
+//     fontWeight: '600',
+//     color: '#000',
+//     textAlign: 'center',
+//   },
+
+//   input: {
+//     height: 48,
+//     borderWidth: 1.5,
+//     borderColor: GOLD,
+//     borderRadius: 10,
+//     paddingHorizontal: 14,
+//     fontSize: 16,
+//     backgroundColor: '#fff',
+//     marginTop: 6,
+//   },
+
+//   continueBtn: {
+//     backgroundColor: GOLD,
+//     paddingVertical: 18,
+//     borderRadius: 30,
+//     alignItems: 'center',
+//     marginTop: 32,
+//     marginBottom: 40,
+//   },
+//   btnDisabled: { opacity: 0.6 },
+//   continueText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+
+//   emptyState: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     padding: 60,
+//   },
+//   emptyText: {
+//     marginTop: 24,
+//     fontSize: 17,
+//     color: '#777',
+//     textAlign: 'center',
+//     lineHeight: 24,
+//   },
 
 //   toastContainer: {
-//     position: "absolute",
+//     position: 'absolute',
 //     top: 60,
 //     left: 20,
 //     right: 20,
 //     zIndex: 9999,
-//     alignItems: "center",
+//     alignItems: 'center',
 //   },
 //   toast: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     paddingHorizontal: 16,
-//     paddingVertical: 14,
-//     borderRadius: 10,
-//     gap: 10,
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.12,
-//     shadowRadius: 4,
-//     elevation: 3,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     paddingHorizontal: 20,
+//     paddingVertical: 16,
+//     borderRadius: 12,
+//     gap: 12,
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: 3 },
+//     shadowOpacity: 0.2,
+//     shadowRadius: 6,
+//     elevation: 5,
 //   },
-//   toastSuccess: { backgroundColor: "#4CAF50" },
-//   toastError: { backgroundColor: "#FF3B30" },
-//   toastText: {
-//     color: "#fff",
-//     fontSize: 15,
-//     fontWeight: "600",
-//   },
+//   toastSuccess: { backgroundColor: '#4CAF50' },
+//   toastError: { backgroundColor: '#F44336' },
+//   toastText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 // });
 
-// app/main/contribution.jsx
 
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
@@ -724,6 +527,7 @@ export default function GiveScreen() {
   const [communityId, setCommunityId] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [token, setToken] = useState(null);
+  const [userId, setUserId] = useState(null);
   const [joinedCommunities, setJoinedCommunities] = useState([]);
   const [offerings, setOfferings] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -731,34 +535,53 @@ export default function GiveScreen() {
   const [offeringsLoading, setOfferingsLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'error' });
 
+  // Load token + userId — but DON'T redirect if missing
   useEffect(() => {
     (async () => {
       try {
         const t = await AsyncStorage.getItem('userToken');
-        const userDataStr = await AsyncStorage.getItem('userData');
-        if (!t) {
-          router.replace('/login');
-          return;
+        let uid = await SecureStore.getItemAsync('userId');
+        if (!uid) {
+          uid = await AsyncStorage.getItem('userId');
         }
+
+        // Just set the values — no redirect
         setToken(t);
+        setUserId(uid);
       } catch (err) {
-        console.warn('Auth load error:', err);
+        console.warn('Failed to load auth data:', err);
+        // No router.replace('/login') anymore
       }
     })();
-  }, [router]);
+  }, []);
 
   const fetchCommunities = async () => {
-    if (!token) return;
+    if (!token) {
+      // Optional: show message instead of blocking
+      showToast('Please log in to see your communities', 'error');
+      setCommunitiesLoading(false);
+      return;
+    }
+
     try {
       setCommunitiesLoading(true);
       const res = await fetch(`${BASE_URL}/communities/joined`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Failed to fetch communities');
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          showToast('Session expired. Please log in again.', 'error');
+        } else {
+          throw new Error('Failed to fetch communities');
+        }
+      }
+
       const json = await res.json();
       setJoinedCommunities(Array.isArray(json.data) ? json.data : []);
     } catch (err) {
       console.error('Communities fetch error:', err);
+      showToast('Could not load communities', 'error');
     } finally {
       setCommunitiesLoading(false);
     }
@@ -766,6 +589,7 @@ export default function GiveScreen() {
 
   useEffect(() => {
     if (token) fetchCommunities();
+    else setCommunitiesLoading(false); // prevent infinite loading
   }, [token]);
 
   const fetchOfferings = async (id) => {
@@ -810,11 +634,14 @@ export default function GiveScreen() {
   };
 
   const proceedToWeb = async () => {
-    // Required fields validation
     if (!communityId) return showToast('Please select a community');
     if (!offering) return showToast('Please select an offering');
     if (!amount) return showToast('Please enter an amount');
-    // if (!phoneNumber.trim()) return showToast('Please enter your phone number');
+
+    // Only warn — don't block if userId is missing
+    if (!userId) {
+      showToast('User ID not found. Payment may not be linked to your account.', 'error');
+    }
 
     const rawAmount = Number(amount.replace(/,/g, ''));
     if (isNaN(rawAmount) || rawAmount < 100) {
@@ -825,26 +652,25 @@ export default function GiveScreen() {
 
     try {
       const params = new URLSearchParams({
+        userId: userId || '',  // send empty string if missing
         amount: rawAmount.toString(),
         communityId,
         offering,
         frequency,
-        phoneNumber: phoneNumber.trim(),
+        phoneNumber: phoneNumber.trim() || '',
       });
 
-      const webUrl = `http://localhost:3000/serve?${params.toString()}`;
-      // For production → replace with your real domain
-      // const webUrl = `https://your-app.com/serve?${params.toString()}`;
+      const webUrl = `https://sadakaplus.co.tz/serve?${params.toString()}`;
+      // const webUrl = `https://your-domain.com/serve?${params.toString()}`;
 
       const canOpen = await Linking.canOpenURL(webUrl);
       if (canOpen) {
         await Linking.openURL(webUrl);
         showToast('Opening payment page...', 'success');
       } else {
-        showToast('Cannot open browser');
+        showToast('Cannot open browser', 'error');
       }
 
-      // Reset form after successful attempt
       setTimeout(() => {
         setAmount('');
         setOffering('');
@@ -854,7 +680,7 @@ export default function GiveScreen() {
       }, 1200);
     } catch (err) {
       console.error('Redirect failed:', err);
-      showToast('Failed to open payment page');
+      showToast('Failed to open payment page', 'error');
     } finally {
       setLoading(false);
     }
@@ -940,7 +766,11 @@ export default function GiveScreen() {
           {isFormDisabled ? (
             <View style={styles.emptyState}>
               <Ionicons name="heart-outline" size={70} color={GOLD} />
-              <Text style={styles.emptyText}>Join a community first to give</Text>
+              <Text style={styles.emptyText}>
+                {token
+                  ? "Join a community first to give"
+                  : "Please log in to view and join communities"}
+              </Text>
             </View>
           ) : (
             <>
@@ -991,16 +821,6 @@ export default function GiveScreen() {
                 />
               </View>
 
-              {/* <Text style={styles.label}>Phone Number (required for payment)</Text>
-              <TextInput
-                style={styles.input}
-                value={phoneNumber}
-                onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9+]/g, ''))}
-                placeholder="e.g. 0712345678 or +255712345678"
-                keyboardType="phone-pad"
-                maxLength={15}
-              /> */}
-
               <TouchableOpacity
                 style={[styles.continueBtn, loading && styles.btnDisabled]}
                 onPress={proceedToWeb}
@@ -1021,6 +841,7 @@ export default function GiveScreen() {
   );
 }
 
+// Styles remain unchanged
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   scrollContent: {
