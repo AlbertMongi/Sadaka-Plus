@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BASE_URL } from './apiConfig';
-
+import { useTranslation } from 'react-i18next';
 const GOLD = '#E18731';
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
@@ -32,7 +32,7 @@ const EmptyState = ({ icon, title, subtitle }) => (
 
 export default function TransactionHistory() {
   const router = useRouter();
-
+ const { t, i18n } = useTranslation();
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,8 +85,8 @@ export default function TransactionHistory() {
       const json = await response.json();
 
       if (!json?.success) {
-        throw new Error(json?.message || 'Failed to load contribution history');
-      }
+  throw new Error(json?.message || t('failed_to_load_contribution_history'));
+}
 
       const rawData = Array.isArray(json.data) ? json.data : [];
 
@@ -122,14 +122,20 @@ export default function TransactionHistory() {
       if (mapped.length === 0) {
         showToast('No contributions found', 'info');
       } else {
-        showToast(`Loaded ${mapped.length} contribution${mapped.length === 1 ? '' : 's'}`, 'success');
+       showToast(
+  t('loaded_contributions', {
+    count: mapped.length,
+    plural: mapped.length === 1 ? '' : 's'
+  }),
+  'success'
+);
       }
 
     } catch (err) {
       console.error('[Contributions fetch error]', err);
       const msg = err.message.includes('Network') || err.message.includes('fetch')
-        ? 'Network error — please check your connection'
-        : err.message || 'Could not load contribution history';
+    ? t('network_error_check_connection') // Translation key for network errors
+    : err.message || t('could_not_load_contribution_history'); // Translation key for generic fallback
       showToast(msg, 'error');
       setFetchError(msg);
     } finally {
@@ -204,13 +210,13 @@ export default function TransactionHistory() {
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Contribution History</Text>
+         <Text style={styles.headerTitle}>{t('contribution_history')}</Text>
           <View style={{ width: 28 }} />
         </View>
 
         {/* Total */}
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Total Contributed</Text>
+          <Text style={styles.balanceLabel}>{t('total_contributed')}</Text>
           <Text style={styles.balanceAmount}>TZS {totalBalance.toLocaleString()}</Text>
         </View>
 
@@ -218,7 +224,7 @@ export default function TransactionHistory() {
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color="#888" style={{ marginRight: 8 }} />
           <TextInput
-            placeholder="Search contributions..."
+              placeholder={t('search_contributions_placeholder')}
             placeholderTextColor="#aaa"
             value={searchTerm}
             onChangeText={setSearchTerm}
@@ -231,14 +237,14 @@ export default function TransactionHistory() {
         {loading && !refreshing ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={GOLD} />
-            <Text style={styles.centerText}>Loading contributions...</Text>
+            <Text style={styles.centerText}>{t('loading_contributions')}</Text>
           </View>
         ) : fetchError ? (
           <View style={styles.center}>
             <Ionicons name="alert-circle-outline" size={60} color="#e74c3c" />
             <Text style={styles.errorText}>{fetchError}</Text>
             <TouchableOpacity style={styles.retryButton} onPress={fetchContributions}>
-              <Text style={styles.retryText}>Try Again</Text>
+              <Text style={styles.retryText}>{t('try_again')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -254,8 +260,8 @@ export default function TransactionHistory() {
             ListEmptyComponent={
               <EmptyState
                 icon="wallet-outline"
-                title="No contributions yet"
-                subtitle="Your contribution history will appear here once you give."
+                title={t('no_contributions_yet')}
+        subtitle={t('contributions_empty_message')}
               />
             }
           />
@@ -289,19 +295,19 @@ export default function TransactionHistory() {
               style={[styles.modalContent, { transform: [{ translateY: modalSlideAnim }] }]}
             >
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Contribution Details</Text>
-                <TouchableOpacity onPress={closeModal}>
+                {/* <Text style={styles.modalTitle}>Contribution Details</Text> */}
+                {/* <TouchableOpacity onPress={closeModal}>
                   <Ionicons name="close" size={28} color={GOLD} />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
 
               {selectedTxn && (
                 <View style={{ gap: 16 }}>
-                  <DetailRow label="Purpose" value={selectedTxn.purpose} />
-                  <DetailRow label="Amount" value={`TZS ${selectedTxn.amount.toLocaleString()}`} isHighlight />
-                  <DetailRow label="Status" value={selectedTxn.status} />
-                  <DetailRow label="Date" value={selectedTxn.dateTime} />
-                  <DetailRow label="Community" value={selectedTxn.communityName} />
+                   <DetailRow label={t('purpose')} value={selectedTxn.purpose} />
+          <DetailRow label={t('amount')} value={`TZS ${selectedTxn.amount.toLocaleString()}`} isHighlight />
+          <DetailRow label={t('status')} value={selectedTxn.status} />
+          <DetailRow label={t('date')} value={selectedTxn.dateTime} />
+          <DetailRow label={t('community')} value={selectedTxn.communityName} />
                 </View>
               )}
             </Animated.View>

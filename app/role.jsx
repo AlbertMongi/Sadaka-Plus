@@ -12,11 +12,13 @@ import {
 import { Ionicons, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 const { height } = Dimensions.get('window');
 const ORANGE = '#FF8C00';
 
 export default function ChooseRoleScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   const saveRole = async (role) => {
@@ -45,11 +47,12 @@ export default function ChooseRoleScreen() {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
-          accessibilityLabel="Go back"
+          accessibilityLabel={t('common.go_back')}
+          accessibilityHint={t('common.go_back_hint')}
         >
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>Choose Your Role</Text>
+        <Text style={styles.title}>{t('choose_role.title')}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -59,33 +62,44 @@ export default function ChooseRoleScreen() {
           source={require('../assets/images/Sadaka App Logo.png')}
           style={styles.logo}
           resizeMode="contain"
+          accessibilityLabel={t('common.app_logo')}
         />
       </View>
 
       {/* Role Selection Card */}
       <View style={styles.card}>
         <View style={styles.cardContent}>
-          <Text style={styles.cardTitle}>Who are you?</Text>
+          <Text style={styles.cardTitle}>{t('choose_role.who_are_you')}</Text>
           <Text style={styles.cardSubtitle}>
-            Select your role to continue registration
+            {t('choose_role.select_role_to_continue')}
           </Text>
 
           {/* User Role */}
-          <TouchableOpacity style={styles.roleButton} onPress={handlePersonPress}>
+          <TouchableOpacity
+            style={styles.roleButton}
+            onPress={handlePersonPress}
+            accessibilityLabel={t('choose_role.user')}
+            accessibilityHint={t('choose_role.user_hint')}
+          >
             <View style={styles.iconCircle}>
               <FontAwesome name="user-plus" size={32} color="#FFF" />
             </View>
-            <Text style={styles.roleLabel}>User</Text>
-            <Text style={styles.roleDesc}>Individual member</Text>
+            <Text style={styles.roleLabel}>{t('choose_role.user')}</Text>
+            <Text style={styles.roleDesc}>{t('choose_role.user_description')}</Text>
           </TouchableOpacity>
 
           {/* Church Role */}
-          <TouchableOpacity style={styles.roleButton} onPress={handleChurchPress}>
+          <TouchableOpacity
+            style={styles.roleButton}
+            onPress={handleChurchPress}
+            accessibilityLabel={t('choose_role.church')}
+            accessibilityHint={t('choose_role.church_hint')}
+          >
             <View style={styles.iconCircle}>
               <MaterialCommunityIcons name="church-outline" size={36} color="#FFF" />
             </View>
-            <Text style={styles.roleLabel}>Church</Text>
-            <Text style={styles.roleDesc}>Community admin</Text>
+            <Text style={styles.roleLabel}>{t('choose_role.church')}</Text>
+            <Text style={styles.roleDesc}>{t('choose_role.church_description')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -93,6 +107,9 @@ export default function ChooseRoleScreen() {
   );
 }
 
+// ────────────────────────────────────────────────
+// Styles (unchanged)
+// ────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -106,7 +123,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'android' ? 20 : -5,
     backgroundColor: '#fff',
-    // borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   backButton: {
@@ -114,13 +130,12 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-
   },
   title: {
     fontSize: 18,
     fontWeight: '700',
     color: '#000',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    fontFamily: 'GothamBold',
   },
   logoContainer: {
     alignItems: 'center',

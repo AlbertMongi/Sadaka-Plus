@@ -20,7 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import { BASE_URL } from './apiConfig';
 import { fetchBase64Image } from './fetchBase64Image';
-
+import { useTranslation } from 'react-i18next';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const ORANGE = '#FF6B00';
 const FALLBACK_IMAGE =
@@ -77,6 +77,7 @@ async function getCachedImage(remoteUri) {
 }
 
 export default function CommunityDetail() {
+  const { t, i18n } = useTranslation();
   const { communityId } = useLocalSearchParams();
   const router = useRouter();
   const [community, setCommunity] = useState(null);
@@ -156,7 +157,7 @@ export default function CommunityDetail() {
       const json = await res.json();
       if (res.ok && json.success) {
         setCommunity(prev => ({ ...prev, isMember: true }));
-        setSheetMessage('You are now following this community!');
+       setSheetMessage(t('you_are_now_following_this_community'));
         setShowSuccessSheet(true);
         openSheet(successSheetAnim);
         setTimeout(() => closeSheet(successSheetAnim, setShowSuccessSheet), 3000);
@@ -182,7 +183,7 @@ export default function CommunityDetail() {
       const json = await res.json();
       if (res.ok && json.success) {
         setCommunity(prev => ({ ...prev, isMember: false }));
-        setSheetMessage('You have unfollowed this community.');
+     setSheetMessage(t('you_have_unfollowed_this_community'));
         setShowSuccessSheet(true);
         openSheet(successSheetAnim);
         setTimeout(() => closeSheet(successSheetAnim, setShowSuccessSheet), 3000);
@@ -235,7 +236,7 @@ export default function CommunityDetail() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.errorText}>Community not found.</Text>
+       <Text style={styles.errorText}>{t('community_not_found')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -316,16 +317,17 @@ export default function CommunityDetail() {
                     size={20}
                     color={ORANGE}
                   />
-                  <Text style={styles.actionText}>
-                    {community.isMember ? 'Unfollow' : 'Follow'}
-                  </Text>
+              <Text style={styles.actionText}>
+  {community.isMember ? t('unfollow') : t('follow')}
+</Text>
                 </>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionBtn} onPress={handleShare}>
               <Ionicons name="share-social-outline" size={20} color={ORANGE} />
-              <Text style={styles.actionText}>Share</Text>
+              <Text style={styles.actionText}>{t('share')}</Text>
+          
             </TouchableOpacity>
           </View>
         </View>
@@ -342,13 +344,14 @@ export default function CommunityDetail() {
             <TouchableWithoutFeedback>
               <Animated.View style={[styles.sheet, { transform: [{ translateY: successSheetAnim }] }]}>
                 <View style={styles.sheetHandle} />
-                <Text style={styles.sheetTitle}>Success!</Text>
+             <Text style={styles.sheetTitle}>{t('success')}</Text>
                 <Text style={styles.sheetSubtitle}>{sheetMessage}</Text>
                 <TouchableOpacity
                   style={styles.doneBtn}
                   onPress={() => closeSheet(successSheetAnim, setShowSuccessSheet)}
                 >
-                  <Text style={styles.doneText}>Done</Text>
+                  <Text style={styles.doneText}>{t('done')}</Text>
+
                 </TouchableOpacity>
               </Animated.View>
             </TouchableWithoutFeedback>
@@ -370,22 +373,22 @@ export default function CommunityDetail() {
                 <View style={{ alignItems: 'center', marginBottom: 12 }}>
                   <Ionicons name="exit-outline" size={58} color="#d9534f" />
                 </View>
-                <Text style={styles.sheetTitle}>Leave Community?</Text>
+                <Text style={styles.sheetTitle}>{t('leave_community_question')}</Text>
                 <Text style={styles.sheetSubtitle}>
-                  Are you sure you want to unfollow {community.name}?
+                 {t('leave_community_confirm')}
                 </Text>
                 <View style={styles.confirmButtons}>
                   <TouchableOpacity
                     style={[styles.confirmBtn, styles.cancelBtn]}
                     onPress={() => closeSheet(confirmSheetAnim, setShowConfirmSheet)}
                   >
-                    <Text style={styles.cancelText}>Cancel</Text>
+                    <Text style={styles.cancelText}>{t('cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.confirmBtn, styles.leaveBtn]}
                     onPress={leaveCommunity}
                   >
-                    <Text style={styles.leaveText}>Leave</Text>
+                    <Text style={styles.leaveText}>{t('leave')}</Text>
                   </TouchableOpacity>
                 </View>
               </Animated.View>

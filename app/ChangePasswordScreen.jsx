@@ -1,5 +1,5 @@
 // app/main/ChangePasswordScreen.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -18,11 +18,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "./apiConfig";
+import { useTranslation } from "react-i18next";
 
 const GOLD = "#E18731";
-const ORANGE = "#FF9F00"; // using same accent as login for consistency
+const ORANGE = "#FF9F00";
 
 export default function ChangePasswordScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -36,29 +38,33 @@ export default function ChangePasswordScreen() {
   // Toast state — exactly like in LoginScreen
   const [toast, setToast] = useState({ visible: false, message: "", type: "error" });
 
-  const showToast = (message, type = "error") => {
-    setToast({ visible: true, message, type });
-    setTimeout(() => setToast({ ...toast, visible: false }), 3500);
+  const showToast = (key, type = "error", params = {}) => {
+    setToast({
+      visible: true,
+      message: t(key, params),
+      type,
+    });
+    setTimeout(() => setToast({ visible: false, message: "", type: "error" }), 3500);
   };
 
   const handleSubmit = async () => {
     // Client-side validation
     if (!currentPassword.trim()) {
-      showToast("Please enter your current password");
+      showToast("change_password.errors.current_required");
       return;
     }
     if (!newPassword.trim()) {
-      showToast("Please enter a new password");
+      showToast("change_password.errors.new_required");
       return;
     }
     if (newPassword !== confirmPassword) {
-      showToast("New passwords do not match");
+      showToast("change_password.errors.passwords_mismatch");
       return;
     }
 
-    // Optional: you can add more rules here (length, complexity...)
+    // Optional: more rules (length, complexity)
     if (newPassword.length < 6) {
-      showToast("New password must be at least 6 characters");
+      showToast("change_password.errors.password_too_short", { min: 6 });
       return;
     }
 
@@ -67,8 +73,8 @@ export default function ChangePasswordScreen() {
     try {
       const token = await AsyncStorage.getItem("userToken");
       if (!token) {
-        showToast("Session expired. Please log in again.");
-        router.replace("/login"); // or wherever your login is
+        showToast("common.session_expired");
+        router.replace("/login");
         return;
       }
 
@@ -88,7 +94,7 @@ export default function ChangePasswordScreen() {
       const json = await response.json();
 
       if (response.ok && json.success) {
-        showToast("Password changed successfully!", "success");
+        showToast("change_password.success.changed", "success");
         // Clear fields
         setCurrentPassword("");
         setNewPassword("");
@@ -96,13 +102,13 @@ export default function ChangePasswordScreen() {
         // Go back after short delay so user sees the toast
         setTimeout(() => router.back(), 1200);
       } else {
-        // Use whatever message backend sends — very important!
-        const errorMsg = json.message || "Failed to change password";
+        // Use backend message if available
+        const errorMsg = json.message || t("change_password.errors.change_failed");
         showToast(errorMsg);
       }
     } catch (error) {
       console.error("Change password error:", error);
-      showToast("Network error. Please check your connection.");
+      showToast("common.network_error");
     } finally {
       setLoading(false);
     }
@@ -138,7 +144,7 @@ export default function ChangePasswordScreen() {
               >
                 <Ionicons name="chevron-back" size={24} color="#000" />
               </TouchableOpacity>
-              <Text style={styles.title}>Change Password</Text>
+              <Text style={styles.title}>{t("change_password.title")}</Text>
               <View style={{ width: 36 }} />
             </View>
 
@@ -146,11 +152,11 @@ export default function ChangePasswordScreen() {
             <View style={styles.form}>
               {/* Current Password */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Current Password</Text>
+                <Text style={styles.label}>{t("change_password.current_password")}</Text>
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter current password"
+                    placeholder={t("change_password.current_placeholder")}
                     placeholderTextColor="#aaa"
                     secureTextEntry={!showCurrent}
                     value={currentPassword}
@@ -173,11 +179,11 @@ export default function ChangePasswordScreen() {
 
               {/* New Password */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>New Password</Text>
+                <Text style={styles.label}>{t("change_password.new_password")}</Text>
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter new password"
+                    placeholder={t("change_password.new_placeholder")}
                     placeholderTextColor="#aaa"
                     secureTextEntry={!showNew}
                     value={newPassword}
@@ -200,11 +206,11 @@ export default function ChangePasswordScreen() {
 
               {/* Confirm Password */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Confirm New Password</Text>
+                <Text style={styles.label}>{t("change_password.confirm_password")}</Text>
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
-                    placeholder="Confirm new password"
+                    placeholder={t("change_password.confirm_placeholder")}
                     placeholderTextColor="#aaa"
                     secureTextEntry={!showConfirm}
                     value={confirmPassword}
@@ -234,7 +240,7 @@ export default function ChangePasswordScreen() {
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.buttonText}>Change Password</Text>
+                  <Text style={styles.buttonText}>{t("change_password.change_button")}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -246,63 +252,73 @@ export default function ChangePasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#fff" },
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 28,
+    marginBottom: 32,
   },
-  backButton: { padding: 6 },
   title: {
-    fontSize: 18,
-    fontFamily: "GothamBold",
-    color: "#000",
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#111",
   },
-  form: { flex: 1 },
-  inputGroup: { marginBottom: 20 },
+  backButton: {
+    padding: 8,
+  },
+  form: {
+    flex: 1,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
   label: {
-    fontSize: 14,
-    color: "#222",
-    marginBottom: 6,
-    fontFamily: "GothamMedium",
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#444",
+    marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f8f8f8",
-    borderRadius: 12,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#eee",
+    borderColor: "#ddd",
   },
   input: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    fontFamily: "GothamRegular",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 16,
   },
-  eyeIcon: { padding: 12 },
-
+  eyeIcon: {
+    paddingHorizontal: 14,
+  },
   button: {
-    backgroundColor: GOLD,
-    paddingVertical: 16,
-    borderRadius: 30,
+    backgroundColor: ORANGE,
+    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: "center",
-    marginTop: 28,
-    elevation: 2,
+    marginTop: 24,
   },
-  buttonDisabled: { opacity: 0.6 },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
   buttonText: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "GothamBold",
+    fontWeight: "700",
   },
-
-  // ────────────────────────────────────────────────
-  // Toast — copied from your LoginScreen (colors adjusted)
-  // ────────────────────────────────────────────────
   toastContainer: {
     position: "absolute",
     top: 60,
@@ -319,21 +335,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 5,
+    elevation: 6,
   },
-  toastSuccess: {
-    backgroundColor: "#4CAF50", // green
-  },
-  toastError: {
-    backgroundColor: "#FF3B30", // red (same as login)
-  },
-  toastText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: "GothamBold",
-  },
+  toastSuccess: { backgroundColor: "#4CAF50" },
+  toastError: { backgroundColor: "#ff3b30" },
+  toastText: { color: "#fff", fontSize: 15, fontWeight: "600" },
 });

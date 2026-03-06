@@ -11,8 +11,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { styles } from '../styles/ResultScreen.styles';
+import { useTranslation } from 'react-i18next';
 
 const ResultScreen = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const { results } = useLocalSearchParams();
 
@@ -60,18 +62,18 @@ const ResultScreen = () => {
   };
 
   const getScoreMessage = (percentage = 0) => {
-    if (percentage >= 90) return { message: "Outstanding!", color: '#27AE60' };
-    if (percentage >= 80) return { message: "Excellent!", color: '#2ECC71' };
-    if (percentage >= 70) return { message: "Good Job!", color: '#E18731' };
-    if (percentage >= 60) return { message: "Well Done!", color: '#E18731' };
-    return { message: "Keep Studying!", color: '#E74C3C' };
+    if (percentage >= 90) return { key: 'result.outstanding', color: '#27AE60' };
+    if (percentage >= 80) return { key: 'result.excellent', color: '#2ECC71' };
+    if (percentage >= 70) return { key: 'result.good_job', color: '#E18731' };
+    if (percentage >= 60) return { key: 'result.well_done', color: '#E18731' };
+    return { key: 'result.keep_studying', color: '#E74C3C' };
   };
 
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#E18731" />
-        <Text style={styles.loadingText}>Calculating Results...</Text>
+        <Text style={styles.loadingText}>{t('result.calculating_results')}</Text>
       </SafeAreaView>
     );
   }
@@ -79,7 +81,7 @@ const ResultScreen = () => {
   if (!parsedResults) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <Text style={{ fontSize: 18, color: '#666' }}>No results available</Text>
+        <Text style={{ fontSize: 18, color: '#666' }}>{t('result.no_results_available')}</Text>
       </SafeAreaView>
     );
   }
@@ -110,7 +112,7 @@ const ResultScreen = () => {
           </Animated.View>
 
           <Text style={[styles.scoreMessage, { color: scoreMessage.color }]}>
-            {scoreMessage.message}
+            {t(scoreMessage.key)}
           </Text>
         </View>
 
@@ -118,13 +120,13 @@ const ResultScreen = () => {
         <View style={styles.resultsContainer}>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{correct}</Text>
-            <Text style={styles.statLabel}>Correct</Text>
-            <Text style={styles.statSubLabel}>Great job!</Text>
+            <Text style={styles.statLabel}>{t('result.correct')}</Text>
+            <Text style={styles.statSubLabel}>{t('result.great_job')}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{Number(parsedResults.wrong) || 0}</Text>
-            <Text style={styles.statLabel}>Wrong</Text>
-            <Text style={styles.statSubLabel}>Review below</Text>
+            <Text style={styles.statLabel}>{t('result.wrong')}</Text>
+            <Text style={styles.statSubLabel}>{t('result.review_below')}</Text>
           </View>
         </View>
 
@@ -134,7 +136,7 @@ const ResultScreen = () => {
             style={styles.primaryButton} 
             onPress={() => router.push('/bible-quize/screens/QuizScreen')}
           >
-            <Text style={styles.primaryButtonText}>Play Again</Text>
+            <Text style={styles.primaryButtonText}>{t('result.play_again')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -144,14 +146,14 @@ const ResultScreen = () => {
               params: { results: JSON.stringify(parsedResults) },
             })}
           >
-            <Text style={styles.secondaryButtonText}>Review Answers</Text>
+            <Text style={styles.secondaryButtonText}>{t('result.review_answers')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.tertiaryButton}
             onPress={() => router.push('/main/index1')}
           >
-            <Text style={styles.tertiaryButtonText}>Back to Home</Text>
+            <Text style={styles.tertiaryButtonText}>{t('result.back_to_home')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

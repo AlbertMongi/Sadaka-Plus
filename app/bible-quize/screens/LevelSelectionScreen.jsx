@@ -5,12 +5,15 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 // import { UserService } from '../../services/UserService';
 // import { QuestionService } from '../../services/QuestionService';
 import { styles } from '../styles/LevelSelectionScreen.styles';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 const LevelSelectionScreen = ({ navigation }) => {
+  const { t } = useTranslation();
+
   const [userProfile, setUserProfile] = useState(null);
   const [levels, setLevels] = useState([]);
 
@@ -55,7 +58,7 @@ const LevelSelectionScreen = ({ navigation }) => {
             styles.levelTitle,
             !unlocked && styles.lockedText
           ]}>
-            Level {level.id}: {level.name}
+            {t('level_selection.level_prefix', { id: level.id, name: level.name })}
           </Text>
           {!unlocked && (
             <Text style={styles.lockIcon}>🔒</Text>
@@ -74,26 +77,26 @@ const LevelSelectionScreen = ({ navigation }) => {
             styles.statText,
             !unlocked && styles.lockedText
           ]}>
-            Difficulty: {level.difficulty}
+            {t('level_selection.difficulty')}: {level.difficulty}
           </Text>
           <Text style={[
             styles.statText,
             !unlocked && styles.lockedText
           ]}>
-            Questions: {level.questionCount}
+            {t('level_selection.questions')}: {level.questionCount}
           </Text>
         </View>
         
         {unlocked && (
           <View style={styles.playButton}>
-            <Text style={styles.playButtonText}>Play Now</Text>
+            <Text style={styles.playButtonText}>{t('level_selection.play_now')}</Text>
           </View>
         )}
         
         {!unlocked && (
           <View style={styles.unlockRequirement}>
             <Text style={styles.unlockText}>
-              Reach Level {level.id} to unlock
+              {t('level_selection.unlock_requirement', { requiredLevel: level.id })}
             </Text>
           </View>
         )}
@@ -104,9 +107,9 @@ const LevelSelectionScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Choose Your Level</Text>
+        <Text style={styles.title}>{t('level_selection.title')}</Text>
         <Text style={styles.subtitle}>
-          Current Level: {userProfile?.level || 1}
+          {t('level_selection.current_level', { level: userProfile?.level || 1 })}
         </Text>
       </View>
 

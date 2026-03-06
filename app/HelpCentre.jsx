@@ -18,12 +18,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from './apiConfig';
-
+import { useTranslation } from 'react-i18next';
 const { height } = Dimensions.get('window');
 const ORANGE = '#FF6B00';
 const GREEN = '#FF6B00';
 
 export default function HelpCentreScreen() {
+   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -108,7 +109,7 @@ export default function HelpCentreScreen() {
         >
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>Feedback</Text>
+        <Text style={styles.title}>{t('feedback')}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -118,16 +119,15 @@ export default function HelpCentreScreen() {
       >
         <View style={styles.card}>
           <View style={styles.cardContent}>
-            <Text style={styles.cardTitle}>Send Feedback</Text>
-            <Text style={styles.cardSubtitle}>
-              We’d love to hear your thoughts, suggestions, or issues.
-            </Text>
+          <Text style={styles.cardTitle}>{t('send_feedback')}</Text>
+<Text style={styles.cardSubtitle}>{t('feedback_subtitle')}</Text>
+
 
             {/* Subject */}
-            <Text style={styles.label}>Subject *</Text>
+          <Text style={styles.label}>{t('subject')} *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter the subject of your feedback..."
+               placeholder={t('subject_placeholder')}
               placeholderTextColor="#999"
               value={subject}
               onChangeText={setSubject}
@@ -135,10 +135,10 @@ export default function HelpCentreScreen() {
             />
 
             {/* Message */}
-            <Text style={styles.label}>Message *</Text>
+        <Text style={styles.label}>{t('message')} *</Text>
             <TextInput
               style={[styles.input, styles.messageInput]}
-              placeholder="Describe your feedback in detail..."
+              placeholder={t('message_placeholder')}
               placeholderTextColor="#999"
               value={message}
               onChangeText={setMessage}
@@ -159,7 +159,7 @@ export default function HelpCentreScreen() {
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.submitText}>Send Feedback</Text>
+                 <Text style={styles.submitText}>{t('send_feedback_button')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -175,13 +175,11 @@ export default function HelpCentreScreen() {
                 style={[styles.sheet, { transform: [{ translateY: sheetAnim }] }]}
               >
                 <View style={styles.sheetHandle} />
-                <Text style={styles.sheetTitle}>Thank You!</Text>
-                <Text style={styles.sheetSubtitle}>
-                  Your feedback has been sent successfully.
-                </Text>
+             <Text style={styles.sheetTitle}>{t('thank_you')}</Text>
+<Text style={styles.sheetSubtitle}>{t('feedback_sent_success')}</Text>
 
                 <TouchableOpacity style={styles.doneBtn} onPress={closeSheet}>
-                  <Text style={styles.doneText}>Done</Text>
+                  <Text style={styles.doneText}>{t('done')}</Text>
                 </TouchableOpacity>
               </Animated.View>
             </TouchableWithoutFeedback>

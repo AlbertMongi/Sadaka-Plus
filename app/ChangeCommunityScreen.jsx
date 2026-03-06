@@ -20,7 +20,7 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import { BASE_URL } from "./apiConfig";
-
+import { useTranslation } from 'react-i18next';
 const ORANGE = "#FF8C00";
 const GOLD = "#E18731";
 const FALLBACK_IMAGE =
@@ -62,6 +62,7 @@ const fetchWithToken = async (url, options = {}, retries = 2) => {
 };
 
 export default function ChangeCommunityScreen() {
+    const { t, i18n } = useTranslation();
   const router = useRouter();
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -118,57 +119,56 @@ export default function ChangeCommunityScreen() {
       }
     },
   }).panHandlers;
+const fetchJoinedCommunities = useCallback(async () => {
+  if (!isConnected) {
+    setLoading(false);
+    showToast(t("no_internet_connection"), "error");
+    return;
+  }
 
-  const fetchJoinedCommunities = useCallback(async () => {
-    if (!isConnected) {
-      setLoading(false);
-      showToast("No internet connection.", "error");
-      return;
-    }
+  setLoading(true);
+  try {
+    const res = await fetchWithToken(`${BASE_URL}/communities/joined`);
+    if (res?.success && Array.isArray(res.data)) {
+      const formatted = res.data.map((c) => ({
+        id: c.id.toString(),
+        name: c.name || t("unnamed_community"),
+        description: c.description || t("no_description_available"),
+        logo: c.logo && c.logo.startsWith("http") ? c.logo : FALLBACK_IMAGE,
+      }));
+      setCommunities(formatted);
 
-    setLoading(true);
-    try {
-      const res = await fetchWithToken(`${BASE_URL}/communities/joined`);
-      if (res?.success && Array.isArray(res.data)) {
-        const formatted = res.data.map((c) => ({
-          id: c.id.toString(),
-          name: c.name || "Unnamed Community",
-          description: c.description || "No description available",
-          logo: c.logo && c.logo.startsWith("http") ? c.logo : FALLBACK_IMAGE,
-        }));
-        setCommunities(formatted);
-
-        const stored = await AsyncStorage.getItem("selectedCommunityId");
-        if (stored && formatted.some((c) => c.id === stored)) {
-          setSelectedId(stored);
-        }
-      } else {
-        setCommunities([]);
-        showToast("No communities found.", "error");
+      const stored = await AsyncStorage.getItem("selectedCommunityId");
+      if (stored && formatted.some((c) => c.id === stored)) {
+        setSelectedId(stored);
       }
-    } catch (err) {
-      console.error("Fetch communities error:", err);
+    } else {
       setCommunities([]);
-      showToast("Failed to load communities.", "error");
-    } finally {
-      setLoading(false);
+      showToast(t("no_communities_found"), "error");
     }
-  }, [isConnected]);
+  } catch (err) {
+    console.error("Fetch communities error:", err);
+    setCommunities([]);
+    showToast(t("failed_to_load_communities"), "error");
+  } finally {
+    setLoading(false);
+  }
+}, [isConnected]);
 
-  useEffect(() => {
-    fetchJoinedCommunities();
-  }, [fetchJoinedCommunities]);
+useEffect(() => {
+  fetchJoinedCommunities();
+}, [fetchJoinedCommunities]);
 
-  const handleSelect = async (community) => {
-    try {
-      await AsyncStorage.setItem("selectedCommunityId", community.id);
-      setSelectedId(community.id);
-      setSelectedCommunityName(community.name);
-      openSheet();
-    } catch (e) {
-      showToast("Failed to save selection.", "error");
-    }
-  };
+const handleSelect = async (community) => {
+  try {
+    await AsyncStorage.setItem("selectedCommunityId", community.id);
+    setSelectedId(community.id);
+    setSelectedCommunityName(community.name);
+    openSheet();
+  } catch (e) {
+    showToast(t("failed_to_save_selection"), "error");
+  }
+};
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -191,7 +191,7 @@ export default function ChangeCommunityScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>Change Community</Text>
+        <Text style={styles.title}>{t("change_community")}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -199,23 +199,23 @@ export default function ChangeCommunityScreen() {
         {/* Card - Same Style as Login */}
         <View style={styles.card}>
           <View style={styles.cardContent}>
-            <Text style={styles.cardTitle}>Your Joined Communities</Text>
+            <Text style={styles.cardTitle}>{t('Your Joined Communities')}</Text>
             <Text style={styles.cardSubtitle}>
-              Select a community to switch into.
+              {t('Select a community to switch into.')}
             </Text>
 
             {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={ORANGE} />
-                <Text style={styles.loadingText}>Loading communities...</Text>
+                <Text style={styles.loadingText}>{t('Loading communities...')}</Text>
               </View>
             ) : communities.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Ionicons name="people-outline" size={64} color="#ccc" />
-                <Text style={styles.emptyTitle}>No Communities Yet</Text>
-                <Text style={styles.emptySubtitle}>
-                  You haven't joined any community. Explore and join one!
-                </Text>
+                <Text style={styles.emptyTitle}>{t('No Communities Yet')}</Text>
+               <Text style={styles.emptySubtitle}>
+  {t("no_joined_communities_message")}
+</Text>
               </View>
             ) : (
               communities.map((community) => (
@@ -261,8 +261,8 @@ export default function ChangeCommunityScreen() {
               </View>
 
               <Ionicons name="checkmark-circle" size={70} color={GOLD} style={{ alignSelf: "center", marginVertical: 20 }} />
-              <Text style={styles.successTitle}>Community Changed!</Text>
-              <Text style={styles.successMessage}>You are now in</Text>
+            <Text style={styles.successTitle}>{t("community_changed")}</Text>
+<Text style={styles.successMessage}>{t("you_are_now_in")}</Text>
               <Text style={styles.successCommunity}>{selectedCommunityName}</Text>
 
               <TouchableOpacity
@@ -272,7 +272,7 @@ export default function ChangeCommunityScreen() {
                   router.back();
                 }}
               >
-                <Text style={styles.successBtnText}>Continue</Text>
+                <Text style={styles.successBtnText}>{t("continue")}</Text>
               </TouchableOpacity>
             </Animated.View>
           </View>
