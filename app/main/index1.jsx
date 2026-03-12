@@ -900,10 +900,10 @@ import {
 } from 'react-native';
 import { BASE_URL } from '../apiConfig';
 import { fetchBase64Image } from '../fetchBase64Image'; // ← adjust path if needed
-
+import { useTranslation } from 'react-i18next';
 const { width, height } = Dimensions.get('window');
 const GOLD = '#E18731';
-const FALLBACK_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
+const FALLBACK_IMAGE = 'https://st2.depositphotos.com/4431055/11855/i/450/depositphotos_118551182-stock-photo-holy-bible-book.jpg';
 const FALLBACK_AVATAR = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
 
 const EmptyState = ({ icon, title, subtitle }) => (
@@ -942,9 +942,15 @@ const SermonSkeleton = () => (
 );
 
 const HomeScreen = () => {
+   const { t, i18n } = useTranslation();
+//    const labels = {
+//   scripture: t('verseOfDay'),
+//   sermons: t('sermons'),
+// };
+
   const router = useRouter();
 
-  const [language] = useState('en');
+
   const [loadingCommunities, setLoadingCommunities] = useState(true);
   const [joinedCommunities, setJoinedCommunities] = useState([]);
   const [selectedCommunityId, setSelectedCommunityId] = useState(null);
@@ -993,12 +999,6 @@ const HomeScreen = () => {
     }
   }, [dataLoading]);
 
-  const labels = {
-    en: {
-      scripture: 'Verse of the Day',
-      sermons: 'Sermons',
-    },
-  };
 
   const fetchUserProfile = useCallback(async () => {
     try {
@@ -1025,17 +1025,20 @@ const HomeScreen = () => {
     }
   }, []);
 
-  useEffect(() => {
-    const hour = new Date().getHours();
-    const greetingText =
-      hour < 12
-        ? `GOOD MORNING${firstName ? ', ' + firstName.toUpperCase() : ''}!`
-        : hour < 17
-        ? `GOOD AFTERNOON${firstName ? ', ' + firstName.toUpperCase() : ''}!`
-        : `GOOD EVENING${firstName ? ', ' + firstName.toUpperCase() : ''}!`;
-    setGreeting(greetingText);
-  }, [firstName]);
+ useEffect(() => {
+  const hour = new Date().getHours();
 
+  let greetingKey;
+  if (hour < 12) greetingKey = 'good_morning';
+  else if (hour < 17) greetingKey = 'good_afternoon';
+  else greetingKey = 'good_evening';
+
+  const greetingText = firstName
+    ? `${t(greetingKey)}, ${firstName.toUpperCase()}!`
+    : `${t(greetingKey)}!`;
+
+  setGreeting(greetingText);
+}, [firstName, t]);
   // const fetchTransactions = useCallback(async () => {
   //   try {
   //     const token = await AsyncStorage.getItem('userToken');
@@ -1344,7 +1347,7 @@ const fetchTransactions = useCallback(async () => {
 
     try {
       await Share.share({
-        message: `${current.verse_text}\n\n${current.verse_reference}\nShared via Sadaka App`,
+        message: `${current.verse_text}\n\n${current.verse_reference}\nShared via Sadaka Plus`,
       });
 
       setShares(prev => ({ ...prev, [current.id]: (prev[current.id] || 0) + 1 }));
@@ -1367,16 +1370,15 @@ const fetchTransactions = useCallback(async () => {
         <View style={styles.fixedHeader}>
           <View style={styles.navBar}>
             <View style={styles.tabs}>
-              <TouchableOpacity onPress={() => router.push('/profile')} style={styles.profileContainer}>
-                <Image
-                  source={{ uri: profileImage || FALLBACK_IMAGE }}
-                  style={styles.avatar}
-                  defaultSource={{ uri: FALLBACK_AVATAR }}
-                  resizeMode="cover"
-                  onError={() => setProfileImage(FALLBACK_IMAGE)}
-                />
-              </TouchableOpacity>
-              <Text style={styles.tabActive}>What would you like to do today?</Text>
+      <TouchableOpacity
+  onPress={() => router.push('/profile')}
+  style={styles.profileContainer}
+>
+  <View style={styles.avatarPlaceholder}>
+    <Ionicons name="person-outline" size={35} color="#ccc" />
+  </View>
+</TouchableOpacity>
+              <Text style={styles.tabActive}>{t('Whatwouldyouliketodotoday')}</Text>
             </View>
             <View style={styles.icons}>
               <TouchableOpacity onPress={() => router.push('/notification')} style={styles.iconTouchable}>
@@ -1398,23 +1400,23 @@ const fetchTransactions = useCallback(async () => {
           {hasNoCommunity ? (
             <View>
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>{labels[language].scripture}</Text>
+                <Text style={styles.sectionTitle}>{t('verseOfDay')}</Text>
                 <EmptyState icon="book-outline" title="No verse available" subtitle="Join a community to see daily verses" />
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>{labels[language].sermons}</Text>
+                <Text style={styles.sectionTitle}>{t('sermons')}</Text>
                 <EmptyState icon="mic-off-outline" title="No sermons" subtitle="Join your community to access sermons" />
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Bible Quiz</Text>
+                <Text style={styles.sectionTitle}>{t('BibleQuiz')}</Text>
                 <View style={styles.quizCard}>
                   <View style={styles.quizIconCircle}>
                     <MaterialCommunityIcons name="brain" size={42} color={GOLD} />
                   </View>
                   <View style={{ flex: 1, marginLeft: 16 }}>
-                    <Text style={styles.quizTitle}>Bible Quiz of the Day</Text>
+                    <Text style={styles.quizTitle}>{t('BibleQuizOfttheDay')}</Text>
                   </View>
                   <TouchableOpacity style={styles.startBtn} onPress={() => router.push('bible-quize/screens/WelcomeScreen')}>
                     <Text style={styles.startText}>Start</Text>
@@ -1439,7 +1441,7 @@ const fetchTransactions = useCallback(async () => {
           ) : (
             <>
               <View style={styles.section}>
-                <Text style={styles.sectionTitle1}>{labels[language].scripture}</Text>
+                <Text style={styles.sectionTitle1}>{t('verseOfDay')}</Text>
 
                 {dataLoading ? (
                   <ScriptureSkeleton />
@@ -1551,15 +1553,15 @@ const fetchTransactions = useCallback(async () => {
                   </View>
                 ) : (
                   <EmptyState
-                    icon="book-outline"
-                    title="No scripture yet"
-                    subtitle="This community hasn't shared any verses."
-                  />
+    icon="book-outline"
+    title={t('noScriptureYet')}
+    subtitle={t('communityNoVersesShared')}
+  />
                 )}
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>{labels[language].sermons}</Text>
+                <Text style={styles.sectionTitle}>{t('sermons')}</Text>
                 {dataLoading ? (
                   <SermonSkeleton />
                 ) : sermons.length > 0 ? (
@@ -1597,28 +1599,29 @@ const fetchTransactions = useCallback(async () => {
                     ))}
                   </View>
                 ) : (
-                  <EmptyState
-                    icon="mic-off-outline"
-                    title="No sermons yet"
-                    subtitle="This community hasn't uploaded any sermons."
-                  />
+                 <EmptyState
+      icon="mic-off-outline"
+      title={t('noSermonsYet')}
+      subtitle={t('communityNoSermonsUploaded')}
+    />
                 )}
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Bible Quiz</Text>
+                <Text style={styles.sectionTitle}>{t('BibleQuiz')}</Text>
                 <View style={styles.quizCard}>
                   <View style={styles.quizIconCircle}>
                     <MaterialCommunityIcons name="brain" size={42} color={GOLD} />
                   </View>
                   <View style={{ flex: 1, marginLeft: 16 }}>
-                    <Text style={styles.quizTitle}>Bible Quiz of the Day</Text>
+                    <Text style={styles.quizTitle}>{t('BibleQuizOftheDay')}</Text>
+                   
                   </View>
                   <TouchableOpacity
                     style={styles.startBtn}
                     onPress={() => router.push('bible-quize/screens/WelcomeScreen')}
                   >
-                    <Text style={styles.startText}>Start</Text>
+                    <Text style={styles.startText}>{t('Start')}</Text>
                     <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
                   </TouchableOpacity>
                 </View>
@@ -1633,10 +1636,10 @@ const fetchTransactions = useCallback(async () => {
                     paddingHorizontal: 14,
                   }}
                 >
-                  <Text style={styles.sectionTitle}>Recent Transactions</Text>
+                  <Text style={styles.sectionTitle}>{t('RecentTransactions')}</Text>
                   <TouchableOpacity onPress={() => router.push('/history')}>
                     <Text style={{ color: GOLD, fontSize: 13, fontFamily: 'GothamMedium' }}>
-                      View More →
+                      {t('ViewMore')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1709,12 +1712,12 @@ const fetchTransactions = useCallback(async () => {
           contentContainerStyle={styles.scrollContentContainer}
         >
           <View style={styles.section}>
-            <Text style={styles.sectionTitle1}>{labels[language].scripture}</Text>
+            <Text style={styles.sectionTitle1}>{t('verseOfDay')}</Text>
             <ScriptureSkeleton />
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{labels[language].sermons}</Text>
+            <Text style={styles.sectionTitle}>{t('sermons')}</Text>
             <SermonSkeleton />
           </View>
 
@@ -1853,6 +1856,19 @@ const styles = StyleSheet.create({
     borderColor: '#f0f0f0',
     height: 115,
   },
+  profileContainer: {
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+avatarPlaceholder: {
+  width: 50,
+  height: 50,
+  borderRadius: 25,
+  backgroundColor: "#f2f2f2",
+  justifyContent: "center",
+  alignItems: "center",
+},
   quizIconCircle: {
     width: 76,
     height: 76,

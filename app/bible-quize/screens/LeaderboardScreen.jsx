@@ -1,3 +1,4 @@
+// LeaderboardScreen.jsx
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,11 +11,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import NavigationBar from "../components/NavigationBar";
 import { styles } from "../styles/LeaderboardScreen.styles";
-
-// Import the service
 import { fetchLeaderboard } from "../services/leaderboardService";
+import { useTranslation } from "react-i18next";
 
-const LeaderboardScreen = ({ navigation }) => {
+export default function LeaderboardScreen({ navigation }) {
+  const { t } = useTranslation();
+
   const [leaderboard, setLeaderboard] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,14 +37,14 @@ const LeaderboardScreen = ({ navigation }) => {
       const formatted = data.map((user, index) => ({
         userId: user.userId,
         name: user.username,
-      // fallback if not returned
         totalQuizzes: user.quizes,
         totalScore: user.score,
+        // level: user.level || 1, // if backend sends level
       }));
 
       setLeaderboard(formatted);
     } catch (error) {
-      // console.error("Error loading leaderboard:", error);
+      console.error("Error loading leaderboard:", error);
     } finally {
       setIsLoading(false);
     }
@@ -50,13 +52,18 @@ const LeaderboardScreen = ({ navigation }) => {
 
   const loadCurrentUser = async () => {
     try {
-      // You can also create a UserService for current user
-      const me = leaderboard.find((u) => u.userId === "76510aac-91da-420c-9e55-cbb0a492403c"); // Example
+      // Replace with real current user ID logic (e.g. from token or storage)
+      const currentUserId = "76510aac-91da-420c-9e55-cbb0a492403c"; // ← example
+      const me = leaderboard.find((u) => u.userId === currentUserId);
       if (me) {
-        setCurrentUser({ id: me.userId, rank: leaderboard.indexOf(me) + 1, ...me });
+        setCurrentUser({
+          id: me.userId,
+          rank: leaderboard.indexOf(me) + 1,
+          ...me,
+        });
       }
     } catch (error) {
-      // console.error("Error loading current user:", error);
+      console.error("Error loading current user:", error);
     }
   };
 
@@ -100,10 +107,10 @@ const LeaderboardScreen = ({ navigation }) => {
             isCurrentUser && styles.currentUserName
           ]}>
             {item.name}
-            {isCurrentUser && ' (You)'}
+            {isCurrentUser && ` (${t('leaderboard.you')})`}
           </Text>
           <Text style={styles.userLevel}>
-            Level {item.level} • {item.totalQuizzes} quizzes
+            {t('leaderboard.level')} {item.level || 1} • {item.totalQuizzes} {t('leaderboard.quizzes')}
           </Text>
         </View>
 
@@ -114,13 +121,13 @@ const LeaderboardScreen = ({ navigation }) => {
           ]}>
             {item.totalScore.toLocaleString()}
           </Text>
-          <Text style={styles.scoreLabel}>points</Text>
+          <Text style={styles.scoreLabel}>{t('leaderboard.points')}</Text>
         </View>
       </View>
     );
   };
 
-  const renderFilterButton = (filterType, label) => (
+  const renderFilterButton = (filterType, labelKey) => (
     <TouchableOpacity
       style={[
         styles.filterButton,
@@ -132,7 +139,7 @@ const LeaderboardScreen = ({ navigation }) => {
         styles.filterButtonText,
         filter === filterType && styles.activeFilterButtonText
       ]}>
-        {label}
+        {t(labelKey)}
       </Text>
     </TouchableOpacity>
   );
@@ -141,7 +148,7 @@ const LeaderboardScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#E18731" />
-        <Text style={styles.loadingText}>Loading Leaderboard...</Text>
+        <Text style={styles.loadingText}>{t('leaderboard.loading')}</Text>
       </SafeAreaView>
     );
   }
@@ -150,42 +157,44 @@ const LeaderboardScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       {/* NavBar header */}
       <NavigationBar navigation={navigation} points={20} />
+
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Leaderboard</Text>
-        <Text style={styles.subtitle}>Top Bible Quiz Champions</Text>
+        <Text style={styles.title}>{t('leaderboard.title')}</Text>
+        <Text style={styles.subtitle}>{t('leaderboard.subtitle')}</Text>
       </View>
 
       {/* Filter Buttons */}
       <View style={styles.filterContainer}>
-        {renderFilterButton('all', 'All Time')}
-        {renderFilterButton('monthly', 'This Month')}
-        {renderFilterButton('weekly', 'This Week')}
+        {renderFilterButton('all', 'leaderboard.filter_all_time')}
+        {renderFilterButton('monthly', 'leaderboard.filter_this_month')}
+        {renderFilterButton('weekly', 'leaderboard.filter_this_week')}
       </View>
 
       {/* Current User Position */}
       {currentUser && (
         <View style={styles.currentUserCard}>
-          <Text style={styles.currentUserTitle}>Your Position</Text>
+          <Text style={styles.currentUserTitle}>{t('leaderboard.your_position')}</Text>
           <View style={styles.currentUserStats}>
             <View style={styles.currentUserStat}>
               <Text style={styles.currentUserStatValue}>
-                #{currentUser.rank || 'Unranked'}
+                #{currentUser.rank || t('leaderboard.unranked')}
               </Text>
-              <Text style={styles.currentUserStatLabel}>Rank</Text>
+              <Text style={styles.currentUserStatLabel}>{t('leaderboard.rank')}</Text>
             </View>
             <View style={styles.currentUserStat}>
               <Text style={styles.currentUserStatValue}>
                 {currentUser.totalScore?.toLocaleString() || 0}
               </Text>
-              <Text style={styles.currentUserStatLabel}>Points</Text>
+              <Text style={styles.currentUserStatLabel}>{t('leaderboard.points')}</Text>
             </View>
-            <View style={styles.currentUserStat}>
-              {/* <Text style={styles.currentUserStatValue}>
+            {/* Uncomment if level is available */}
+            {/* <View style={styles.currentUserStat}>
+              <Text style={styles.currentUserStatValue}>
                 {currentUser.level || 1}
-              </Text> */}
-              {/* <Text style={styles.currentUserStatLabel}>Level</Text> */}
-            </View>
+              </Text>
+              <Text style={styles.currentUserStatLabel}>{t('leaderboard.level')}</Text>
+            </View> */}
           </View>
         </View>
       )}
@@ -206,15 +215,13 @@ const LeaderboardScreen = ({ navigation }) => {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No rankings available yet</Text>
+            <Text style={styles.emptyText}>{t('leaderboard.empty_title')}</Text>
             <Text style={styles.emptySubText}>
-              Complete some quizzes to see the leaderboard!
+              {t('leaderboard.empty_subtitle')}
             </Text>
           </View>
         }
       />
     </SafeAreaView>
   );
-};
-
-export default LeaderboardScreen;
+}

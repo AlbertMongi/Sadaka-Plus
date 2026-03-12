@@ -1,0 +1,706 @@
+{
+
+  "more": "More",
+  "allCommunities": "All Communities",
+  "changeCommunity": "Change community",
+  "campaigns": "Campaigns",
+  "contributionHistory": "Contribution History",
+  "feebback": "Feebback",
+  "privacyPolicy": "Privacy & Policy",
+  "logOut": "Log Out",
+  "changeLanguage": "Change Language",
+  "currentLanguage": "Current: English",
+
+"verseOfDay": "Verse of the Day",
+"sermons": "Sermons",
+"BibleQuiz": "Bible Quiz",
+"BibleQuizOftheDay": "Quiz of the Day",
+"Start":"Start",
+"RecentTransactions":"Recent Transactions",
+"ViewMore":"View More",
+"Whatwouldyouliketodotoday":"What would you like to do today?",
+"Home":"Home",
+"Events": "Events",
+"Give":"Give",
+"Live":"Live",
+"More":"More",
+"my_events": "My Events",
+"all_events": "All Events",
+  "no_events_yet": "No Events Yet",
+  "no_events_found": "No Events Found",
+  "no_events_yet_subtitle": "You haven't joined any events yet. Explore and be part of upcoming gatherings!",
+  "no_events_found_subtitle": "No events available at the moment.\nJoin a community to discover more!",
+  "search_for_an_event": "Search for an event",
+    "no_results_found": "No results found",
+  "no_teachings_yet": "No Teachings Yet",
+  "try_searching_something_else": "Try searching for something else.",
+  "teachings_will_appear_here": "Live sessions and recorded teachings will appear here.",
+    "live_and_teachings": "Live & Teachings",
+    "search_for_teachings": "Search teachings...",
+      "watching_now": "{{count}} watching now",
+  "views": "{{count}} views",
+  "communities": "Communities",
+  "Search communities...": "Search communities...",
+  "search_communities": "Search communities...",
+  "popular_communities": "Popular Communities",
+  "no_popular_communities_found": "No popular communities found",
+  "my_communities": "My Communities",
+  "all_communities": "All Communities",
+  "loading_communities": "Loading communities...",
+  "no_results": "No Results",
+  "try_searching_different_keywords": "Try searching with different keywords",
+  "no_joined_communities": "No Joined Communities",
+  "no_joined_communities_subtitle": "You haven't joined any community yet.",
+  "no_communities_available": "No Communities Available",
+  "no_communities_available_subtitle": "There are no communities to show right now.",
+  "no_internet_connection": "No internet connection.",
+  "failed_to_load_communities": "Failed to load communities.",
+  "failed_to_load_your_communities": "Failed to load your communities.",
+    "you_are_now_following_this_community": "You are now following this community!",
+  "you_have_unfollowed_this_community": "You have unfollowed this community.",
+  "community_not_found": "Community not found.",
+  "success": "Success!",
+  "done": "Done",
+  "unfollow": "Unfollow",
+  "follow": "Follow",
+  "share": "Share",
+  "leave_community_question": "Leave Community?",
+  "leave_community_confirm": "Are you sure you want to unfollow this community?",
+  "cancel": "Cancel",
+  "leave": "Leave",
+  "no_description_provided": "No description provided.",
+  "join_this_amazing_community": "Join this amazing community!",
+  "unnamed_community": "Unnamed Community",
+  "no_description_available": "No description available",
+  "no_communities_found": "No communities found.",
+  "failed_to_save_selection": "Failed to save selection.",
+  "change_community": "Change Community",
+  "Your Joined Communities": "Your Joined Communities",
+  "Select a community to switch into.": "Select a community to switch into.",
+  "Loading communities...": "Loading communities...",
+  "No Communities Yet": "No Communities Yet",
+  "no_joined_communities_message": "You haven't joined any community. Explore and join one!",
+  "community_changed": "Community Changed!",
+  "you_are_now_in": "You are now in",
+  "continue": "Continue",
+  "no_community_selected": "No Community Selected",
+  "join_church_community_message": "Join your church community to view campaigns and updates.",
+  "find_community": "Find Community",
+  "no_campaigns_yet": "No campaigns yet",
+  "no_campaigns_message": "There are no campaigns to show right now.",
+   "contribution_history": "Contribution History",
+  "total_contributed": "Total Contributed",
+  "search_contributions_placeholder": "Search contributions...",
+  "loading_contributions": "Loading contributions...",
+  "try_again": "Try Again",
+  "no_contributions_yet": "No contributions yet",
+  "contributions_empty_message": "Your contribution history will appear here once you give.",
+  "contribution_details": "Contribution Details",
+  "purpose": "Purpose",
+  "amount": "Amount",
+  "status": "Status",
+  "date": "Date",
+  "community": "Community",
+  "failed_to_load_contribution_history": "Failed to load contribution history",
+  "could_not_load_contribution_history": "Could not load contribution history",
+  "network_error_check_connection": "Network error — please check your connection",
+  "no_auth_token": "No authentication token found. Please log in.",
+  "no_contributions_found": "No contributions found",
+  "loaded_contributions": "Loaded {{count}} contribution{{plural}}",
+    "feedback": "Feedback",
+  "send_feedback": "Send Feedback",
+  "feedback_subtitle": "We’d love to hear your thoughts, suggestions, or issues.",
+  "subject": "Subject",
+  "subject_placeholder": "Enter the subject of your feedback...",
+  "message": "Message",
+  "message_placeholder": "Describe your feedback in detail...",
+  "send_feedback_button": "Send Feedback",
+  "thank_you": "Thank You!",
+  "feedback_sent_success": "Your feedback has been sent successfully.",
+    "good_morning": "Good morning",
+  "good_afternoon": "Good afternoon",
+  "good_evening": "Good evening",
+   "profile": "Profile",
+  "loading_profile": "Loading profile...",
+  "verified_account": "Verified Account",
+  "edit_profile_information": "Edit Profile Information",
+  "change_password": "Change Password",
+  "delete_account": "Delete Account",
+  "profile_auto_load_online": "Your profile will load automatically once you're back online.",
+  "retry_now": "Retry Now",
+"profile.title": "Profile",
+  
+  "failed_load_profile": "Failed to load profile",
+  "session_expired_login_again": "Session expired. Please login again.",
+
+  "profile_picture_updated": "Profile picture updated successfully!",
+  "upload_failed": "Upload failed",
+  "failed_update_profile_picture": "Failed to update profile picture",
+
+  "gallery_permission_denied": "Gallery access denied. Please enable in settings.",
+  "failed_pick_image": "Failed to pick image",
+
+  "enter_password_required": "Please enter your password",
+
+  "account_deleted_successfully": "Account deleted successfully",
+  "deletion_failed": "Deletion failed",
+  "failed_delete_account_try_again": "Failed to delete account. Try again.",
+  "wrong_password": "Wrong password",
+"common.next": "Next",
+  "delete_warning_intro": "Deleting your account is permanent. The following data will be removed:",
+  "delete_profile_info": "• Your profile information",
+  "delete_transaction_history": "• Your transaction history",
+  "delete_followed_communities": "• Communities you follow",
+  "enter_password_confirm": "Enter your password to confirm",
+
+  "user_fallback": "User",
+
+  "powered_by": "powered by EvMak © 2026",
+   "give": "Give",
+  "select_community": "Select community",
+  "whats_your_offering": "What's your offering?",
+  "frequency": "Frequency",
+  "one_time": "One time",
+  "weekly": "Weekly",
+  "monthly": "Monthly",
+  "amount_tzs": "Amount (TZS)",
+  "continue_to_payment": "Continue to Payment",
+  "join_community_to_give": "Join a community first to give",
+  "login_to_view_join_communities": "Please log in to view and join communities",
+  "login_required_communities": "Please log in to see your communities",
+  "failed_fetch_communities": "Failed to fetch communities",
+  "could_not_load_communities": "Could not load communities",
+  "select_community_required": "Please select a community",
+  "select_offering_required": "Please select an offering",
+  "enter_amount_required": "Please enter an amount",
+  "user_id_missing_warning": "User ID not found. Payment may not be linked to your account.",
+  "minimum_amount_required": "Amount must be at least 100 TZS",
+  "opening_payment_page": "Opening payment page...",
+  "cannot_open_browser": "Cannot open browser",
+  "confirm_attendance": "Confirm Attendance",
+  "cancel_attendance": "Cancel Attendance",
+  "confirm_attend_message": "Are you sure you want to attend this event?",
+  "cancel_attend_message": "Are you sure you want to cancel your attendance for this event?",
+
+  "yes_attend": "Yes, Attend",
+  "yes_cancel": "Yes, Cancel",
+  "attendance_confirmed": "You have confirmed your attendance!",
+  "attendance_cancelled": "Attendance cancelled.",
+  "event_not_found": "Event not found.",
+
+  "attend": "Attend",
+  "logoutQuestion": "Are you sure you want to logout?",
+  "logoutConfirm": "Yes, logout",
+  "select_offering": "Select offering",
+    "notifications": "Notifications",
+  "no_notifications_yet": "No notifications yet",
+  "notifications_placeholder": "Once you receive notifications, they’ll appear here.",
+  "Untitled": "Untitled",
+  "No message": "No message",
+  "Notification": "Notification",
+  "Read": "Mark as read",
+  "skip": "Skip",
+  "next": "Next",
+  "getStarted": "Get Started",
+
+  "onboarding": {
+    "slide1": {
+      "heading": "Welcome to Sadaka Plus",
+      "subText": "Welcome to our application to get you started."
+    },
+    "slide2": {
+      "heading": "Easily Manage Donations",
+      "subText": "Track your offerings, tithes and donations in one place."
+    },
+    "slide3": {
+      "heading": "Stay Updated With Church News",
+      "subText": "Get real-time updates, event reminders and more"
+    }
+  },
+  "login": {
+    "title": "Login",
+    "welcome_back": "Welcome Back",
+    "log_in_to_continue": "Log in to continue to your account.",
+    "phone_or_email_required": "Phone number / email *",
+    "enter_phone_or_email": "Enter your phone/email",
+    "password_required": "Password *",
+    "enter_password": "Enter your password",
+    "forgot_password": "Forgot Password?",
+    "login_button": "Login",
+    "no_account": "Don't have an account?",
+    "sign_up": "Sign Up",
+    "please_enter_username_and_password": "Please enter your username and password.",
+    "success": "Login successful!",
+    "failed": "Login failed. Please try again.",
+    "fingerprint_coming_soon": "Fingerprint login coming soon!"
+  },
+  "common": {
+    "no_internet_connection": "No internet connection.",
+    "network_error": "Network error. Please try again later."
+  },
+"choose_role": {
+    "title": "Choose Your Role",
+    "who_are_you": "Who are you?",
+    "select_role_to_continue": "Select your role to continue registration",
+    "user": "User",
+    "user_description": "Individual member",
+    "church": "Church",
+    "church_description": "Community admin"
+  },
+  "common": {
+    "go_back": "Go back"
+  },
+
+  "signup": {
+    "title": "Sign Up",
+    "step1_title": "Please enter your details",
+    "step2_title": "Secure your account",
+    "first_name_placeholder": "First Name",
+    "middle_name_placeholder": "Middle Name (optional)",
+    "last_name_placeholder": "Last Name",
+    "phone_placeholder": "Phone Number",
+    "email_placeholder": "Email",
+    "password_placeholder": "Password",
+    "confirm_password_placeholder": "Confirm Password",
+    "next": "Next",
+    "create_account_button": "Create Account",
+    "creating_account": "Creating Account...",
+    "already_have_account": "Already have an account?",
+    "log_in_link": "Log In",
+    "success": {
+      "account_created": "Account created! Verify your phone number"
+    },
+    "errors": {
+      "first_and_last_name_required": "Please enter first and last name",
+      "invalid_phone": "Enter a valid phone number",
+      "password_too_short": "Password must be at least 6 characters",
+      "passwords_do_not_match": "Passwords do not match",
+      "registration_failed": "Registration failed"
+    }
+  },
+  "common": {
+    "next": "Next",
+    "back": "Back",
+    "network_error": "Network error. Please try again."
+  },
+   "common": {
+    "next": "Next",
+    "back": "Back",
+    "login": "Login"
+  },
+  "church_registration": {
+    "title": "Church Registration",
+    "step_of": "Step {{current}} of {{total}}",
+    "step1_title": "Organization Details",
+    "step2_title": "Location Information",
+    "step3_title": "Contact & Registration",
+    "step4_title": "Description",
+    "step5_title": "Set Password",
+    "organization_name": "Organization Name",
+    "denomination": "Denomination",
+    "region": "Region",
+    "district": "District",
+    "street": "Street",
+    "registration_number": "Registration Number",
+    "phone_number": "Phone Number",
+    "email": "Email",
+    "description": "Description",
+    "password": "Password",
+    "confirm_password": "Confirm Password",
+    "create_account": "Create Account",
+    "thank_you": "Thank You!",
+    "kyc_contact_message": "Your church registration is received. Our team will contact you for verification.",
+
+    "success": {
+      "registered": "Your church has been successfully registered!"
+    },
+
+    "errors": {
+      "organization_name_required": "Organization name is required.",
+      "denomination_required": "Denomination is required.",
+      "region_required": "Region is required.",
+      "district_required": "District is required.",
+      "street_required": "Street is required.",
+      "registration_number_required": "Registration number is required.",
+      "phone_required": "Phone number is required.",
+      "email_required": "Email is required.",
+      "invalid_email": "Please enter a valid email address.",
+      "description_required": "Description is required.",
+      "password_min_length": "Password must be at least {{min}} characters long.",
+      "passwords_do_not_match": "Passwords do not match.",
+      "registration_failed": "Registration failed. Please try again."
+    }
+  },
+  "common": {
+    "network_error": "Network error. Please check your connection."
+  },
+  "forgot_password": {
+    "title": "Forgot Password",
+    "subtitle": "Enter your phone number to reset your password",
+    "phone_placeholder": "Enter phone number",
+    "send_button": "Send",
+    "sending": "Sending...",
+    "success": {
+      "code_sent": "Code sent successfully."
+    },
+    "errors": {
+      "phone_required": "Please enter your phone number.",
+      "send_failed": "Failed to send code."
+    }
+  },
+  "common": {
+    "network_error": "Network error. Please try again later."
+  },
+  "otp": {
+    "title": "Enter OTP",
+    "subtitle": "Code sent to {{phone}}",
+    "your_phone": "your phone",
+    "verify_button": "Verify OTP",
+    "verifying": "Verifying...",
+    "resend_button": "Resend OTP",
+    "resend_timer": "Resend OTP in {{seconds}}s",
+    "success": { "resent": "OTP resent successfully." },
+    "errors": {
+      "enter_all_digits": "Please enter all 6 digits.",
+      "invalid_otp": "Invalid OTP.",
+      "resend_failed": "Failed to resend OTP."
+    }
+  },
+
+
+
+
+  "common": {
+    "go_back": "Go back",
+    "next": "Next",
+    "back": "Back",
+    "login": "Login",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "done": "Done",
+    "error": "Error",
+    "success": "Success",
+    "no_internet_connection": "No internet connection.",
+    "network_error": "Network error. Please try again.",
+    "session_expired": "Session expired. Please log in again.",
+    "current_language": "Current: English"
+  },
+
+  "welcome": {
+    "bible_quiz": "Bible Quiz",
+    "welcome_message": "Welcome!",
+    "play_now": "PLAY NOW"
+  },
+
+  "more_page": {
+    "more": "More",
+    "all_communities": "All Communities",
+    "change_community": "Change community",
+    "campaigns": "Campaigns",
+    "contribution_history": "Contribution History",
+    "feedback": "Feedback",
+    "privacy_policy": "Privacy & Policy",
+    "log_out": "Log Out",
+    "change_language": "Change Language"
+  },
+
+  "home": {
+    "verse_of_day": "Verse of the Day",
+    "sermons": "Sermons",
+    "bible_quiz": "Bible Quiz",
+    "bible_quiz_of_the_day": "Quiz of the Day",
+    "start": "Start",
+    "recent_transactions": "Recent Transactions",
+    "view_more": "View More",
+    "what_would_you_like_to_do_today": "What would you like to do today?",
+    "home": "Home",
+    "events": "Events",
+    "give": "Give",
+    "live": "Live",
+    "more": "More"
+  },
+
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next",
+    "getStarted": "Get Started",
+    "slide1": {
+      "heading": "Welcome to Sadaka Plus",
+      "subText": "Welcome to our application to get you started."
+    },
+    "slide2": {
+      "heading": "Easily Manage Donations",
+      "subText": "Track your offerings, tithes and donations in one place."
+    },
+    "slide3": {
+      "heading": "Stay Updated With Church News",
+      "subText": "Get real-time updates, event reminders and more"
+    }
+  },
+
+  "login": {
+    "title": "Login",
+    "welcome_back": "Welcome Back",
+    "log_in_to_continue": "Log in to continue to your account.",
+    "phone_or_email_required": "Phone number / email *",
+    "enter_phone_or_email": "Enter your phone/email",
+    "password_required": "Password *",
+    "enter_password": "Enter your password",
+    "forgot_password": "Forgot Password?",
+    "login_button": "Login",
+    "no_account": "Don't have an account?",
+    "sign_up": "Sign Up",
+    "please_enter_username_and_password": "Please enter your username and password.",
+    "success": "Login successful!",
+    "failed": "Login failed. Please try again.",
+    "fingerprint_coming_soon": "Fingerprint login coming soon!"
+  },
+
+  "choose_role": {
+    "title": "Choose Your Role",
+    "who_are_you": "Who are you?",
+    "select_role_to_continue": "Select your role to continue registration",
+    "user": "User",
+    "user_description": "Individual member",
+    "church": "Church",
+    "church_description": "Community admin"
+  },
+
+  "signup": {
+    "title": "Sign Up",
+    "step1_title": "Please enter your details",
+    "step2_title": "Secure your account",
+    "first_name_placeholder": "First Name",
+    "middle_name_placeholder": "Middle Name (optional)",
+    "last_name_placeholder": "Last Name",
+    "phone_placeholder": "Phone Number",
+    "email_placeholder": "Email",
+    "password_placeholder": "Password",
+    "confirm_password_placeholder": "Confirm Password",
+    "next": "Next",
+    "create_account_button": "Create Account",
+    "creating_account": "Creating Account...",
+    "already_have_account": "Already have an account?",
+    "log_in_link": "Log In",
+    "success": {
+      "account_created": "Account created! Verify your phone number"
+    },
+    "errors": {
+      "first_and_last_name_required": "Please enter first and last name",
+      "invalid_phone": "Enter a valid phone number",
+      "password_too_short": "Password must be at least 6 characters",
+      "passwords_do_not_match": "Passwords do not match",
+      "registration_failed": "Registration failed"
+    }
+  },
+
+  "church_registration": {
+    "title": "Church Registration",
+    "step_of": "Step {{current}} of {{total}}",
+    "step1_title": "Organization Details",
+    "step2_title": "Location Information",
+    "step3_title": "Contact & Registration",
+    "step4_title": "Description",
+    "step5_title": "Set Password",
+    "organization_name": "Organization Name",
+    "denomination": "Denomination",
+    "region": "Region",
+    "district": "District",
+    "street": "Street",
+    "registration_number": "Registration Number",
+    "phone_number": "Phone Number",
+    "email": "Email",
+    "description": "Description",
+    "password": "Password",
+    "confirm_password": "Confirm Password",
+    "create_account": "Create Account",
+    "thank_you": "Thank You!",
+    "kyc_contact_message": "Your church registration is received. Our team will contact you for verification.",
+    "success": {
+      "registered": "Your church has been successfully registered!"
+    },
+    "errors": {
+      "organization_name_required": "Organization name is required.",
+      "denomination_required": "Denomination is required.",
+      "region_required": "Region is required.",
+      "district_required": "District is required.",
+      "street_required": "Street is required.",
+      "registration_number_required": "Registration number is required.",
+      "phone_required": "Phone number is required.",
+      "email_required": "Email is required.",
+      "invalid_email": "Please enter a valid email address.",
+      "description_required": "Description is required.",
+      "password_min_length": "Password must be at least {{min}} characters long.",
+      "passwords_do_not_match": "Passwords do not match.",
+      "registration_failed": "Registration failed. Please try again."
+    }
+  },
+
+  "forgot_password": {
+    "title": "Forgot Password",
+    "subtitle": "Enter your phone number to reset your password",
+    "phone_placeholder": "Enter phone number",
+    "send_button": "Send",
+    "sending": "Sending...",
+    "success": {
+      "code_sent": "Code sent successfully."
+    },
+    "errors": {
+      "phone_required": "Please enter your phone number.",
+      "send_failed": "Failed to send code."
+    }
+  },
+
+  "otp": {
+    "title": "Enter OTP",
+    "subtitle": "Code sent to {{phone}}",
+    "your_phone": "your phone",
+    "verify_button": "Verify OTP",
+    "verifying": "Verifying...",
+    "resend_button": "Resend OTP",
+    "resend_timer": "Resend OTP in {{seconds}}s",
+    "success": {
+      "resent": "OTP resent successfully."
+    },
+    "errors": {
+      "enter_all_digits": "Please enter all 6 digits.",
+      "invalid_otp": "Invalid OTP.",
+      "resend_failed": "Failed to resend OTP."
+    }
+  },
+
+  "profile": {
+    "edit_title": "Edit Profile",
+    "loading": "Loading your profile...",
+    "first_name_required": "First Name *",
+    "first_name_placeholder": "First Name",
+    "last_name_required": "Last Name *",
+    "last_name_placeholder": "Last Name",
+    "middle_name_optional": "Middle Name (Optional)",
+    "middle_name_placeholder": "Middle Name",
+    "email_required": "Email *",
+    "email_placeholder": "your@email.com",
+    "phone_required": "Phone Number *",
+    "phone_placeholder": "e.g. 255712345678",
+    "save_changes": "Save Changes",
+    "updated_success": "Profile Updated!",
+    "changes_saved": "Your changes have been saved successfully.",
+    "errors": {
+      "required_fields": "Please fill in all required fields.",
+      "load_failed": "Failed to load profile. Please try again.",
+      "update_failed": "Failed to update profile."
+    }
+  },
+
+  "change_password": {
+    "title": "Change Password",
+    "current_password": "Current Password",
+    "current_placeholder": "Enter current password",
+    "new_password": "New Password",
+    "new_placeholder": "Enter new password",
+    "confirm_password": "Confirm New Password",
+    "confirm_placeholder": "Confirm new password",
+    "change_button": "Change Password",
+    "success": {
+      "changed": "Password changed successfully!"
+    },
+    "errors": {
+      "current_required": "Please enter your current password",
+      "new_required": "Please enter a new password",
+      "passwords_mismatch": "New passwords do not match",
+      "password_too_short": "New password must be at least {{min}} characters",
+      "change_failed": "Failed to change password"
+    }
+  },
+
+  "leaderboard": {
+    "title": "Leaderboard",
+    "subtitle": "Top Bible Quiz Champions",
+    "loading": "Loading Leaderboard...",
+    "filter_all_time": "All Time",
+    "filter_this_month": "This Month",
+    "filter_this_week": "This Week",
+    "your_position": "Your Position",
+    "rank": "Rank",
+    "points": "points",
+    "level": "Level",
+    "quizzes": "quizzes",
+    "you": "You",
+    "unranked": "Unranked",
+    "empty_title": "No rankings available yet",
+    "empty_subtitle": "Complete some quizzes to see the leaderboard!"
+  },
+
+  "quiz": {
+    "loading_questions": "Loading Questions...",
+    "no_questions_available": "No questions available",
+    "question_number": "Question {{current}}/{{total}}",
+    "previous": "Previous",
+    "next": "Next",
+    "submit_quiz": "Submit Quiz",
+    "incomplete_quiz": "Incomplete Quiz",
+    "unanswered_warning": "You have {{count}} unanswered bible questions.",
+    "submit_confirm": "Are you sure you want to submit?",
+    "continue_quiz": "Continue Quiz",
+    "submit_anyway": "Submit Anyway",
+    "errors": {
+      "load_failed": "Failed to load questions. Please try again.",
+      "submit_failed": "Failed to submit quiz. Please check your connection."
+    }
+  },
+
+  "result": {
+    "calculating_results": "Calculating Results...",
+    "no_results_available": "No results available",
+    "outstanding": "Outstanding!",
+    "excellent": "Excellent!",
+    "good_job": "Good Job!",
+    "well_done": "Well Done!",
+    "keep_studying": "Keep Studying!",
+    "correct": "Correct",
+    "great_job": "Great job!",
+    "wrong": "Wrong",
+    "review_below": "Review below",
+    "play_again": "Play Again",
+    "review_answers": "Review Answers",
+    "back_to_home": "Back to Home"
+  },
+
+  "review_answers": {
+    "title": "Review Your Answers",
+    "loading": "Loading your answers...",
+    "no_answers_title": "No Answers to Review",
+    "no_answers_message": "You haven't completed any quiz yet.\nFinish a quiz to see your results here!",
+    "question_number": "Question {{number}}",
+    "question_text_missing": "Question text not available",
+    "your_choice": "Your choice:",
+    "not_answered": "Not answered",
+    "correct_answer": "Correct:"
+  },
+  "selectLanguage": "Select Language",
+  "changeLanguage": "Change Language",
+  "current": "Current",
+  "english": "English",
+  "swahili": "Kiswahili",
+  "verseOfDay": "Verse of the Day",
+    "noVerseAvailable": "No verse available",
+    "joinCommunityToSeeDailyVerses": "Join a community to see daily verses",
+    "sermons": "Sermons",
+    "noSermons": "No sermons",
+    "joinCommunityToAccessSermons": "Join your community to access sermons",
+    "noScriptureYet": "No scripture yet",
+    "communityNoVersesShared": "This community hasn't shared any verses.",
+    "sermons": "Sermons",
+    "noSermonsYet": "No sermons yet",
+    "communityNoSermonsUploaded": "This community hasn't uploaded any sermons.",
+    "defaultSermonDescription": "Tap to listen to this powerful message of faith and hope.", 
+    "redirecting_to_secure_website": "Opening secure donation page...",
+"you_will_be_redirected_to_secure_website": "You will be redirected to our secure website to complete your contribution.\nAll payments are processed externally.",
+"continue_on_website": "Continue on Website"
+}
+  
+
+
+
+

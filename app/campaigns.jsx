@@ -1,4 +1,5 @@
-// app/main/campaigns.jsx
+// app/main/campaigns.jsx  (or app/campaigns.jsx — depending on your folder structure)
+
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -18,6 +19,7 @@ import {
   View,
 } from 'react-native';
 import { BASE_URL } from './apiConfig';
+import { useTranslation } from 'react-i18next';
 
 const { width, height } = Dimensions.get('window');
 const GOLD = '#FF9F0D';
@@ -110,7 +112,9 @@ const formatDate = (dateString) => {
   const d = new Date(dateString);
   if (isNaN(d.getTime())) return 'N/A';
   return d.toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   });
 };
 
@@ -120,25 +124,22 @@ const isValidImageUrl = (url) =>
 /* ──────────────────────────────────────────────────────────────
    EMPTY STATES
 ────────────────────────────────────────────────────────────── */
-const NoCommunityState = ({ router }) => (
+const NoCommunityState = ({ router, t }) => (
   <View style={styles.noCommunityContainer}>
     <Ionicons name="people-outline" size={70} color={GOLD} />
-    <Text style={styles.noCommunityTitle}>No Community Selected</Text>
-    <Text style={styles.noCommunitySubtitle}>
-      Join your church community to view campaigns and updates.
-    </Text>
-
+    <Text style={styles.noCommunityTitle}>{t('no_community_selected')}</Text>
+    <Text style={styles.noCommunitySubtitle}>{t('join_church_community_message')}</Text>
     <TouchableOpacity style={styles.joinBtn} onPress={() => router.push('/CommunityScreen')}>
       <Text style={styles.joinBtnText}>Find Community</Text>
     </TouchableOpacity>
   </View>
 );
 
-const EmptyState = () => (
+const EmptyState = ({ t }) => (
   <View style={styles.emptyContainer}>
     <Ionicons name="megaphone-outline" size={70} color={GOLD} />
-    <Text style={styles.emptyTitle}>No campaigns yet</Text>
-    <Text style={styles.emptySubtitle}>There are no campaigns to show right now.</Text>
+    <Text style={styles.emptyTitle}>{t('no_campaigns_yet')}</Text>
+    <Text style={styles.emptySubtitle}>{t('no_campaigns_message')}</Text>
   </View>
 );
 
@@ -147,6 +148,7 @@ const EmptyState = () => (
 ────────────────────────────────────────────────────────────── */
 export default function CampaignsScreen() {
   const router = useRouter();
+  const { t } = useTranslation(); // ← only here
   const scrollRef = useRef(null);
 
   /* COMMUNITY STATE */
@@ -198,6 +200,7 @@ export default function CampaignsScreen() {
         await new Promise((r) => setTimeout(r, RETRY_DELAY));
         return fetchWithToken(url, options, retries - 1);
       }
+      console.warn('fetchWithToken failed:', error);
       return null;
     }
   };
@@ -207,18 +210,19 @@ export default function CampaignsScreen() {
   ───────────────────────────────────────── */
   const fetchJoinedCommunities = async () => {
     setLoadingCommunities(true);
-
     try {
       const token = await AsyncStorage.getItem('userToken');
-      if (!token) throw new Error();
+      if (!token) throw new Error('No token');
 
       const res = await fetch(`${BASE_URL}/communities/joined`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
       const json = await res.json();
 
-      if (json.success && json.data?.length > 0) {
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
         const communities = json.data.map((c) => ({
           id: c.id.toString(),
           name: c.name || 'Unnamed',
@@ -228,10 +232,11 @@ export default function CampaignsScreen() {
         setJoinedCommunities(communities);
 
         const stored = await AsyncStorage.getItem('selectedCommunityId');
-        const id =
-          stored && communities.some((c) => c.id === stored)
-            ? stored
-            : communities[0].id;
+        let id = communities[0].id;
+
+        if (stored && communities.some((c) => c.id === stored)) {
+          id = stored;
+        }
 
         setSelectedCommunityId(id);
         await AsyncStorage.setItem('selectedCommunityId', id);
@@ -239,7 +244,8 @@ export default function CampaignsScreen() {
         setJoinedCommunities([]);
         setSelectedCommunityId(null);
       }
-    } catch {
+    } catch (err) {
+      console.warn('fetchJoinedCommunities failed:', err);
       setJoinedCommunities([]);
       setSelectedCommunityId(null);
     } finally {
@@ -263,47 +269,39 @@ export default function CampaignsScreen() {
       `${BASE_URL}/updates/category/CAMPAIGN/${selectedCommunityId}`
     );
 
-    if (!res) {
-      console.warn('fetchCampaigns: no response from server');
+    if (!res?.success || !Array.isArray(res.data)) {
       setCampaigns([]);
       cardAnims.current = [];
       setLoading(false);
       return;
     }
 
-    if (res?.success && Array.isArray(res.data)) {
-      const formatted = res.data.map((item) => {
-        const img = item.imageUrl || item.image || item.photo || '';
-        const finalImg = isValidImageUrl(img) ? img : FALLBACK_IMAGE;
-        return {
-          id: (item.id || '').toString(),
-          title: item.title || item.content || 'No Title',
-          content: item.content || 'No content available.',
-          category: item.category || 'CAMPAIGN',
-          scheduledAt: item.scheduledAt || item.createdAt || new Date().toISOString(),
-          likes: item.likes || 0,
-          liked: item.liked || false,
-          shares: item.shares || 0,
-          imageUrl: finalImg,
-          raw: item,
-        };
-      });
+    const formatted = res.data.map((item) => {
+      const img = item.imageUrl || item.image || item.photo || '';
+      const finalImg = isValidImageUrl(img) ? img : FALLBACK_IMAGE;
 
-      console.log(`fetchCampaigns: mapped ${formatted.length} campaigns`);
-      setCampaigns(formatted);
-      initializeAnims(formatted);
-      initializeInteractions(formatted);
-    } else {
-      console.log('fetchCampaigns: success=false or data not array', res);
-      setCampaigns([]);
-      cardAnims.current = [];
-    }
+      return {
+        id: (item.id || '').toString(),
+        title: item.title || item.content || 'No Title',
+        content: item.content || 'No content available.',
+        category: item.category || 'CAMPAIGN',
+        scheduledAt: item.scheduledAt || item.createdAt || new Date().toISOString(),
+        likes: item.likes || 0,
+        liked: !!item.liked,
+        shares: item.shares || 0,
+        imageUrl: finalImg,
+        raw: item,
+      };
+    });
+
+    setCampaigns(formatted);
+    initializeAnims(formatted);
+    initializeInteractions(formatted);
 
     setLoading(false);
     animateEntrance();
   };
 
-  /* ── Anim init */
   const initializeAnims = (data) => {
     cardAnims.current = data.map(() => ({
       fade: new Animated.Value(0),
@@ -377,14 +375,17 @@ export default function CampaignsScreen() {
     const isLiked = likedStatus[id] || false;
     const prevLikes = likes[id] || 0;
 
+    // optimistic update
     setLikes((p) => ({ ...p, [id]: isLiked ? prevLikes - 1 : prevLikes + 1 }));
     setLikedStatus((p) => ({ ...p, [id]: !isLiked }));
 
     try {
       await fetchWithToken(`${BASE_URL}/likes/campaign/${id}`, { method: 'POST' });
-    } catch {
+    } catch (err) {
+      // rollback on error
       setLikes((p) => ({ ...p, [id]: prevLikes }));
       setLikedStatus((p) => ({ ...p, [id]: isLiked }));
+      console.warn('Like failed:', err);
     }
   };
 
@@ -402,14 +403,16 @@ export default function CampaignsScreen() {
       await fetchWithToken(`${BASE_URL}/shares/campaign/${campaign.id}`, {
         method: 'POST',
       });
-    } catch {}
+    } catch (err) {
+      console.warn('Share failed:', err);
+    }
   };
 
   /* ─────────────────────────────────────────
        CARD COMPONENT
   ───────────────────────────────────────── */
   const CampaignCard = ({ item, index }) => {
-    const anim = cardAnims.current[index] || { fade: 1, slide: 0 };
+    const anim = cardAnims.current[index] || { fade: new Animated.Value(1), slide: new Animated.Value(0) };
 
     return (
       <Animated.View
@@ -428,17 +431,20 @@ export default function CampaignsScreen() {
 
           <View style={styles.overlay}>
             <View style={styles.header}>
-              <Text style={styles.category}>{item.category}</Text>
+              {/* <Text style={styles.category}>{item.category}</Text> */}
               <Text style={styles.date}>{formatDate(item.scheduledAt)}</Text>
             </View>
 
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.content}>{item.content}</Text>
+              <Text style={styles.content} numberOfLines={4}>
+                {item.content}
+              </Text>
             </View>
 
             <View style={styles.actionButtons}>
-              {/* <TouchableOpacity
+              {/* Uncomment when backend like/share endpoints are stable
+              <TouchableOpacity
                 style={[
                   styles.socialButton,
                   likedStatus[item.id] && styles.likedButton,
@@ -457,9 +463,10 @@ export default function CampaignsScreen() {
                 style={styles.socialButton}
                 onPress={() => handleShare(item)}
               >
-                <Ionicons name="share-outline" size={20} color="#fff" />
+                <Ionicons name="share-social-outline" size={20} color="#fff" />
                 <Text style={styles.countText}>{shares[item.id] || 0}</Text>
-              </TouchableOpacity> */}
+              </TouchableOpacity>
+              */}
             </View>
           </View>
         </View>
@@ -485,7 +492,7 @@ export default function CampaignsScreen() {
             >
               <Ionicons name="chevron-back" size={24} color="#000" />
             </TouchableOpacity>
-            <Text style={styles.screenTitle}>Campaigns</Text>
+            <Text style={styles.screenTitle}>{t('campaigns')}</Text>
             <View style={{ width: 36 }} />
           </View>
 
@@ -497,8 +504,9 @@ export default function CampaignsScreen() {
                 colors={[GOLD]}
               />
             }
+            contentContainerStyle={{ flexGrow: 1 }}
           >
-            <NoCommunityState router={router} />
+            <NoCommunityState router={router} t={t} />
           </ScrollView>
         </Animated.View>
       </SafeAreaView>
@@ -515,7 +523,7 @@ export default function CampaignsScreen() {
           >
             <Ionicons name="chevron-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.screenTitle}>Campaigns</Text>
+          <Text style={styles.screenTitle}>{t('campaigns')}</Text>
           <View style={{ width: 36 }} />
         </View>
 
@@ -540,7 +548,7 @@ export default function CampaignsScreen() {
               ))}
             </>
           ) : campaigns.length === 0 ? (
-            <EmptyState />
+            <EmptyState t={t} />
           ) : (
             campaigns.map((item, index) => (
               <CampaignCard key={item.id} item={item} index={index} />
@@ -553,7 +561,7 @@ export default function CampaignsScreen() {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   STYLES
+   STYLES  (unchanged)
 ────────────────────────────────────────────────────────────── */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
@@ -565,6 +573,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     backgroundColor: '#fff',
     borderBottomColor: '#f0f0f0',
+    // borderBottomWidth: 1,
   },
   backButton: {
     width: 36,
@@ -576,15 +585,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#000',
-    fontFamily: 'GothamBold',
+    // fontFamily: 'GothamBold',   // ← make sure font is loaded
   },
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: Platform.OS === 'android' ? 80 : 20,
+    paddingBottom: Platform.OS === 'android' ? 80 : 32,
   },
 
-  /* Skeleton styles */
+  // Skeleton
   skeletonCard: {
     height: 300,
     borderRadius: 16,
@@ -605,7 +614,7 @@ const styles = StyleSheet.create({
   },
   skeletonActions: { flexDirection: 'row', marginTop: 12 },
 
-  /* Card styles */
+  // Card
   card: {
     height: 300,
     borderRadius: 16,
@@ -630,17 +639,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    fontFamily: 'GothamBold',
   },
-  date: { color: '#fff', fontSize: 12, fontFamily: 'GothamRegular' },
+  date: { color: '#fff', fontSize: 12 },
   title: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 8,
-    fontFamily: 'GothamBold',
   },
-  content: { color: '#fff', fontSize: 14, lineHeight: 20, fontFamily: 'GothamMedium' },
+  content: { color: '#fff', fontSize: 14, lineHeight: 20 },
   actionButtons: { flexDirection: 'row', marginTop: 12 },
   socialButton: {
     flexDirection: 'row',
@@ -652,9 +659,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   likedButton: { backgroundColor: '#E18731' },
-  countText: { color: '#fff', fontSize: 12, marginLeft: 6, fontFamily: 'GothamMedium' },
+  countText: { color: '#fff', fontSize: 12, marginLeft: 6 },
 
-  /* Empty states */
+  // Empty / No community
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -667,17 +674,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: GOLD,
-    fontFamily: 'GothamBold',
   },
   emptySubtitle: {
     marginTop: 6,
     fontSize: 12,
     color: '#555',
     textAlign: 'center',
-    fontFamily: 'GothamRegular',
   },
 
-  /* No community */
   noCommunityContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -686,7 +690,7 @@ const styles = StyleSheet.create({
   },
   noCommunityTitle: {
     fontSize: 20,
-    fontFamily: 'GothamBold',
+    fontWeight: '700',
     marginTop: 20,
     textAlign: 'center',
   },
@@ -696,6 +700,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 16,
   },
-  joinBtn: { backgroundColor: GOLD, paddingHorizontal: 32, paddingVertical: 16, borderRadius: 30 },
-  joinBtnText: { color: '#fff', fontSize: 16, fontFamily: 'GothamBold' },
+  joinBtn: {
+    backgroundColor: GOLD,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 30,
+  },
+  joinBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

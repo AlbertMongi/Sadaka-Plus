@@ -21,10 +21,10 @@ import NetInfo from '@react-native-community/netinfo';
 import * as FileSystem from 'expo-file-system';
 import { BASE_URL } from './apiConfig';
 import { fetchBase64Image } from './fetchBase64Image';
-
+import { useTranslation } from 'react-i18next';
 const ORANGE = "#FF8C00";
 const GOLD = "#E18731";
-const FALLBACK_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
+const FALLBACK_IMAGE = 'https://st2.depositphotos.com/4431055/11855/i/450/depositphotos_118551182-stock-photo-holy-bible-book.jpg';
 
 // ────────────────────────────────────────────────
 //  IMAGE CACHING HELPER (same as HomeScreen)
@@ -77,7 +77,7 @@ async function getCachedImage(remoteUri) {
 
 export default function Community() {
   const router = useRouter();
-
+ const { t, i18n } = useTranslation();
   const [searchText, setSearchText] = useState('');
   const [popularCommunities, setPopularCommunities] = useState([]);
   const [allCommunities, setAllCommunities] = useState([]);
@@ -279,7 +279,7 @@ export default function Community() {
         <TouchableOpacity style={styles.backButton} onPress={() => router.push('/main/more')}>
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>Communities</Text>
+        <Text style={styles.title}>{t("communities")}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -288,7 +288,7 @@ export default function Community() {
         <Ionicons name="search" size={18} color="#888" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search communities..."
+          placeholder={t("Search communities...")}
           placeholderTextColor="#999"
           value={searchText}
           onChangeText={setSearchText}
@@ -309,7 +309,8 @@ export default function Community() {
         ListHeaderComponent={
           <>
             {/* Popular Communities */}
-            <Text style={styles.sectionTitle}>Popular Communities</Text>
+            <Text style={styles.sectionTitle}>{t("popular_communities")}</Text>
+            {/* <Text style={styles.sectionTitle}>Popular Communities</Text> */}
             {loadingPopular ? (
               <View style={styles.skeletonRow}>
                 {[1, 2, 3, 4].map(i => (
@@ -326,16 +327,17 @@ export default function Community() {
                 contentContainerStyle={styles.popularList}
               />
             ) : (
-              <Text style={styles.emptyText}>No popular communities found.</Text>
+              <Text style={styles.emptyText}>{t("no_popular_communities_found")}</Text>
             )}
 
             {/* Tabs */}
             <View style={styles.tabs}>
               <TouchableOpacity onPress={() => setActiveTab('my')}>
-                <Text style={[styles.tab, activeTab === 'my' && styles.activeTab]}>My Communities</Text>
+                <Text style={[styles.tab, activeTab === 'my' && styles.activeTab]}>{t("my_communities")}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setActiveTab('all')}>
-                <Text style={[styles.tab, activeTab === 'all' && styles.activeTab]}>All Communities</Text>
+                <Text style={[styles.tab, activeTab === 'all' && styles.activeTab]}>{t("all_communities")}</Text>
+           
               </TouchableOpacity>
             </View>
           </>
@@ -344,24 +346,24 @@ export default function Community() {
           isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={ORANGE} />
-              <Text style={styles.loadingText}>Loading communities...</Text>
+              <Text style={styles.loadingText}>{t("loading_communities")}</Text>
             </View>
           ) : searchText.length > 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="search-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyTitle}>No Results</Text>
-              <Text style={styles.emptySubtitle}>Try searching with different keywords</Text>
+             <Text style={styles.emptyTitle}>{t("no_results")}</Text>
+<Text style={styles.emptySubtitle}>{t("try_searching_different_keywords")}</Text>
             </View>
           ) : (
             <View style={styles.emptyContainer}>
               <Ionicons name="people-outline" size={80} color="#ccc" />
               <Text style={styles.emptyTitle}>
-                {activeTab === 'my' ? "No Joined Communities" : "No Communities Available"}
+                {activeTab === 'my' ? t("no_joined_communities") : t("no_communities_available")}
               </Text>
               <Text style={styles.emptySubtitle}>
-                {activeTab === 'my'
-                  ? "You haven't joined any community yet."
-                  : "There are no communities to show right now."}
+                  {activeTab === 'my'
+      ? t("no_joined_communities_subtitle")
+      : t("no_communities_available_subtitle")}
               </Text>
             </View>
           )

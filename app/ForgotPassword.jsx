@@ -17,16 +17,19 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { BASE_URL } from './apiConfig';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = BASE_URL;
 const GOLD = '#FF8C00';
 
 export default function ForgotPasswordScreen() {
+  const { t } = useTranslation();
+  const router = useRouter();
+
   const [phoneNo, setPhoneNo] = useState('');
   const [loading, setLoading] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [buttonOpacity] = useState(new Animated.Value(1));
-  const router = useRouter();
 
   const animateButton = (toValue) => {
     Animated.timing(buttonOpacity, {
@@ -37,8 +40,8 @@ export default function ForgotPasswordScreen() {
   };
 
   const handleSend = async () => {
-    if (!phoneNo) {
-      setNotificationMessage('Please enter your phone number.');
+    if (!phoneNo.trim()) {
+      setNotificationMessage(t('forgot_password.errors.phone_required'));
       return;
     }
 
@@ -49,19 +52,20 @@ export default function ForgotPasswordScreen() {
       const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNo }),
+        body: JSON.stringify({ phoneNo: phoneNo.trim() }),
       });
 
       const data = await res.json();
+
       if (res.ok) {
-        setNotificationMessage('Code sent successfully.');
+        setNotificationMessage(t('forgot_password.success.code_sent'));
         router.push('/changepassword');
       } else {
-        setNotificationMessage(data?.message || 'Failed to send code.');
+        setNotificationMessage(data?.message || t('forgot_password.errors.send_failed'));
       }
     } catch (error) {
       console.error('Forgot password error:', error);
-      setNotificationMessage('Network error. Please try again later.');
+      setNotificationMessage(t('common.network_error'));
     } finally {
       setLoading(false);
     }
@@ -80,14 +84,14 @@ export default function ForgotPasswordScreen() {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.innerWrapper}>
-              <Text style={styles.title}>Forgot Password</Text>
+              <Text style={styles.title}>{t('forgot_password.title')}</Text>
               <Text style={styles.subtitle}>
-                Enter your phone number to reset your password
+                {t('forgot_password.subtitle')}
               </Text>
 
               <TextInput
                 style={styles.input}
-                placeholder="Enter phone number"
+                placeholder={t('forgot_password.phone_placeholder')}
                 placeholderTextColor="#999"
                 keyboardType="phone-pad"
                 autoCapitalize="none"
@@ -100,14 +104,14 @@ export default function ForgotPasswordScreen() {
                   disabled={loading}
                   style={[
                     styles.sendButton,
-                    { backgroundColor: phoneNo ? GOLD : '#e0c8a3' },
+                    { backgroundColor: phoneNo.trim() ? GOLD : '#e0c8a3' },
                   ]}
                   onPressIn={() => animateButton(0.7)}
                   onPressOut={() => animateButton(1)}
                   onPress={handleSend}
                 >
                   <Text style={styles.buttonText}>
-                    {loading ? 'Sending...' : 'Send'}
+                    {loading ? t('forgot_password.sending') : t('forgot_password.send_button')}
                   </Text>
                   {!loading && (
                     <Ionicons

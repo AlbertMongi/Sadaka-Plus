@@ -1,27 +1,28 @@
 // File: app/bible-quize/screens/QuizScreen.jsx (or wherever your file is)
-import React, { useState, useEffect, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
   Animated,
   Modal,
-  TouchableWithoutFeedback,
-  StyleSheet,
   Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import NavigationBar from '../components/NavigationBar';
 import { QuestionService } from '../services/QuestionService';
 import { styles as quizStyles } from '../styles/QuizScreen.styles'; // Your original styles
-import NavigationBar from '../components/NavigationBar';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-
+import { useTranslation } from 'react-i18next';
 const ORANGE = "#E18731"; // Your quiz theme color
 
 const QuizScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const router = useRouter();
   const { level, levelName } = useLocalSearchParams();
@@ -98,7 +99,7 @@ const QuizScreen = () => {
       setQuestions(questions);
       setLoading(false);
     } catch (error) {
-      showToast("Failed to load questions. Please try again.");
+ showToast("quiz.errors.load_failed");
       setLoading(false);
     }
   };
@@ -120,7 +121,7 @@ const QuizScreen = () => {
         params: { results: JSON.stringify(results) },
       });
     } catch (err) {
-      showToast("Failed to submit quiz. Please check your connection.");
+     showToast("quiz.errors.submit_failed");
     }
   };
 
@@ -169,7 +170,7 @@ const QuizScreen = () => {
     return (
       <SafeAreaView style={quizStyles.container}>
         <View style={quizStyles.loadingContainer}>
-          <Text style={quizStyles.loadingText}>Loading Questions...</Text>
+        <Text style={quizStyles.loadingText}>{t('quiz.loading_questions')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -179,7 +180,7 @@ const QuizScreen = () => {
     return (
       <SafeAreaView style={quizStyles.container}>
         <View style={quizStyles.errorContainer}>
-          <Text style={quizStyles.errorText}>No questions available</Text>
+         <Text style={quizStyles.errorText}>{t('quiz.no_questions_available')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -216,9 +217,12 @@ const QuizScreen = () => {
           <View style={quizStyles.questionCard}>
             <View style={quizStyles.questionHeader}>
               <View style={quizStyles.questionNumber}>
-                <Text style={quizStyles.questionNumberText}>
-                  Question {currentQuestionIndex + 1}/{questions.length}
-                </Text>
+               <Text style={quizStyles.questionNumberText}>
+  {t('quiz.question_number', { 
+    current: currentQuestionIndex + 1, 
+    total: questions.length 
+  })}
+</Text>
               </View>
               <Text style={quizStyles.levelLabel}>{levelName}</Text>
             </View>
@@ -258,17 +262,17 @@ const QuizScreen = () => {
                 quizStyles.navButtonText,
                 currentQuestionIndex === 0 && quizStyles.disabledButtonText
               ]}>
-                Previous
+               {t('quiz.previous')}
               </Text>
             </TouchableOpacity>
 
             {isLastQuestion ? (
               <TouchableOpacity style={quizStyles.submitButton} onPress={handleSubmitQuiz}>
-                <Text style={quizStyles.submitButtonText}>Submit Quiz</Text>
+                <Text style={quizStyles.submitButtonText}>{t('quiz.submit_quiz')}</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity style={quizStyles.navButton} onPress={handleNextQuestion}>
-                <Text style={quizStyles.navButtonText}>Next</Text>
+                <Text style={quizStyles.navButtonText}>{t('quiz.next')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -296,22 +300,22 @@ const QuizScreen = () => {
 
           <Ionicons name="alert-circle-outline" size={56} color={ORANGE} style={{ alignSelf: 'center', marginVertical: 16 }} />
 
-          <Text style={localStyles.sheetTitle}>Incomplete Quiz</Text>
+          <Text style={localStyles.sheetTitle}>{t('quiz.incomplete_quiz')}</Text>
           <Text style={localStyles.sheetMessage}>
-            You have {unansweredCount} unanswered question{unansweredCount !== 1 ? 's' : ''}.
-            {'\n'}Are you sure you want to submit?
+           {t('quiz.unanswered_warning', { count: unansweredCount })}
+            {'\n'}{t('quiz.submit_confirm')}
           </Text>
 
           <View style={localStyles.sheetButtons}>
             <TouchableOpacity style={localStyles.sheetCancelButton} onPress={closeBottomSheet}>
-              <Text style={localStyles.sheetCancelText}>Continue Quiz</Text>
+            <Text style={localStyles.sheetCancelText}>{t('quiz.continue_quiz')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={localStyles.sheetSubmitButton} onPress={() => {
               closeBottomSheet();
               submitQuiz();
             }}>
-              <Text style={localStyles.sheetSubmitText}>Submit Anyway</Text>
+            <Text style={localStyles.sheetSubmitText}>{t('quiz.submit_anyway')}</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>

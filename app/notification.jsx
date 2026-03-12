@@ -17,10 +17,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { BASE_URL } from './apiConfig';
-
+import { useTranslation } from 'react-i18next';
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function NotificationScreen() {
+    const { t, i18n } = useTranslation();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -145,14 +146,15 @@ export default function NotificationScreen() {
       ]}
     >
       <View style={styles.notificationHeader}>
-        <Text
-          style={[
-            styles.notificationTitle,
-            !item.readAt && { color: '#FF8C00' },
-          ]}
-        >
-          {item.title || 'Untitled'}
-        </Text>
+     <Text
+  style={[
+    styles.notificationTitle,
+    !item.readAt && { color: '#FF8C00' },
+  ]}
+>
+  {(item.title || 'Untitled')
+    .replace(/^Reminder[:\-\s]*/i, '')}
+</Text>
         {!item.readAt && <View style={styles.unreadDot} />}
       </View>
       <Text style={styles.notificationMessage} numberOfLines={2}>
@@ -182,7 +184,8 @@ export default function NotificationScreen() {
         </TouchableOpacity>
 
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={styles.headerTitle}>Notifications</Text>
+          <Text style={styles.headerTitle}>{t('notifications')}</Text>
+     
           {hasUnread && <View style={styles.headerDot} />}
         </View>
 
@@ -201,13 +204,13 @@ export default function NotificationScreen() {
           showsVerticalScrollIndicator={false}
         />
       ) : (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="notifications-off-outline" size={64} color="#FF8C00" />
-          <Text style={styles.emptyText}>No notifications yet</Text>
-          <Text style={styles.emptySubText}>
-            Once you receive notifications, they’ll appear here.
-          </Text>
-        </View>
+       <View style={styles.emptyContainer}>
+  <Ionicons name="notifications-off-outline" size={64} color="#FF8C00" />
+  <Text style={styles.emptyText}>{t('no_notifications_yet')}</Text>
+  <Text style={styles.emptySubText}>
+    {t('notifications_placeholder')}
+  </Text>
+</View>
       )}
 
       {/* Bottom Sheet */}
@@ -249,7 +252,8 @@ export default function NotificationScreen() {
                     {processing ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
-                      <Text style={sheetStyles.deleteButtonText}>Read</Text>
+                      <Text style={sheetStyles.deleteButtonText}>{t('Read')
+                      }</Text>
                     )}
                   </TouchableOpacity>
                 </ScrollView>

@@ -1,23 +1,26 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+// screens/ReviewAnswersScreen.js
+import React, { useState, useEffect } from 'react';
 import {
-  ActivityIndicator,
+  View,
+  Text,
   FlatList,
+  ActivityIndicator,
   SafeAreaView,
   StyleSheet,
-  Text,
-  View,
 } from 'react-native';
-
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 import NavigationBar from '../components/NavigationBar';
+import { useTranslation } from 'react-i18next';
 
 const ORANGE = '#E18731';
 const GREEN = '#4CAF50';
 const ORANGE_DARK = '#FF9800';
 
 const ReviewAnswersScreen = () => {
+  const { t } = useTranslation();
   const { results } = useLocalSearchParams();
+
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,11 +41,11 @@ const ReviewAnswersScreen = () => {
       }
 
       const mapped = parsed.answers.map((ans) => ({
-        question: ans.question || 'Question text not available',
+        question: ans.question || t('review_answers.question_text_missing'),
         userAnswer:
           ans.selectedAnswer && ans.options?.[ans.selectedAnswer]
             ? ans.options[ans.selectedAnswer]
-            : 'Not answered',
+            : t('review_answers.not_answered'),
         correctAnswer: ans.options?.[ans.correctAnswer] || '—',
         selectedKey: ans.selectedAnswer || null,
         correctKey: ans.correctAnswer || null,
@@ -65,7 +68,7 @@ const ReviewAnswersScreen = () => {
 
         <View style={styles.center}>
           <ActivityIndicator size="large" color={ORANGE} />
-          <Text style={styles.loadingText}>Loading your answers...</Text>
+          <Text style={styles.loadingText}>{t('review_answers.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -82,10 +85,9 @@ const ReviewAnswersScreen = () => {
             <Ionicons name="book-outline" size={64} color={ORANGE} />
           </View>
 
-          <Text style={styles.emptyTitle}>No Answers to Review</Text>
+          <Text style={styles.emptyTitle}>{t('review_answers.no_answers_title')}</Text>
           <Text style={styles.emptyMessage}>
-            You haven't completed any quiz yet.{'\n'}
-            Finish a quiz to see your results here!
+            {t('review_answers.no_answers_message')}
           </Text>
         </View>
       </SafeAreaView>
@@ -102,13 +104,15 @@ const ReviewAnswersScreen = () => {
 
     return (
       <View style={styles.card}>
-        <Text style={styles.questionNumber}>Question {index + 1}</Text>
+        <Text style={styles.questionNumber}>
+          {t('review_answers.question_number', { number: index + 1 })}
+        </Text>
         <Text style={styles.question}>{question}</Text>
 
         <View style={styles.answersContainer}>
           {/* Your Answer */}
           <View style={styles.answerRow}>
-            <Text style={styles.label}>Your choice:</Text>
+            <Text style={styles.label}>{t('review_answers.your_choice')}</Text>
 
             <Text
               style={[
@@ -119,7 +123,7 @@ const ReviewAnswersScreen = () => {
               ]}
             >
               {isNotAnswered
-                ? 'Not answered'
+                ? t('review_answers.not_answered')
                 : selectedKey
                 ? `"${selectedKey}" - ${userAnswer}`
                 : userAnswer}
@@ -128,7 +132,9 @@ const ReviewAnswersScreen = () => {
 
           {/* Correct Answer */}
           <View style={styles.answerRow}>
-            <Text style={[styles.label, styles.correctLabel]}>Correct:</Text>
+            <Text style={[styles.label, styles.correctLabel]}>
+              {t('review_answers.correct_answer')}
+            </Text>
             <Text style={[styles.answerText, styles.correct]}>
               {correctKey ? `"${correctKey}" - ` : ''}
               {correctAnswer}
@@ -144,7 +150,7 @@ const ReviewAnswersScreen = () => {
       <NavigationBar points={20} />
 
       <View style={styles.header}>
-        <Text style={styles.title}>Review Your Answers</Text>
+        <Text style={styles.title}>{t('review_answers.title')}</Text>
       </View>
 
       <FlatList

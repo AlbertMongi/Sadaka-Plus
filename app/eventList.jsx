@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 const { width } = Dimensions.get('window');
 const GOLD = '#E18731';
 const FALLBACK_IMG =
-  'https://images.unsplash.com/photo-1507842217343-583bb7270b66?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+  'https://st2.depositphotos.com/4431055/11855/i/450/depositphotos_118551182-stock-photo-holy-bible-book.jpg';
 
 const eventsData = [
   {

@@ -14,12 +14,15 @@ import {
   View,
 } from 'react-native';
 import { BASE_URL } from './apiConfig';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const GOLD = '#E18731';
 
 export default function SignUpScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
+
   const [step, setStep] = useState(1);
   const translateX = useRef(new Animated.Value(0)).current;
 
@@ -45,10 +48,14 @@ export default function SignUpScreen() {
   });
 
   /* 🔔 TOAST HELPER */
-  const showToast = (message, type = 'error') => {
-    setToast({ visible: true, message, type });
+  const showToast = (messageKey, type = 'error', params = {}) => {
+    setToast({
+      visible: true,
+      message: t(messageKey, params),
+      type,
+    });
     setTimeout(() => {
-      setToast({ visible: false, message: '', type });
+      setToast({ visible: false, message: '', type: 'error' });
     }, 3500);
   };
 
@@ -65,11 +72,11 @@ export default function SignUpScreen() {
   const handleNext = () => {
     if (step === 1) {
       if (!firstName.trim() || !lastName.trim()) {
-        showToast('Please enter first and last name');
+        showToast('signup.errors.first_and_last_name_required');
         return;
       }
       if (phone.trim().length < 9) {
-        showToast('Enter a valid phone number');
+        showToast('signup.errors.invalid_phone');
         return;
       }
       animateStep('right', 2);
@@ -78,11 +85,11 @@ export default function SignUpScreen() {
 
     if (step === 2) {
       if (password.length < 6) {
-        showToast('Password must be at least 6 characters');
+        showToast('signup.errors.password_too_short');
         return;
       }
       if (password !== confirmPassword) {
-        showToast('Passwords do not match');
+        showToast('signup.errors.passwords_do_not_match');
         return;
       }
       handleSignUp();
@@ -112,26 +119,30 @@ export default function SignUpScreen() {
       const data = await res.json();
 
       if (res.ok) {
-        showToast('Account created! Verify your phone number', 'success');
+        showToast('signup.success.account_created', 'success');
 
-        // Changed behaviour → go to OTP screen instead of main
         setTimeout(() => {
-          router.replace('/otp');           // ← or '/verify-otp' or whatever your OTP route is
-          // You can also pass phone number if your OTP screen expects it:
+          router.replace('/otp');
+          // Alternative with params:
           // router.replace({ pathname: '/otp', params: { phone } });
         }, 1200);
       } else {
-        showToast(data?.message || 'Registration failed');
+        showToast('signup.errors.registration_failed', 'error', {
+          message: data?.message || '',
+        });
       }
     } catch {
-      showToast('Network error. Please try again.');
+      showToast('common.network_error');
     } finally {
       setLoading(false);
     }
   };
 
   const icons = ['person-outline', 'lock-closed-outline'];
-  const titles = ['Please enter your details', 'Secure your account'];
+  const stepTitles = [
+    t('signup.step1_title'),
+    t('signup.step2_title'),
+  ];
 
   return (
     <KeyboardAvoidingView
@@ -162,7 +173,7 @@ export default function SignUpScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Sign Up</Text>
+        <Text style={styles.headerTitle}>{t('signup.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -182,39 +193,39 @@ export default function SignUpScreen() {
               <Ionicons name={icons[step - 1]} size={42} color={GOLD} />
             </View>
 
-            <Text style={styles.title}>{titles[step - 1]}</Text>
+            <Text style={styles.title}>{stepTitles[step - 1]}</Text>
 
             {/* STEP 1 */}
             {step === 1 && (
               <>
                 <TextInput
                   style={styles.input}
-                  placeholder="First Name"
+                  placeholder={t('signup.first_name_placeholder')}
                   value={firstName}
                   onChangeText={setFirstName}
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Middle Name (optional)"
+                  placeholder={t('signup.middle_name_placeholder')}
                   value={middleName}
                   onChangeText={setMiddleName}
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Last Name"
+                  placeholder={t('signup.last_name_placeholder')}
                   value={lastName}
                   onChangeText={setLastName}
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Phone Number"
+                  placeholder={t('signup.phone_placeholder')}
                   keyboardType="phone-pad"
                   value={phone}
                   onChangeText={setPhone}
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Email"
+                  placeholder={t('signup.email_placeholder')}
                   keyboardType="email-address"
                   value={email}
                   onChangeText={setEmail}
@@ -228,7 +239,7 @@ export default function SignUpScreen() {
                 <View style={styles.passwordContainer}>
                   <TextInput
                     style={styles.passwordInput}
-                    placeholder="Password"
+                    placeholder={t('signup.password_placeholder')}
                     secureTextEntry={!showPassword}
                     value={password}
                     onChangeText={setPassword}
@@ -245,7 +256,7 @@ export default function SignUpScreen() {
                 <View style={styles.passwordContainer}>
                   <TextInput
                     style={styles.passwordInput}
-                    placeholder="Confirm Password"
+                    placeholder={t('signup.confirm_password_placeholder')}
                     secureTextEntry={!showConfirm}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
@@ -268,16 +279,16 @@ export default function SignUpScreen() {
             >
               <Text style={styles.nextButtonText}>
                 {loading
-                  ? 'Creating Account...'
+                  ? t('signup.creating_account')
                   : step === 2
-                  ? 'Create Account'
-                  : 'Next'}
+                  ? t('signup.create_account_button')
+                  : t('common.next')}
               </Text>
             </TouchableOpacity>
 
             {step === 2 && (
               <TouchableOpacity style={styles.backButton} onPress={handleBackStep}>
-                <Text style={styles.backText}>Back</Text>
+                <Text style={styles.backText}>{t('common.back')}</Text>
               </TouchableOpacity>
             )}
 
@@ -286,8 +297,10 @@ export default function SignUpScreen() {
               onPress={() => router.push('/login')}
             >
               <Text style={styles.loginText}>
-                Already have an account?{' '}
-                <Text style={{ color: GOLD, fontWeight: 'bold' }}>Log In</Text>
+                {t('signup.already_have_account')}{' '}
+                <Text style={{ color: GOLD, fontWeight: 'bold' }}>
+                  {t('signup.log_in_link')}
+                </Text>
               </Text>
             </TouchableOpacity>
           </Animated.View>

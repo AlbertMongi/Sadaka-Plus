@@ -22,12 +22,14 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import { BASE_URL } from "./apiConfig";
+import { useTranslation } from "react-i18next";
 
 const { height } = Dimensions.get("window");
 const ORANGE = "#FF8C00";
 const GOLD = "#E18731";
 
 export default function EditProfileScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   const [firstName, setFirstName] = useState("");
@@ -48,9 +50,13 @@ export default function EditProfileScreen() {
   const [updatedData, setUpdatedData] = useState(null);
   const sheetAnim = useRef(new Animated.Value(height)).current;
 
-  const showToast = (message, type = "error") => {
-    setToast({ visible: true, message, type });
-    setTimeout(() => setToast({ ...toast, visible: false }), 3500);
+  const showToast = (key, type = "error", params = {}) => {
+    setToast({
+      visible: true,
+      message: t(key, params),
+      type,
+    });
+    setTimeout(() => setToast({ visible: false, message: "", type: "error" }), 3500);
   };
 
   // Network Detection
@@ -58,7 +64,7 @@ export default function EditProfileScreen() {
     const unsubscribe = NetInfo.addEventListener((state) => {
       const connected = state.isConnected ?? true;
       setIsConnected(connected);
-      if (!connected) showToast("No internet connection.", "error");
+      if (!connected) showToast("common.no_internet_connection", "error");
     });
     return () => unsubscribe();
   }, []);
@@ -82,7 +88,7 @@ export default function EditProfileScreen() {
 
   const fetchProfile = async () => {
     if (!isConnected) {
-      showToast("No internet connection.", "error");
+      showToast("common.no_internet_connection", "error");
       setLoading(false);
       return;
     }
@@ -91,7 +97,7 @@ export default function EditProfileScreen() {
       setLoading(true);
       const token = await AsyncStorage.getItem("userToken");
       if (!token) {
-        showToast("Session expired. Please log in again.", "error");
+        showToast("common.session_expired", "error");
         router.replace("/login");
         return;
       }
@@ -117,7 +123,7 @@ export default function EditProfileScreen() {
       }
     } catch (err) {
       console.error("Profile fetch error:", err);
-      showToast("Failed to load profile. Please try again.", "error");
+      showToast("profile.errors.load_failed", "error");
     } finally {
       setLoading(false);
     }
@@ -129,12 +135,12 @@ export default function EditProfileScreen() {
 
   const handleSubmit = async () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !phoneNo.trim()) {
-      showToast("Please fill in all required fields.", "error");
+      showToast("profile.errors.required_fields", "error");
       return;
     }
 
     if (!isConnected) {
-      showToast("No internet connection.", "error");
+      showToast("common.no_internet_connection", "error");
       return;
     }
 
@@ -170,7 +176,7 @@ export default function EditProfileScreen() {
       }
     } catch (err) {
       console.error("Update error:", err);
-      showToast(err.message || "Failed to update profile.", "error");
+      showToast("profile.errors.update_failed", "error");
     } finally {
       setSaving(false);
     }
@@ -201,7 +207,7 @@ export default function EditProfileScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.title}>Edit Profile</Text>
+          <Text style={styles.title}>{t("profile.edit_title")}</Text>
           <View style={{ width: 36 }} />
         </View>
 
@@ -210,30 +216,30 @@ export default function EditProfileScreen() {
             {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={ORANGE} />
-                <Text style={styles.loadingText}>Loading your profile...</Text>
+                <Text style={styles.loadingText}>{t("profile.loading")}</Text>
               </View>
             ) : (
               <>
                 {/* Name Row */}
                 <View style={styles.row}>
                   <View style={styles.halfInput}>
-                    <Text style={styles.label}>First Name *</Text>
+                    <Text style={styles.label}>{t("profile.first_name_required")}</Text>
                     <TextInput
                       style={styles.input}
                       value={firstName}
                       onChangeText={setFirstName}
-                      placeholder="First Name"
+                      placeholder={t("profile.first_name_placeholder")}
                       placeholderTextColor="#999"
                       autoCapitalize="words"
                     />
                   </View>
                   <View style={styles.halfInput}>
-                    <Text style={styles.label}>Last Name *</Text>
+                    <Text style={styles.label}>{t("profile.last_name_required")}</Text>
                     <TextInput
                       style={styles.input}
                       value={lastName}
                       onChangeText={setLastName}
-                      placeholder="Last Name"
+                      placeholder={t("profile.last_name_placeholder")}
                       placeholderTextColor="#999"
                       autoCapitalize="words"
                     />
@@ -242,12 +248,12 @@ export default function EditProfileScreen() {
 
                 {/* Middle Name */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Middle Name (Optional)</Text>
+                  <Text style={styles.label}>{t("profile.middle_name_optional")}</Text>
                   <TextInput
                     style={styles.input}
                     value={middleName}
                     onChangeText={setMiddleName}
-                    placeholder="Middle Name"
+                    placeholder={t("profile.middle_name_placeholder")}
                     placeholderTextColor="#999"
                     autoCapitalize="words"
                   />
@@ -255,26 +261,26 @@ export default function EditProfileScreen() {
 
                 {/* Email */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Email *</Text>
+                  <Text style={styles.label}>{t("profile.email_required")}</Text>
                   <TextInput
                     style={styles.input}
                     value={email}
                     onChangeText={setEmail}
-                    placeholder="your@email.com"
+                    placeholder={t("profile.email_placeholder")}
                     placeholderTextColor="#999"
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
                 </View>
 
-                {/* Phone */}
+                {/* Phone - Uncomment if you want to allow editing */}
                 {/* <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Phone Number *</Text>
+                  <Text style={styles.label}>{t("profile.phone_required")}</Text>
                   <TextInput
                     style={styles.input}
                     value={phoneNo}
                     onChangeText={setPhoneNo}
-                    placeholder="e.g. 255712345678"
+                    placeholder={t("profile.phone_placeholder")}
                     placeholderTextColor="#999"
                     keyboardType="phone-pad"
                   />
@@ -289,7 +295,7 @@ export default function EditProfileScreen() {
                   {saving ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.saveBtnText}>Save Changes</Text>
+                    <Text style={styles.saveBtnText}>{t("profile.save_changes")}</Text>
                   )}
                 </TouchableOpacity>
               </>
@@ -308,8 +314,8 @@ export default function EditProfileScreen() {
 
                 <Ionicons name="checkmark-circle" size={80} color={GOLD} style={{ alignSelf: "center", marginVertical: 20 }} />
 
-                <Text style={styles.sheetTitle}>Profile Updated!</Text>
-                <Text style={styles.sheetSubtitle}>Your changes have been saved successfully.</Text>
+                <Text style={styles.sheetTitle}>{t("profile.updated_success")}</Text>
+                <Text style={styles.sheetSubtitle}>{t("profile.changes_saved")}</Text>
 
                 {updatedData && (
                   <View style={styles.updatedInfo}>
@@ -323,7 +329,9 @@ export default function EditProfileScreen() {
                         .join(" ")}
                     </Text>
                     <Text style={styles.infoText}>{updatedData.email}</Text>
-                    <Text style={styles.infoText}>{updatedData.phoneNo}</Text>
+                    {updatedData.phoneNo && (
+                      <Text style={styles.infoText}>{updatedData.phoneNo}</Text>
+                    )}
                   </View>
                 )}
 
@@ -334,7 +342,7 @@ export default function EditProfileScreen() {
                     router.back();
                   }}
                 >
-                  <Text style={styles.doneBtnText}>Done</Text>
+                  <Text style={styles.doneBtnText}>{t("common.done.title")}</Text>
                 </TouchableOpacity>
               </Animated.View>
             </View>
@@ -344,7 +352,6 @@ export default function EditProfileScreen() {
     </SafeAreaView>
   );
 }
-
 // CONSISTENT STYLES - 100% Match with your app
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#fff" },

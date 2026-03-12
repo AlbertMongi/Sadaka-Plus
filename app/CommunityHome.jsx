@@ -16,7 +16,7 @@ import {
 const { width, height } = Dimensions.get("window");
 const GOLD = "#E18731";
 const FALLBACK_IMAGE =
-  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s";
+  "https://st2.depositphotos.com/4431055/11855/i/450/depositphotos_118551182-stock-photo-holy-bible-book.jpg";
 const CARD_SIZE = (width - 64) / 2;
 
 const DashboardScreen = () => {

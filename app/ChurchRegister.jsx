@@ -1,5 +1,3 @@
-// export default RegistrationScreen;
-
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -20,12 +18,15 @@ import {
   View,
 } from "react-native";
 import { BASE_URL } from "./apiConfig";
+import { useTranslation } from "react-i18next";
 
 const { width, height } = Dimensions.get("window");
 const GOLD = "#E18731";
 
 export default function ChurchRegistrationScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
+
   const translateX = useRef(new Animated.Value(0)).current;
   const sheetAnim = useRef(new Animated.Value(height)).current;
 
@@ -64,10 +65,14 @@ export default function ChurchRegistrationScreen() {
   }, []);
 
   /* 🔔 TOAST HELPER */
-  const showToast = (message, type = "error") => {
-    setToast({ visible: true, message, type });
+  const showToast = (key, type = "error", params = {}) => {
+    setToast({
+      visible: true,
+      message: t(key, params),
+      type,
+    });
     setTimeout(() => {
-      setToast({ visible: false, message: "", type });
+      setToast({ visible: false, message: "", type: "error" });
     }, 3500);
   };
 
@@ -88,59 +93,59 @@ export default function ChurchRegistrationScreen() {
     switch (step) {
       case 1:
         if (!form.name.trim()) {
-          showToast("Organization Name is required");
+          showToast("church_registration.errors.organization_name_required");
           return false;
         }
         if (!form.denomination.trim()) {
-          showToast("Denomination is required");
+          showToast("church_registration.errors.denomination_required");
           return false;
         }
         break;
       case 2:
         if (!form.region.trim()) {
-          showToast("Region is required");
+          showToast("church_registration.errors.region_required");
           return false;
         }
         if (!form.district.trim()) {
-          showToast("District is required");
+          showToast("church_registration.errors.district_required");
           return false;
         }
         if (!form.street.trim()) {
-          showToast("Street is required");
+          showToast("church_registration.errors.street_required");
           return false;
         }
         break;
       case 3:
         if (!form.registrationNumber.trim()) {
-          showToast("Registration Number is required");
+          showToast("church_registration.errors.registration_number_required");
           return false;
         }
         if (!form.phoneNo.trim()) {
-          showToast("Phone Number is required");
+          showToast("church_registration.errors.phone_required");
           return false;
         }
         if (!form.email.trim()) {
-          showToast("Email is required");
+          showToast("church_registration.errors.email_required");
           return false;
         }
         if (!/\S+@\S+\.\S+/.test(form.email)) {
-          showToast("Email format is invalid");
+          showToast("church_registration.errors.invalid_email");
           return false;
         }
         break;
       case 4:
         if (!form.description.trim()) {
-          showToast("Description is required");
+          showToast("church_registration.errors.description_required");
           return false;
         }
         break;
       case 5:
         if (form.password.length < 8) {
-          showToast("Password must be at least 8 characters");
+          showToast("church_registration.errors.password_min_length", { min: 8 });
           return false;
         }
         if (form.password !== form.confirmPassword) {
-          showToast("Passwords do not match");
+          showToast("church_registration.errors.passwords_do_not_match");
           return false;
         }
         break;
@@ -158,7 +163,6 @@ export default function ChurchRegistrationScreen() {
 
   const handleBackStep = () => animateStep("left", step - 1);
 
-  // Back arrow pressed behavior
   const handleBackPress = () => {
     if (step === 1) {
       router.back();
@@ -204,13 +208,13 @@ export default function ChurchRegistrationScreen() {
       });
 
       if (res.ok) {
-        showToast("Registration successful!", "success");
+        showToast("church_registration.success.registered", "success");
         setTimeout(openSheet, 600);
       } else {
-        showToast("Registration failed");
+        showToast("church_registration.errors.registration_failed");
       }
     } catch {
-      showToast("Network error. Please try again.");
+      showToast("common.network_error");
     } finally {
       setLoading(false);
     }
@@ -224,12 +228,12 @@ export default function ChurchRegistrationScreen() {
     "lock-closed-outline",
   ];
 
-  const titles = [
-    "Organization Info",
-    "Location Details",
-    "Contact Information",
-    "Description",
-    "Secure Account",
+  const stepTitles = [
+    t("church_registration.step1_title"),
+    t("church_registration.step2_title"),
+    t("church_registration.step3_title"),
+    t("church_registration.step4_title"),
+    t("church_registration.step5_title"),
   ];
 
   return (
@@ -264,7 +268,7 @@ export default function ChurchRegistrationScreen() {
         <TouchableOpacity onPress={handleBackPress}>
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Register Church</Text>
+        <Text style={styles.topTitle}>{t("church_registration.title")}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -283,7 +287,7 @@ export default function ChurchRegistrationScreen() {
               <View style={[styles.progressBar, { width: `${progress}%` }]} />
             </View>
             <Text style={styles.progressText}>
-              Step {step} of {TOTAL_STEPS}
+              {t("church_registration.step_of", { current: step, total: TOTAL_STEPS })}
             </Text>
 
             <Animated.View
@@ -293,17 +297,17 @@ export default function ChurchRegistrationScreen() {
                 <Ionicons name={icons[step - 1]} size={42} color={GOLD} />
               </View>
 
-              <Text style={styles.title}>{titles[step - 1]}</Text>
+              <Text style={styles.title}>{stepTitles[step - 1]}</Text>
 
               {step === 1 && (
                 <>
                   <Input
-                    placeholder="Organization Name"
+                    placeholder={t("church_registration.organization_name")}
                     onChangeText={(v) => handleChange("name", v)}
                     value={form.name}
                   />
                   <Input
-                    placeholder="Denomination"
+                    placeholder={t("church_registration.denomination")}
                     onChangeText={(v) => handleChange("denomination", v)}
                     value={form.denomination}
                   />
@@ -313,17 +317,17 @@ export default function ChurchRegistrationScreen() {
               {step === 2 && (
                 <>
                   <Input
-                    placeholder="Region"
+                    placeholder={t("church_registration.region")}
                     onChangeText={(v) => handleChange("region", v)}
                     value={form.region}
                   />
                   <Input
-                    placeholder="District"
+                    placeholder={t("church_registration.district")}
                     onChangeText={(v) => handleChange("district", v)}
                     value={form.district}
                   />
                   <Input
-                    placeholder="Street"
+                    placeholder={t("church_registration.street")}
                     onChangeText={(v) => handleChange("street", v)}
                     value={form.street}
                   />
@@ -333,18 +337,18 @@ export default function ChurchRegistrationScreen() {
               {step === 3 && (
                 <>
                   <Input
-                    placeholder="Registration Number"
+                    placeholder={t("church_registration.registration_number")}
                     onChangeText={(v) => handleChange("registrationNumber", v)}
                     value={form.registrationNumber}
                   />
                   <Input
-                    placeholder="Phone Number"
+                    placeholder={t("church_registration.phone_number")}
                     keyboardType="phone-pad"
                     onChangeText={(v) => handleChange("phoneNo", v)}
                     value={form.phoneNo}
                   />
                   <Input
-                    placeholder="Email"
+                    placeholder={t("church_registration.email")}
                     keyboardType="email-address"
                     onChangeText={(v) => handleChange("email", v)}
                     value={form.email}
@@ -354,7 +358,7 @@ export default function ChurchRegistrationScreen() {
 
               {step === 4 && (
                 <Input
-                  placeholder="Brief description"
+                  placeholder={t("church_registration.description")}
                   multiline
                   style={{ height: 90, textAlignVertical: "top" }}
                   onChangeText={(v) => handleChange("description", v)}
@@ -365,14 +369,14 @@ export default function ChurchRegistrationScreen() {
               {step === 5 && (
                 <>
                   <PasswordInput
-                    placeholder="Password"
+                    placeholder={t("church_registration.password")}
                     show={showPassword}
                     toggle={() => setShowPassword(!showPassword)}
                     onChangeText={(v) => handleChange("password", v)}
                     value={form.password}
                   />
                   <PasswordInput
-                    placeholder="Confirm Password"
+                    placeholder={t("church_registration.confirm_password")}
                     show={showConfirm}
                     toggle={() => setShowConfirm(!showConfirm)}
                     onChangeText={(v) => handleChange("confirmPassword", v)}
@@ -386,14 +390,16 @@ export default function ChurchRegistrationScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={styles.nextButtonText}>
-                    {step === TOTAL_STEPS ? "Create Account" : "Next"}
+                    {step === TOTAL_STEPS
+                      ? t("church_registration.create_account")
+                      : t("common.next")}
                   </Text>
                 )}
               </TouchableOpacity>
 
               {step > 1 && (
                 <TouchableOpacity style={styles.backButton} onPress={handleBackStep}>
-                  <Text style={styles.backText}>Back</Text>
+                  <Text style={styles.backText}>{t("common.back")}</Text>
                 </TouchableOpacity>
               )}
             </Animated.View>
@@ -408,19 +414,18 @@ export default function ChurchRegistrationScreen() {
             style={[styles.sheet, { transform: [{ translateY: sheetAnim }] }]}
           >
             <Ionicons name="checkmark-circle" size={70} color={GOLD} />
-            <Text style={styles.sheetTitle}>Thank You!</Text>
+            <Text style={styles.sheetTitle}>{t("church_registration.thank_you")}</Text>
             <Text style={styles.sheetText}>
-              Thank you for registering. We will contact you soon for completing your KYC.
+              {t("church_registration.kyc_contact_message")}
             </Text>
 
-           <TouchableOpacity
-  style={styles.nextButton1}
-  activeOpacity={0.8}
-  onPress={() => router.replace("/login")}
->
-  <Text style={styles.nextButtonText1}>Login</Text>
-</TouchableOpacity>
-
+            <TouchableOpacity
+              style={styles.nextButton1}
+              activeOpacity={0.8}
+              onPress={() => router.replace("/login")}
+            >
+              <Text style={styles.nextButtonText1}>{t("common.login")}</Text>
+            </TouchableOpacity>
           </Animated.View>
         </View>
       </Modal>
@@ -428,14 +433,23 @@ export default function ChurchRegistrationScreen() {
   );
 }
 
-/* ---------- Inputs ---------- */
+/* ---------- Custom Input Components ---------- */
 const Input = ({ style, ...props }) => (
-  <TextInput style={[styles.input, style]} {...props} />
+  <TextInput
+    style={[styles.input, style]}
+    placeholderTextColor="#999"
+    {...props}
+  />
 );
 
 const PasswordInput = ({ show, toggle, ...props }) => (
   <View style={styles.passwordContainer}>
-    <TextInput secureTextEntry={!show} style={styles.passwordInput} {...props} />
+    <TextInput
+      secureTextEntry={!show}
+      style={styles.passwordInput}
+      placeholderTextColor="#999"
+      {...props}
+    />
     <TouchableOpacity onPress={toggle}>
       <Ionicons
         name={show ? "eye-off-outline" : "eye-outline"}
@@ -445,7 +459,6 @@ const PasswordInput = ({ show, toggle, ...props }) => (
     </TouchableOpacity>
   </View>
 );
-
 /* ---------- Styles ---------- */
 const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 40 },

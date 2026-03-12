@@ -1,28 +1,27 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
+  Alert,
+  Animated,
   FlatList,
   Image,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
-  Animated,
-  Alert,
   RefreshControl,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../apiConfig';
 import { fetchBase64Image } from '../fetchBase64Image';
-
+import { useTranslation } from 'react-i18next';
 const GOLD = '#E18731';
-const FALLBACK_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
+const FALLBACK_IMAGE = 'https://st2.depositphotos.com/4431055/11855/i/450/depositphotos_118551182-stock-photo-holy-bible-book.jpg';
 
 function formatDate(dateString) {
   const dateObj = new Date(dateString);
@@ -37,6 +36,7 @@ function formatDate(dateString) {
 }
 
 export default function EventsScreen() {
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('my');
@@ -108,7 +108,7 @@ export default function EventsScreen() {
         return enriched;
       } else {
         console.error('Invalid API response for all events:', json);
-        setError('No events yet. Join a community to discover fellowships, worship nights, and special services near you.');
+        setError(t('No events yet. Join a community to discover fellowships, worship nights, and special services near you.'));
         return [];
       }
     } catch (err) {
@@ -369,7 +369,7 @@ export default function EventsScreen() {
             <View style={styles.header}>
               <TouchableOpacity>
               </TouchableOpacity>
-              <Text style={styles.headerText}>Events</Text>
+              <Text style={styles.headerText}>{t("Events")}</Text>
               <TouchableOpacity
                 onPress={() => navigation.navigate('notification')}
                 style={styles.iconButton}
@@ -383,7 +383,7 @@ export default function EventsScreen() {
             <View style={styles.searchContainer}>
               <Ionicons name="search" size={18} color="#999" style={styles.searchIcon} />
               <TextInput
-                placeholder="Search for an event"
+                 placeholder={t("search_for_an_event")}
                 placeholderTextColor="#999"
                 value={searchTerm}
                 onChangeText={setSearchTerm}
@@ -400,14 +400,14 @@ export default function EventsScreen() {
                 <Text
                   style={[styles.tabText, activeTab === 'my' ? styles.activeTab : styles.inactiveTab]}
                 >
-                  My Events
+                 {t("my_events")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleTabPress('all')}>
                 <Text
                   style={[styles.tabText, activeTab === 'all' ? styles.activeTab : styles.inactiveTab]}
                 >
-                  All Events
+                   {t("all_events")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -440,11 +440,14 @@ export default function EventsScreen() {
                   ListEmptyComponent={
                     <EmptyState
                       icon="calendar-outline"
-                      title={activeTab === 'my' ? "No Events Yet" : "No Events Found"}
+                       title={activeTab === 'my' ? t("no_events_yet") : t("no_events_found")}
                       subtitle={
-                        activeTab === 'my'
-                          ? "You haven't joined to any events yet. Explore and be part of upcoming gatherings!"
-                          : "No events available at the moment.\nJoin a community to discover more!"
+                        // activeTab === 'my'
+                        //   ? "You haven't joined to any events yet. Explore and be part of upcoming gatherings!"
+                        //   : "No events available at the moment.\nJoin a community to discover more!"
+                          activeTab === 'my'
+        ? t("no_events_yet_subtitle")
+        : t("no_events_found_subtitle")
                       }
                     />
                   }

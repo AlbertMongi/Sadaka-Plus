@@ -22,7 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as ScreenOrientation from 'expo-screen-orientation';
-
+import { useTranslation } from 'react-i18next';
 import { BASE_URL } from '../apiConfig';
 
 const { width } = Dimensions.get('window');
@@ -48,7 +48,7 @@ const Toast = ({ visible, message, type = "error" }) => {
 
 export default function LiveTeachings() {
   const router = useRouter();
-
+ const { t, i18n } = useTranslation();
   const [videos, setVideos] = useState([]);
   const [filteredVideos, setFilteredVideos] = useState([]); // ← For search results
   const [searchQuery, setSearchQuery] = useState(''); // ← Search input
@@ -234,8 +234,8 @@ export default function LiveTeachings() {
         )}
         <Text style={item.isLive ? styles.liveViewers : styles.viewCount}>
           {item.isLive 
-            ? `${item.viewers.toLocaleString()} watching now`
-            : `${item.viewers.toLocaleString()} views`
+               ? t("watching_now", { count: item.viewers.toLocaleString() })
+    : t("views", { count: item.viewers.toLocaleString() })
           }
         </Text>
       </View>
@@ -250,7 +250,7 @@ export default function LiveTeachings() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Live & Teachings</Text>
+        <Text style={styles.headerTitle}>{t("live_and_teachings")}</Text>
       </View>
 
       {/* Search Bar */}
@@ -258,7 +258,7 @@ export default function LiveTeachings() {
         <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search teachings..."
+          placeholder={t("search_for_teachings")}
           placeholderTextColor="#aaa"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -294,15 +294,15 @@ export default function LiveTeachings() {
           ) : (
             <View style={styles.emptyContainer}>
               <Ionicons name="tv-outline" size={80} color="#ccc" />
-              <Text style={styles.emptyTitle}>
-                {searchQuery ? "No results found" : "No Teachings Yet"}
-              </Text>
+           <Text style={styles.emptyTitle}>
+  {searchQuery ? t("no_results_found") : t("no_teachings_yet")}
+</Text>
               <Text style={styles.emptySubtitle}>
-                {searchQuery 
-                  ? `Try searching for something else.`
-                  : "Live sessions and recorded teachings will appear here."
-                }
-              </Text>
+  {searchQuery
+    ? t("try_searching_something_else")
+    : t("teachings_will_appear_here")
+  }
+</Text>
             </View>
           )
         }

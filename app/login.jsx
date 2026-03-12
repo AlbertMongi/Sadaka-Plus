@@ -24,7 +24,7 @@
 // export default function LoginScreen() {
 //   const router = useRouter();
 
-//   const [phoneNo, setPhoneNo] = useState("");
+//   const [username, setUsername] = useState("");
 //   const [password, setPassword] = useState("");
 //   const [showPassword, setShowPassword] = useState(false);
 //   const [loading, setLoading] = useState(false);
@@ -50,16 +50,11 @@
 //     setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 3500);
 //   };
 
-//   const validatePhoneNumber = (phone) => /^\+?\d{10,15}$/.test(phone);
-
 //   const handleLogin = async () => {
-//     if (!phoneNo || !password) {
-//       showToast("Please enter both phone number and password.");
-//       return;
-//     }
+//     const trimmedUsername = username.trim();
 
-//     if (!validatePhoneNumber(phoneNo)) {
-//       showToast("Please enter a valid phone number.");
+//     if (!trimmedUsername || !password) {
+//       showToast("Please enter your username and password.");
 //       return;
 //     }
 
@@ -71,25 +66,29 @@
 //     setLoading(true);
 
 //     try {
+//       const payload = {
+//         username: trimmedUsername,
+//         password,
+//       };
+
 //       const res = await fetch(`${BASE_URL}/auth/user/login`, {
 //         method: "POST",
 //         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({ phoneNo, password }),
+//         body: JSON.stringify(payload),
 //       });
 
 //       const data = await res.json();
 
 //       if (res.ok && data.success) {
-//         // ✅ SAVE PHONE NUMBER FOR OTP SCREEN
-//         await AsyncStorage.setItem("userPhoneNo", phoneNo);
+//         // Save username for future use (recovery, pre-fill, etc.)
+//         await AsyncStorage.setItem("username", trimmedUsername);
 
 //         showToast("Login successful!", "success");
 
-//         // ✅ ALWAYS GO TO OTP SCREEN (NO ADMIN ROUTING)
 //         setTimeout(() => {
 //           router.push({
 //             pathname: "/otp2",
-//             params: { phoneNo },
+//             params: { identifier: trimmedUsername },
 //           });
 //         }, 800);
 //       } else {
@@ -162,14 +161,15 @@
 //               Log in to continue to your account.
 //             </Text>
 
-//             <Text style={styles.label}>Phone Number *</Text>
+//             <Text style={styles.label}>Phone number/email *</Text>
 //             <TextInput
 //               style={styles.input}
-//               placeholder="Enter your phone number"
+//               placeholder="Enter your phone/email"
 //               placeholderTextColor="#999"
-//               value={phoneNo}
-//               onChangeText={setPhoneNo}
-//               keyboardType="phone-pad"
+//               value={username}
+//               onChangeText={setUsername}
+//               autoCapitalize="none"
+//               autoCorrect={false}
 //             />
 
 //             <Text style={styles.label}>Password *</Text>
@@ -226,6 +226,9 @@
 //   );
 // }
 
+// // ────────────────────────────────────────────────
+// // Styles remain 100% unchanged
+// // ────────────────────────────────────────────────
 // const styles = StyleSheet.create({
 //   safeArea: { flex: 1, backgroundColor: "#fff" },
 //   topBar: {
@@ -313,10 +316,12 @@ import { useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "./apiConfig";
+import { useTranslation } from "react-i18next";
 
 const ORANGE = "#FF9F00";
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   const [username, setUsername] = useState("");
@@ -340,8 +345,12 @@ export default function LoginScreen() {
     return () => unsubscribe();
   }, []);
 
-  const showToast = (message, type = "error") => {
-    setToast({ visible: true, message, type });
+  const showToast = (messageKey, type = "error", params = {}) => {
+    setToast({
+      visible: true,
+      message: t(messageKey, params),
+      type,
+    });
     setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 3500);
   };
 
@@ -349,12 +358,12 @@ export default function LoginScreen() {
     const trimmedUsername = username.trim();
 
     if (!trimmedUsername || !password) {
-      showToast("Please enter your username and password.");
+      showToast("login.please_enter_username_and_password");
       return;
     }
 
     if (!isConnected) {
-      showToast("No internet connection.");
+      showToast("common.no_internet_connection");
       return;
     }
 
@@ -375,10 +384,9 @@ export default function LoginScreen() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // Save username for future use (recovery, pre-fill, etc.)
         await AsyncStorage.setItem("username", trimmedUsername);
 
-        showToast("Login successful!", "success");
+        showToast("login.success", "success");
 
         setTimeout(() => {
           router.push({
@@ -387,10 +395,10 @@ export default function LoginScreen() {
           });
         }, 800);
       } else {
-        showToast(data.message || "Login failed. Please try again.");
+        showToast("login.failed", "error", { message: data.message });
       }
     } catch (err) {
-      showToast("Network error. Please try again later.");
+      showToast("common.network_error");
     } finally {
       setLoading(false);
     }
@@ -410,7 +418,7 @@ export default function LoginScreen() {
       }),
     ]).start();
 
-    showToast("Fingerprint login coming soon!", "success");
+    showToast("login.fingerprint_coming_soon", "success");
   };
 
   return (
@@ -441,7 +449,7 @@ export default function LoginScreen() {
 
       <View style={styles.topBar}>
         <View style={{ width: 36 }} />
-        <Text style={styles.title}>Login</Text>
+        <Text style={styles.title}>{t("login.title")}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -451,15 +459,15 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.cardContent}>
-            <Text style={styles.cardTitle}>Welcome Back</Text>
+            <Text style={styles.cardTitle}>{t("login.welcome_back")}</Text>
             <Text style={styles.cardSubtitle}>
-              Log in to continue to your account.
+              {t("login.log_in_to_continue")}
             </Text>
 
-            <Text style={styles.label}>Phone number/email *</Text>
+            <Text style={styles.label}>{t("login.phone_or_email_required")}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter your phone/email"
+              placeholder={t("login.enter_phone_or_email")}
               placeholderTextColor="#999"
               value={username}
               onChangeText={setUsername}
@@ -467,11 +475,11 @@ export default function LoginScreen() {
               autoCorrect={false}
             />
 
-            <Text style={styles.label}>Password *</Text>
+            <Text style={styles.label}>{t("login.password_required")}</Text>
             <View style={styles.passwordContainer}>
               <TextInput
                 style={[styles.input, { flex: 1, backgroundColor: "transparent" }]}
-                placeholder="Enter your password"
+                placeholder={t("login.enter_password")}
                 placeholderTextColor="#999"
                 secureTextEntry={!showPassword}
                 value={password}
@@ -493,7 +501,7 @@ export default function LoginScreen() {
               style={styles.forgotWrapper}
               onPress={() => router.push("/ForgotPassword")}
             >
-              <Text style={styles.forgotText}>Forgot Password?</Text>
+              <Text style={styles.forgotText}>{t("login.forgot_password")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -504,14 +512,14 @@ export default function LoginScreen() {
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.submitText}>Login</Text>
+                <Text style={styles.submitText}>{t("login.login_button")}</Text>
               )}
             </TouchableOpacity>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Don't have an account?</Text>
+              <Text style={styles.footerText}>{t("login.no_account")}</Text>
               <TouchableOpacity onPress={() => router.push("/role")}>
-                <Text style={styles.footerLink}> Sign Up</Text>
+                <Text style={styles.footerLink}> {t("login.sign_up")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -521,9 +529,6 @@ export default function LoginScreen() {
   );
 }
 
-// ────────────────────────────────────────────────
-// Styles remain 100% unchanged
-// ────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#fff" },
   topBar: {
