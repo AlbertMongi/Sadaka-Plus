@@ -14,7 +14,7 @@
 "verseOfDay": "Verse of the Day",
 "sermons": "Sermons",
 "BibleQuiz": "Bible Quiz",
-"BibleQuizOftheDay": "Bible Quiz of the Day",
+"BibleQuizOftheDay": "Quiz of the Day",
 "Start":"Start",
 "RecentTransactions":"Recent Transactions",
 "ViewMore":"View More",
@@ -409,7 +409,7 @@
     "verse_of_day": "Verse of the Day",
     "sermons": "Sermons",
     "bible_quiz": "Bible Quiz",
-    "bible_quiz_of_the_day": "Bible Quiz of the Day",
+    "bible_quiz_of_the_day": "Quiz of the Day",
     "start": "Start",
     "recent_transactions": "Recent Transactions",
     "view_more": "View More",
@@ -694,7 +694,10 @@
     "sermons": "Sermons",
     "noSermonsYet": "No sermons yet",
     "communityNoSermonsUploaded": "This community hasn't uploaded any sermons.",
-    "defaultSermonDescription": "Tap to listen to this powerful message of faith and hope."
+    "defaultSermonDescription": "Tap to listen to this powerful message of faith and hope.", 
+    "redirecting_to_secure_website": "Opening secure donation page...",
+"you_will_be_redirected_to_secure_website": "You will be redirected to our secure website to complete your contribution.\nAll payments are processed externally.",
+"continue_on_website": "Continue on Website"
 }
   
 

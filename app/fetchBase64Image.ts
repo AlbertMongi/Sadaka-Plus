@@ -85,7 +85,7 @@ export const fetchBase64Image = async (
   filename?: string | null
 ): Promise<string> => {
   const FALLBACK_IMAGE =
-    'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+    'https://st2.depositphotos.com/4431055/11855/i/450/depositphotos_118551182-stock-photo-holy-bible-book.jpg';
 
   if (!filename) return FALLBACK_IMAGE;
 

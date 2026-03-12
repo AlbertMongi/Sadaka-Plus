@@ -903,7 +903,7 @@ import { fetchBase64Image } from '../fetchBase64Image'; // ← adjust path if ne
 import { useTranslation } from 'react-i18next';
 const { width, height } = Dimensions.get('window');
 const GOLD = '#E18731';
-const FALLBACK_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb_oySS2-AZYC97VkAwMB1NKY1Wm1qHy_CeQ&s';
+const FALLBACK_IMAGE = 'https://st2.depositphotos.com/4431055/11855/i/450/depositphotos_118551182-stock-photo-holy-bible-book.jpg';
 const FALLBACK_AVATAR = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
 
 const EmptyState = ({ icon, title, subtitle }) => (
@@ -1347,7 +1347,7 @@ const fetchTransactions = useCallback(async () => {
 
     try {
       await Share.share({
-        message: `${current.verse_text}\n\n${current.verse_reference}\nShared via Sadaka App`,
+        message: `${current.verse_text}\n\n${current.verse_reference}\nShared via Sadaka Plus`,
       });
 
       setShares(prev => ({ ...prev, [current.id]: (prev[current.id] || 0) + 1 }));
@@ -1370,15 +1370,14 @@ const fetchTransactions = useCallback(async () => {
         <View style={styles.fixedHeader}>
           <View style={styles.navBar}>
             <View style={styles.tabs}>
-              <TouchableOpacity onPress={() => router.push('/profile')} style={styles.profileContainer}>
-                <Image
-                  source={{ uri: profileImage || FALLBACK_IMAGE }}
-                  style={styles.avatar}
-                  defaultSource={{ uri: FALLBACK_AVATAR }}
-                  resizeMode="cover"
-                  onError={() => setProfileImage(FALLBACK_IMAGE)}
-                />
-              </TouchableOpacity>
+      <TouchableOpacity
+  onPress={() => router.push('/profile')}
+  style={styles.profileContainer}
+>
+  <View style={styles.avatarPlaceholder}>
+    <Ionicons name="person-outline" size={35} color="#ccc" />
+  </View>
+</TouchableOpacity>
               <Text style={styles.tabActive}>{t('Whatwouldyouliketodotoday')}</Text>
             </View>
             <View style={styles.icons}>
@@ -1857,6 +1856,19 @@ const styles = StyleSheet.create({
     borderColor: '#f0f0f0',
     height: 115,
   },
+  profileContainer: {
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+avatarPlaceholder: {
+  width: 50,
+  height: 50,
+  borderRadius: 25,
+  backgroundColor: "#f2f2f2",
+  justifyContent: "center",
+  alignItems: "center",
+},
   quizIconCircle: {
     width: 76,
     height: 76,

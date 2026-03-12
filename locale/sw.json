@@ -70,7 +70,7 @@
   "leave": "Acha",
   "no_description_provided": "Hakuna maelezo yaliyotolewa.",
   "join_this_amazing_community": "Jiunge na jamii hii ya kuvutia!",
-
+"cancel_attend_message": "Una uhakika unataka kughairi kuhudhuria tukio hili?",
   "unnamed_community": "Jamii isiyo na jina",
   "no_description_available": "Hakuna maelezo yanayopatikana",
   "no_communities_found": "Hakuna jamii zilizopatikana.",
@@ -576,7 +576,11 @@
     "sermons": "Mahubiri",
     "noSermonsYet": "Hakuna mahubiri bado",
     "communityNoSermonsUploaded": "Jumuiya hii haijapakia mahubiri yoyote.",
-    "defaultSermonDescription": "Bonyeza kusikiliza ujumbe huu wenye nguvu wa imani na matumaini."
+    "defaultSermonDescription": "Bonyeza kusikiliza ujumbe huu wenye nguvu wa imani na matumaini.",
  
+  "redirecting_to_secure_website": "Inafungua ukurasa salama wa malipo...",
+  "you_will_be_redirected_to_secure_website": "Utaelekezwa kwenye tovuti yetu salama kukamilisha mchango wako.\nMalipo yote yanafanyika nje ya programu.",
+  "continue_on_website": "Endelea kwenye Tovuti"
+
 
 }
