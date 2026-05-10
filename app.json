@@ -41,7 +41,8 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/Sadaka App Logo.png"
+      "favicon": "./assets/images/Sadaka App Logo.png",
+     "publicPath": "/laravel-api/"
     },
     "plugins": [
       "expo-router",
